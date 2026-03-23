@@ -30,7 +30,8 @@ Learnings are stored in topic-specific files -- NOT in memory DB, NOT in CLAUDE.
 | Project Setup, Tooling, Build | `project-setup.md` |
 | Architecture, Patterns, State | `architecture.md` |
 | UI/UX, Components, Styling | `ui-ux.md` |
-| API, Backend, Data | `api-data.md` |
+| CloudKit, Sync, Sharing, Offline | `cloudkit-sync.md` |
+| iOS, SwiftUI, SwiftData, Sign in with Apple | `ios-swiftui.md` |
 | Testing, QA, CI/CD | `testing.md` |
 
 **Format:** One line per learning, brief and actionable. Read the file first to find the right section, then append.

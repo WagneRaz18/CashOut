@@ -1,0 +1,27 @@
+# macOS
+.DS_Store
+.Spotlight-V100
+.Trashes
+
+# Xcode
+DerivedData/
+xcuserdata/
+*.xcuserstate
+*.pbxuser
+*.mode1v3
+*.mode2v3
+*.perspectivev3
+*.xccheckout
+*.moved-aside
+build/
+*.ipa
+*.dSYM.zip
+
+# Python (memory system)
+tools/memory/.venv/
+__pycache__/
+*.pyc
+
+# Environment
+.env
+*.pem
