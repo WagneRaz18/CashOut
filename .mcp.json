@@ -1,0 +1,10 @@
+{
+  "mcpServers": {
+    "cashout-memory": {
+      "command": "/Users/wagneraz/Developer/CashOut/tools/memory/.venv/bin/python",
+      "args": [
+        "/Users/wagneraz/Developer/CashOut/tools/memory/mcp_server.py"
+      ]
+    }
+  }
+}
