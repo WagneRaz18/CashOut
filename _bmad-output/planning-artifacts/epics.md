@@ -150,7 +150,7 @@ FR26: Epic 4 — Last-write-wins conflict resolution
 
 ## Epic List
 
-### Epic 1: Project Foundation & Solo Cash Entry
+### Epic 1: Solo Cash Entry
 User can sign in with Apple and log cash expenses in under 5 seconds using the numpad-first entry flow, with data persisted locally. The app is fully functional for a single user, including offline capability.
 **FRs covered:** FR1, FR2, FR3, FR4, FR9, FR12, FR19, FR23, FR24
 
@@ -170,15 +170,15 @@ Both partners share expenses in real-time — second partner installs, signs in,
 User can personalize their spending categories by creating and editing custom categories, and access app settings for household management.
 **FRs covered:** FR10, FR11
 
-## Epic 1: Project Foundation & Solo Cash Entry
+## Epic 1: Solo Cash Entry
 
 User can sign in with Apple and log cash expenses in under 5 seconds using the numpad-first entry flow, with data persisted locally. The app is fully functional for a single user, including offline capability.
 
 ### Story 1.1: Xcode Project Setup with Core Data & CloudKit
 
-As a developer,
-I want a properly configured Xcode project with Core Data, CloudKit, and MVVM folder structure,
-So that all subsequent features can be built on a correctly-configured foundation.
+As a user,
+I want the app built on a properly configured foundation with Core Data, CloudKit, and MVVM architecture,
+So that expense entry, sync, and all features work reliably from the start.
 
 **Acceptance Criteria:**
 
@@ -343,11 +343,11 @@ So that I can quickly categorize my cash expenses using familiar labels and colo
 **When** defined
 **Then** it maps colorName strings to SwiftUI Color values resolved from the asset catalog
 
-### Story 1.5: Expense Entry Screen with Numpad & Category Picker
+### Story 1.5: Numpad & Amount Display
 
 As a user,
-I want to enter cash expenses using a numpad with category selection,
-So that I can log purchases in under 5 seconds with minimal effort.
+I want a numpad and amount display on the entry screen,
+So that I can type cash amounts quickly with a calculator-style interface.
 
 **Acceptance Criteria:**
 
@@ -361,7 +361,7 @@ So that I can log purchases in under 5 seconds with minimal effort.
 
 **Given** a numpad key tap
 **When** a digit is pressed
-**Then** the amount display updates immediately in primary color and a light haptic fires via HapticService (UX-DR10)
+**Then** the amount display updates immediately in primary color (UX-DR2)
 
 **Given** amount entry
 **When** digits are typed
@@ -371,13 +371,25 @@ So that I can log purchases in under 5 seconds with minimal effort.
 **When** tapped
 **Then** the last digit is removed from the amount
 
+### Story 1.6: Category Picker, Save Flow & Expense Persistence
+
+As a user,
+I want to select a category and save my expense with one tap,
+So that logging a purchase is fast and the data is immediately stored.
+
+**Acceptance Criteria:**
+
 **Given** CategoryPickerView
 **When** displayed above the numpad
 **Then** it shows a horizontal ScrollView of category chips with color dot (8pt circle) + label, and the most-recently-used category is pre-selected (UX-DR3, UX-DR9)
 
+**Given** MRU category tracking
+**When** the user saves an expense
+**Then** the selected categoryID is persisted to UserDefaults as the MRU default, and restored on next app launch or entry screen appearance
+
 **Given** a category chip
 **When** tapped
-**Then** it becomes selected with tinted background + colored border and a light haptic fires
+**Then** it becomes selected with tinted background + colored border
 
 **Given** the Save button
 **When** amount is $0.00
@@ -386,7 +398,6 @@ So that I can log purchases in under 5 seconds with minimal effort.
 **Given** the Save button
 **When** amount > $0 and tapped
 **Then** the expense is saved to Core Data via ExpenseRepository with amount (Int64 cents), categoryID, createdByUserID, createdAt, modifiedAt, and optional note
-**And** a success haptic fires (UINotificationFeedbackGenerator .success)
 **And** the screen resets to "$0.00" with the just-used category as the new MRU default
 **And** no confirmation banner, toast, or animation is shown (UX-DR26)
 
@@ -398,13 +409,33 @@ So that I can log purchases in under 5 seconds with minimal effort.
 **When** the user saves an entry
 **Then** it persists locally via Core Data and the experience is identical to online (FR23, FR24)
 
-**Given** HapticService
-**When** any haptic event is triggered
-**Then** all haptics route through HapticServiceProtocol.trigger(_:) and respect UIAccessibility.isReduceMotionEnabled
-
 **Given** ExpenseEntryViewModel
 **When** created
 **Then** it is @Observable with @MainActor, uses @ObservationIgnored on repository/service references, and does not import SwiftUI
+
+### Story 1.7: Entry Screen Haptics, Accessibility & Dynamic Type
+
+As a user,
+I want haptic feedback on every interaction and full accessibility support,
+So that the entry experience feels responsive and is usable by everyone.
+
+**Acceptance Criteria:**
+
+**Given** a numpad key tap
+**When** a digit is pressed
+**Then** a light haptic fires via HapticService (UX-DR10)
+
+**Given** a category chip
+**When** tapped
+**Then** a light haptic fires via HapticService (UX-DR10)
+
+**Given** the Save button
+**When** tapped successfully
+**Then** a success haptic fires (UINotificationFeedbackGenerator .success) (UX-DR10)
+
+**Given** HapticService
+**When** any haptic event is triggered
+**Then** all haptics route through HapticServiceProtocol.trigger(_:) and respect UIAccessibility.isReduceMotionEnabled
 
 **Given** VoiceOver is enabled
 **When** the entry screen is focused
@@ -597,6 +628,8 @@ So that I can analyze my cash spending patterns at different time scales.
 
 ### Story 3.2: Category Donut Chart
 
+**Dependencies:** Requires Epic 2 FeedView for filtered feed navigation (tap donut slice → filtered feed).
+
 As a user,
 I want a visual donut chart showing my spending proportions by category,
 So that I can instantly see where most of my cash is going.
@@ -628,6 +661,8 @@ So that I can instantly see where most of my cash is going.
 **Then** an empty donut outline is shown (not hidden entirely) (UX-DR15)
 
 ### Story 3.3: Daily Bar Chart & Category Breakdown List
+
+**Dependencies:** Requires Epic 2 FeedView for filtered feed navigation (tap category row → filtered feed).
 
 As a user,
 I want a bar chart showing daily spending patterns and a detailed category breakdown,
@@ -796,6 +831,8 @@ So that our shared feed is always current and no data is lost.
 User can personalize their spending categories by creating and editing custom categories, and access app settings for household management.
 
 ### Story 5.1: Settings Screen
+
+**Dependencies:** Requires Epic 4 CloudSharingService for the Household "Invite Partner" button.
 
 As a user,
 I want to access app settings from the feed or insights screen,

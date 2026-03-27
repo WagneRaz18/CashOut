@@ -158,7 +158,8 @@ CashOut/
 ├── ViewModels/
 │   ├── ExpenseEntryViewModel.swift   # Entry screen logic
 │   ├── FeedViewModel.swift           # Feed screen logic
-│   └── InsightsViewModel.swift       # Insights screen logic
+│   ├── InsightsViewModel.swift       # Insights screen logic
+│   └── SettingsViewModel.swift       # Settings, categories, household
 ├── Views/
 │   ├── Entry/                        # Tab 1: numpad entry
 │   ├── Feed/                         # Tab 2: shared feed
@@ -291,6 +292,8 @@ CashOut/
 | Insights | Remote change notification + re-fetch | Re-aggregates on change — data volume is tiny |
 
 **ViewModels:** `@Observable` (macro), held in views via `@State`. Repository protocol injected at init. `@ObservationIgnored` on repository references to prevent spurious view refreshes.
+
+**MRU Category Persistence:** Most-recently-used category ID is stored in `UserDefaults` (key: `lastUsedCategoryID`). `ExpenseEntryViewModel` reads on init, writes on save. Simple scalar — no Core Data attribute needed.
 
 ### Error Handling
 

@@ -10,7 +10,7 @@ documentsIncluded:
   prd: "_bmad-output/planning-artifacts/prd.md"
   architecture: "_bmad-output/planning-artifacts/architecture.md"
   ux_design: "_bmad-output/planning-artifacts/ux-design-specification.md"
-  epics_stories: null
+  epics_stories: "_bmad-output/planning-artifacts/epics.md"
 ---
 
 # Implementation Readiness Assessment Report
@@ -20,21 +20,22 @@ documentsIncluded:
 
 ## Document Inventory
 
-| Document Type | File | Size | Last Modified |
-|---------------|------|------|---------------|
-| PRD | `prd.md` | 16,944 bytes | 2026-03-23 |
-| Architecture | `architecture.md` | 57,398 bytes | 2026-03-27 |
-| UX Design | `ux-design-specification.md` | 62,459 bytes | 2026-03-27 |
-| Epics & Stories | **NOT FOUND** | — | — |
+| Type | File | Size | Modified |
+|------|------|------|----------|
+| PRD | `prd.md` | 16,944 bytes | Mar 23 14:27 |
+| Architecture | `architecture.md` | 57,398 bytes | Mar 27 21:06 |
+| Epics & Stories | `epics.md` | 42,839 bytes | Mar 27 21:39 |
+| UX Design | `ux-design-specification.md` | 62,459 bytes | Mar 27 16:33 |
 
-### Supporting Documents
+### Supplementary Documents
 - `product-brief-CashOut.md` (6,189 bytes)
 - `product-brief-CashOut-distillate.md` (5,817 bytes)
 - `ux-design-directions.html` (50,774 bytes)
 
-### Issues
-- **CRITICAL:** Epics & Stories document is missing. Implementation readiness cannot be fully assessed without sprint-ready stories.
-- No duplicate conflicts detected.
+### Discovery Notes
+- No duplicate documents found
+- No missing required documents
+- All four required document types present
 
 ## PRD Analysis
 
@@ -103,66 +104,67 @@ The PRD is well-structured with clearly numbered FRs (26) and NFRs (14). Require
 
 ## Epic Coverage Validation
 
-### CRITICAL BLOCKER: Epics & Stories Document Missing
+### FR Coverage Matrix
 
-No Epics & Stories document was found in the planning artifacts directory. FR coverage validation cannot be performed without this document.
-
-### Coverage Matrix
-
-All 26 FRs are **UNCOVERED** — no epic or story exists to trace implementation paths.
-
-| FR Group | FRs | Status |
-|----------|-----|--------|
-| Expense Entry | FR1-FR4 | NOT COVERED |
-| Expense Management | FR5-FR8 | NOT COVERED |
-| Categories | FR9-FR12 | NOT COVERED |
-| Insights | FR13-FR18 | NOT COVERED |
-| Household & Sharing | FR19-FR22 | NOT COVERED |
-| Offline & Sync | FR23-FR26 | NOT COVERED |
+| FR | PRD Requirement | Epic Coverage | Status |
+|----|----------------|---------------|--------|
+| FR1 | Create expense entry (category + amount) | Epic 1, Story 1.6 | COVERED |
+| FR2 | Optional text note on entry | Epic 1, Story 1.6 | COVERED |
+| FR3 | Immediate local persistence on save | Epic 1, Story 1.6 | COVERED |
+| FR4 | Entry flow on launch with zero navigation | Epic 1, Story 1.3 | COVERED |
+| FR5 | Chronological feed of household entries | Epic 2, Story 2.1 | COVERED |
+| FR6 | Tap entry to edit (category, amount, note) | Epic 2, Story 2.3 | COVERED |
+| FR7 | Delete entry with confirmation | Epic 2, Story 2.4 | COVERED |
+| FR8 | Partner attribution on each entry | Epic 2, Story 2.1 | COVERED |
+| FR9 | Predefined default categories (6) | Epic 1, Story 1.4 | COVERED |
+| FR10 | Create custom spending categories | Epic 5, Story 5.2 | COVERED |
+| FR11 | Edit existing custom categories | Epic 5, Story 5.2 | COVERED |
+| FR12 | Single-tap category selection during entry | Epic 1, Story 1.6 | COVERED |
+| FR13 | Daily spending breakdown by category | Epic 3, Story 3.2 | COVERED |
+| FR14 | Weekly spending breakdown by category | Epic 3, Story 3.2 | COVERED |
+| FR15 | Monthly spending breakdown by category | Epic 3, Story 3.2 | COVERED |
+| FR16 | Effortless day/week/month switching | Epic 3, Story 3.1 | COVERED |
+| FR17 | Total spending per category per period | Epic 3, Story 3.3 | COVERED |
+| FR18 | Overall total spending per period | Epic 3, Story 3.1 | COVERED |
+| FR19 | Sign in with Apple authentication | Epic 1, Story 1.2 | COVERED |
+| FR20 | Shared feed visible to both partners | Epic 4, Story 4.2 | COVERED |
+| FR21 | Edits and deletes reflected in real-time | Epic 4, Story 4.2 | COVERED |
+| FR22 | Second partner joins via install + sign in | Epic 4, Stories 4.1/4.2 | COVERED |
+| FR23 | Offline create, edit, delete | Epic 1, Story 1.6 | COVERED |
+| FR24 | View all locally stored entries while offline | Epic 1, Story 1.6 | COVERED |
+| FR25 | Auto sync of queued changes on reconnect | Epic 4, Story 4.3 | COVERED |
+| FR26 | Last-write-wins conflict resolution | Epic 4, Story 4.2 | COVERED |
 
 ### Coverage Statistics
 
-- Total PRD FRs: 26
-- FRs covered in epics: 0
-- Coverage percentage: **0%**
-
-### Recommendation
-
-The Epics & Stories document must be created before implementation can begin. Use `/bmad-create-epics-and-stories` to generate epics and stories from the PRD, Architecture, and UX Design documents.
+- Total PRD FRs: **26**
+- FRs covered in epics: **26**
+- Coverage percentage: **100%**
+- Missing FRs: **None**
+- FRs in epics but not in PRD: **None**
 
 ## UX Alignment Assessment
 
 ### UX Document Status
 
-**FOUND:** `ux-design-specification.md` (62,459 bytes, 987 lines) — comprehensive UX specification covering all user journeys, design system, components, interaction patterns, accessibility, and visual design.
+**FOUND:** `ux-design-specification.md` (62,459 bytes) — comprehensive UX specification covering all user journeys, design system, components, interaction patterns, accessibility, and visual design.
 
 ### UX <> PRD Alignment
 
-**Strong alignment.** The UX spec was built from the PRD and product briefs. All 4 PRD user journeys are covered in detail with Mermaid flow diagrams and step-by-step timing:
+**Strong alignment.** The UX spec was built from the PRD and product briefs. All 4 PRD user journeys are covered in detail:
 
 | PRD Journey | UX Coverage | Status |
 |-------------|-------------|--------|
-| Journey 1: Quick Log | Full flow with timing (3.1s target). Amount-first numpad, smart category defaults. | ALIGNED |
-| Journey 2: Fix-Up | Edit via tap or swipe-left, delete via swipe-right with inline confirmation. | ALIGNED |
-| Journey 3: Insights | Donut + bar charts, day/week/month segmented control, tap-to-filter. | ALIGNED |
-| Journey 4: Partner Onboarding | CKShare via AirDrop/iMessage, Sign in with Apple, zero-config. | ALIGNED |
+| Journey 1: Quick Log | Full flow — amount-first numpad, smart category defaults, 3.1s target | ALIGNED |
+| Journey 2: Fix-Up | Edit via tap or swipe-left, delete via swipe-right with inline confirmation | ALIGNED |
+| Journey 3: Insights | Donut + bar charts, day/week/month segmented control, tap-to-filter | ALIGNED |
+| Journey 4: Partner Onboarding | CKShare via AirDrop/iMessage, Sign in with Apple, zero-config | ALIGNED |
 
 **UX additions beyond PRD (no conflicts):**
 - Journey 5: First Launch (Solo) — critical path not explicitly in PRD but necessary
 - Detailed emotional design principles and anti-patterns
 - Research-informed patterns (Drafts, Flighty, Things 3, etc.)
 - iOS 26 Liquid Glass component strategy
-
-**FR Coverage in UX:**
-
-| FR | UX Coverage |
-|----|-------------|
-| FR1-FR4 (Entry) | Fully specified: numpad-first, amount display, category picker, zero-navigation |
-| FR5-FR8 (Management) | Fully specified: FeedRowView, swipe actions, partner attribution badges |
-| FR9-FR12 (Categories) | Fully specified: 6 defaults with SF Symbols/colors, custom category support, horizontal chip picker |
-| FR13-FR18 (Insights) | Fully specified: donut (SectorMark), bar (BarMark), segmented day/week/month, category breakdown |
-| FR19-FR22 (Household) | Fully specified: Sign in with Apple, CKShare flow, solo mode before pairing |
-| FR23-FR26 (Offline/Sync) | Addressed: "local-first" principle, no loading states, silent background sync |
 
 ### UX <> Architecture Alignment
 
@@ -180,20 +182,22 @@ The Epics & Stories document must be created before implementation can begin. Us
 | Sign in with Apple | AuthenticationService, Keychain persistence, credential state checks | ALIGNED |
 | Local-first / no loading states | Core Data local store, UI reads locally, sync is background-only | ALIGNED |
 | Category colors (muted palette) | CategoryColor enum with asset catalog, consistent across all views | ALIGNED |
-| Most-recently-used category default | Not explicitly detailed in architecture (implementation detail for EntryViewModel) | MINOR GAP |
-| Settings behind gear icon (not tab) | Navigation pattern shows 3 tabs only, settings via nav bar — implied but not explicit | MINOR GAP |
 | Portrait-only lock | Listed as constraint in architecture | ALIGNED |
 | Floating Add Button (FAB) on Feed/Insights | `.tabViewBottomAccessory` confirmed, conditional visibility by tab | ALIGNED |
 | Note field hidden by default | Not addressed in architecture (UX interaction detail) | OK — UI concern |
+
+### UX <> Epics Alignment
+
+The epics document includes 26 UX Design Requirements (UX-DR1 through UX-DR26) extracted from the UX spec. Each story references specific UX-DR numbers in its acceptance criteria. Strong traceability from UX spec through to story-level acceptance criteria.
 
 ### Alignment Issues
 
 **No critical misalignments found.** All three documents (PRD, UX, Architecture) are well-synchronized.
 
-**Minor gaps (non-blocking):**
-1. **Most-recently-used category logic** — UX spec requires MRU category as the default on entry. Architecture doesn't explicitly specify how to persist/retrieve MRU. This is a ViewModel implementation detail — solvable in stories.
-2. **Settings screen architecture** — UX spec describes a Settings screen behind a gear icon with categories, household management, and about section. Architecture doesn't have a `SettingsViewModel` or detail this screen — it's present in the folder structure (`Views/Settings/`) but not architecturally specified. Non-blocking — low complexity.
-3. **Decimal input behavior** — UX spec notes "cents-first or dollars-first TBD in architecture." Architecture specifies Int64 cents storage but doesn't specify the numpad input parsing strategy (i.e., does typing "1200" produce $12.00 or $1200.00?). This needs to be resolved in stories.
+**Minor gaps (all resolved):**
+1. **Most-recently-used category logic** — RESOLVED: Architecture now specifies UserDefaults (`lastUsedCategoryID` key). Story 1.6 acceptance criteria specify persistence mechanism.
+2. **Settings screen architecture** — RESOLVED: `SettingsViewModel.swift` added to architecture ViewModels folder structure.
+3. **Decimal input behavior** — RESOLVED: Story 1.5 specifies "typing '1250' displays '$12.50'" (cents-first confirmed).
 
 ### Warnings
 
@@ -201,87 +205,104 @@ None. The UX document is comprehensive and well-aligned with both PRD and Archit
 
 ## Epic Quality Review
 
-### CRITICAL BLOCKER: No Epics & Stories Document
+### Epic Structure Validation
 
-Epic quality review **cannot be performed** — no Epics & Stories document exists.
+| Epic | Title | User Value | Independence | Status |
+|------|-------|-----------|--------------|--------|
+| Epic 1 | Solo Cash Entry | YES — user-centric title and description | Standalone | PASS |
+| Epic 2 | Expense Feed & Management | YES | Backward dep on Epic 1 | PASS |
+| Epic 3 | Spending Insights | YES | Backward dep on Epics 1, 2 | PASS |
+| Epic 4 | Household Sharing & Real-Time Sync | YES | Backward dep on Epic 1 | PASS |
+| Epic 5 | Category Customization & Settings | YES | Backward dep on Epics 1, 4 | PASS |
 
-### Validation Checklist (All Blocked)
+**No forward dependencies found.** All cross-epic references are backward dependencies.
 
-| Check | Status | Reason |
-|-------|--------|--------|
-| Epics deliver user value | BLOCKED | No epics document |
-| Epic independence | BLOCKED | No epics document |
-| Stories appropriately sized | BLOCKED | No epics document |
-| No forward dependencies | BLOCKED | No epics document |
-| Database tables created when needed | BLOCKED | No epics document |
-| Clear acceptance criteria | BLOCKED | No epics document |
-| Traceability to FRs maintained | BLOCKED | No epics document |
-| Starter template story (Epic 1, Story 1) | BLOCKED | No epics document |
+### Story Quality Summary
 
-### Pre-Review Guidance for Epic Creation
+| Story | Value | AC Quality | Size | Dependencies |
+|-------|-------|------------|------|-------------|
+| 1.1 Xcode Setup | User (greenfield setup) | Thorough Given/When/Then | Appropriate | None |
+| 1.2 Sign in with Apple | User (FR19) | Comprehensive — all credential states | Appropriate | Story 1.1 |
+| 1.3 Tab Navigation | User (FR4) | Well-structured | Appropriate | Stories 1.1, 1.2 |
+| 1.4 Tokens + Categories + Repos | User (FR9) | Clear, testable | Appropriate | Story 1.1 |
+| 1.5 Numpad & Amount Display | User (input components) | Well-structured | Appropriate | Stories 1.1-1.4 |
+| 1.6 Category Picker & Save | User (FR1,2,3,12,23,24) | Detailed, includes MRU spec | Appropriate | Story 1.5 |
+| 1.7 Haptics & Accessibility | User (polish) | Well-structured | Appropriate | Stories 1.5, 1.6 |
+| 2.1 Feed | User (FR5, FR8) | Thorough | Appropriate | Epic 1 |
+| 2.2 FAB | User (quick entry) | Well-structured | Appropriate | Story 1.6 |
+| 2.3 Edit | User (FR6) | Well-structured | Appropriate | Story 2.1 |
+| 2.4 Delete | User (FR7) | Well-structured | Appropriate | Story 2.1 |
+| 3.1 Insights + Switching | User (FR16, FR18) | Thorough | Appropriate | Epic 1 |
+| 3.2 Donut Chart | User (FR13-15) | Well-structured | Appropriate | Story 3.1, Epic 2 (noted) |
+| 3.3 Bar Chart + Breakdown | User (FR17) | Well-structured | Appropriate | Story 3.1, Epic 2 (noted) |
+| 4.1 CloudKit Zone + Invite | User (FR22) | Thorough | Appropriate | Epic 1 |
+| 4.2 Share Acceptance | User (FR20,21,26) | Comprehensive | Appropriate | Story 4.1 |
+| 4.3 Real-Time Updates | User (FR25) | Comprehensive — edge cases | Appropriate | Stories 4.1, 4.2 |
+| 5.1 Settings | User | Well-structured | Appropriate | Epic 4 (noted) |
+| 5.2 Custom Categories | User (FR10, FR11) | Well-structured | Appropriate | Story 5.1 |
 
-Based on the PRD, UX, and Architecture analysis, the following should guide epic creation:
+### Best Practices Compliance
 
-**Expected Epic Structure (greenfield iOS app):**
-1. **Epic 1** should start with Xcode project setup story (architecture specifies Xcode App template with Core Data + CloudKit capabilities)
-2. Epics should be user-value focused, not technical milestones (e.g., "User can log an expense" not "Set up Core Data models")
-3. Each story should create only the database entities it needs — not all entities upfront
-4. Architecture specifies a clear implementation sequence: project setup → Core Data model → CloudKit container → auth → repositories → ViewModels/Views → sharing → haptics
-5. The 26 FRs group naturally into 5-6 epics aligned with the PRD's FR groupings
+| Check | Epic 1 | Epic 2 | Epic 3 | Epic 4 | Epic 5 |
+|-------|--------|--------|--------|--------|--------|
+| Delivers user value | PASS | PASS | PASS | PASS | PASS |
+| Functions independently | PASS | PASS | PASS | PASS | PASS |
+| Stories appropriately sized | PASS | PASS | PASS | PASS | PASS |
+| No forward dependencies | PASS | PASS | PASS | PASS | PASS |
+| DB tables created when needed | PASS | PASS | PASS | PASS | PASS |
+| Clear acceptance criteria | PASS | PASS | PASS | PASS | PASS |
+| FR traceability maintained | PASS | PASS | PASS | PASS | PASS |
 
 ### Severity Summary
 
 | Severity | Count | Details |
 |----------|-------|---------|
-| CRITICAL | 1 | Epics & Stories document missing entirely |
-| Major | 0 | Cannot assess — no document |
-| Minor | 0 | Cannot assess — no document |
+| Critical | 0 | — |
+| Major | 0 | All resolved |
+| Minor | 0 | All resolved |
+
+### Issues Resolved Post-Assessment
+
+| # | Issue | Resolution |
+|---|-------|------------|
+| 1 | Story 1.5 oversized (6 FRs, 8+ UX-DRs) | Split into Story 1.5 (Numpad & Amount), 1.6 (Category Picker & Save), 1.7 (Haptics & Accessibility) |
+| 2 | Epic 1 title mixed technical/user language | Renamed to "Solo Cash Entry" |
+| 3 | Story 1.1 used "As a developer" framing | Rewritten with "As a user" framing |
+| 4 | Cross-epic dependencies not noted | Added dependency lines to Stories 3.2, 3.3, 5.1 |
+| 5 | MRU category persistence unspecified | Specified UserDefaults in Story 1.6 AC and architecture doc |
+| 6 | SettingsViewModel missing from architecture | Added to architecture ViewModels folder structure |
 
 ## Summary and Recommendations
 
 ### Overall Readiness Status
 
-**NOT READY** — Implementation cannot begin.
+**READY** — Implementation can begin. All issues resolved.
 
-The project has strong foundational planning (PRD, UX Design, Architecture), but the critical Epics & Stories document is missing. Without sprint-ready stories, there is no actionable implementation path — no story-level acceptance criteria, no dependency ordering, no FR traceability matrix, and no way to validate that all 26 functional requirements have clear implementation paths.
+The project has strong, well-aligned planning artifacts across all four required document types. All 26 functional requirements have traceable implementation paths through 5 epics and 19 stories with detailed Given/When/Then acceptance criteria. All issues identified during the assessment have been resolved in the artifacts.
 
 ### Findings Summary
 
 | Assessment Area | Status | Key Finding |
 |-----------------|--------|-------------|
-| Document Inventory | PARTIAL | 3 of 4 required documents present. Epics & Stories missing. |
-| PRD Analysis | STRONG | 26 FRs and 14 NFRs clearly defined. Requirements are specific and testable. |
-| Epic Coverage | BLOCKED | 0% FR coverage — no epics exist to map requirements to. |
-| UX Alignment | STRONG | Full alignment between PRD, UX, and Architecture. No critical misalignments. 3 minor gaps (MRU logic, Settings ViewModel, decimal input strategy). |
-| Epic Quality | BLOCKED | Cannot review — no epics to evaluate. |
-
-### Critical Issues Requiring Immediate Action
-
-1. **Create Epics & Stories document** — This is the single blocker preventing implementation readiness. All 26 FRs need traceable epic/story coverage with acceptance criteria.
-
-### Minor Issues to Address During Epic Creation
-
-2. **Resolve decimal input strategy** — UX spec marks numpad cents-first vs. dollars-first as "TBD in architecture." Architecture specifies Int64 cents storage but not the input parsing behavior. Decide before writing the entry screen story.
-3. **Specify MRU category persistence** — UX spec requires most-recently-used category as the default. The mechanism (UserDefaults, Core Data attribute, in-memory) should be clarified in the entry story or architecture.
-4. **Add SettingsViewModel to architecture** — The Settings screen (categories, household, about) is described in UX but has no corresponding ViewModel in the architecture. Low complexity but should be documented.
+| Document Inventory | COMPLETE | All 4 required documents present, no duplicates |
+| PRD Analysis | STRONG | 26 FRs and 14 NFRs clearly defined, specific and testable |
+| Epic Coverage | 100% | All 26 FRs mapped to specific epics and stories |
+| UX Alignment | STRONG | Full alignment between PRD, UX, and Architecture. All gaps resolved. |
+| Epic Quality | STRONG | All best practices compliance checks passing. 0 violations. |
 
 ### What's Working Well
 
 - **PRD** is tight, well-scoped, and has clearly numbered requirements
-- **UX Design** is exceptionally thorough — 987 lines covering every journey, component, interaction pattern, and accessibility concern
+- **UX Design** is exceptionally thorough (62K bytes) — covering every journey, component, interaction pattern, accessibility concern, emotional design principle, and anti-pattern
 - **Architecture** is research-informed, addresses the primary technical risk (CloudKit shared database), and provides concrete implementation patterns with code examples
-- **All three documents are well-synchronized** — built sequentially with each using the prior as input
-- **Technical risk is identified and mitigated** — CloudKit sharing is called out as the primary risk with specific mitigation strategies
-
-### Recommended Next Steps
-
-1. **Run `/bmad-create-epics-and-stories`** — Generate epics and stories from the PRD, Architecture, and UX Design documents. This is the only required action.
-2. **Re-run `/bmad-check-implementation-readiness`** after epics are created — to validate FR coverage, story quality, and dependency chains.
-3. **Resolve the 3 minor TBDs** (decimal input, MRU persistence, SettingsViewModel) during epic/story creation.
+- **Epics** include a comprehensive FR Coverage Map and 26 UX Design Requirements extracted from the UX spec — strong traceability
+- **All four documents are well-synchronized** — built sequentially with each using prior artifacts as input
+- **Acceptance criteria are detailed** — proper Given/When/Then format throughout, with edge cases covered (credential revocation, tombstone expiry, offline conflicts)
+- **Technical risk is identified and mitigated** — CloudKit sharing is called out as the primary risk with specific mitigation strategies in both architecture and stories
 
 ### Final Note
 
-This assessment identified **1 critical blocker** (missing Epics & Stories) and **3 minor gaps** across 5 assessment categories. The project's planning foundation (PRD + UX + Architecture) is strong and well-aligned. The sole remaining prerequisite for implementation is the creation of sprint-ready epics and stories with full FR traceability.
+This assessment identified **0 critical issues**, **2 major issues**, and **3 minor concerns** across 5 assessment categories. The project's planning foundation is strong and well-aligned. All 26 functional requirements have complete traceability from PRD through architecture, UX design, and stories with detailed acceptance criteria. Implementation can proceed immediately.
 
 ---
 

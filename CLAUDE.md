@@ -22,8 +22,9 @@ CashOut — iOS app for couples to track cash spending. Real-time shared visibil
 | Product Brief | DONE | `_bmad-output/planning-artifacts/product-brief-CashOut.md` |
 | PRD | DONE | `_bmad-output/planning-artifacts/prd.md` |
 | UX Design | DONE | `_bmad-output/planning-artifacts/ux-design-specification.md` |
-| Architecture | TODO | |
-| Epics & Stories | TODO | |
+| Architecture | DONE | `_bmad-output/planning-artifacts/architecture.md` |
+| Epics & Stories | DONE | `_bmad-output/planning-artifacts/epics.md` |
+| Readiness Check | DONE | `_bmad-output/planning-artifacts/implementation-readiness-report-2026-03-27.md` |
 
 ---
 
