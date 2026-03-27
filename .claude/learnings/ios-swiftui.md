@@ -3,17 +3,33 @@
 <!-- One line per learning, brief and actionable -->
 
 ## SwiftUI Navigation
+- Never wrap TabView inside NavigationStack — each tab must own its own NavigationStack inside itself.
+- NavigationPath must be @State on the tab root view, never on a ViewModel.
 
 ## SwiftUI State & Observation
+- .task re-fires on every tab appear in TabView — guard with loaded-state check (e.g., `guard items.isEmpty else { return }`).
+- Subscribe to NotificationCenter via async sequence in .task {} — auto-cancels on view disappear. Never use addObserver in ViewModels.
 
 ## SwiftUI Performance
+- Use List (not ScrollView+VStack) for Feed — provides swipe actions and built-in row recycling. Switch to LazyVStack only if custom row layouts require leaving List.
+- .tabBarMinimizeBehavior(.onScrollDown) must be applied on TabView itself, not on tab content. Only triggers on tabs with scrollable content.
 
 ## Sign in with Apple
+- Email/name data only available on FIRST sign-in — cache to CloudKit UserProfile record immediately.
+- Store userIdentifier in Keychain with kSecAttrAccessibleAfterFirstUnlockThisDeviceOnly.
+- Register for ASAuthorizationAppleIDProvider.credentialRevokedNotification for mid-session revocation detection.
+- Handle .revoked (clear Keychain + cleanup) separately from .notFound (just show sign-in, no cleanup).
 
 ## SwiftData Migrations
+- N/A — CashOut uses Core Data, not SwiftData (shared CloudKit database not supported in SwiftData).
 
 ## SwiftData Relationships
+- N/A — CashOut uses Core Data.
 
 ## SwiftData Threading
+- N/A — CashOut uses Core Data.
 
 ## iOS Platform Patterns
+- For Liquid Glass buttons: use .buttonStyle(.glass) or .buttonStyle(.glassProminent) — never combine with .glassEffect() modifier on the same element.
+- .glassEffect() is for non-button views. Button styles auto-apply glass.
+- Use view-associated UIImpactFeedbackGenerator(style:view:) for iOS 26+ (correct Taptic Engine routing), not legacy initializer.
