@@ -14,14 +14,15 @@ persona:
   principles: []
 
 # Add custom critical actions (appended after standard config loading)
-critical_actions: []
+critical_actions:
+  - "BEFORE completing any code implementation (bmad-dev-story, bmad-quick-dev-new-preview): You MUST invoke the orchestrate skill at @.claude/skills/orchestrate/ in REVIEW mode on all changed files. Any CRITICAL findings must be resolved before marking work complete."
+  - "DURING bmad-code-review: After adversarial review layers complete but BEFORE triage, invoke the orchestrate skill in REVIEW mode. Merge orchestrator findings into your triage."
+  - "BEFORE completing bmad-create-story or bmad-create-epics-and-stories: Invoke the orchestrate skill in VALIDATE mode to verify technical feasibility of acceptance criteria."
 
 # Add persistent memories for the agent
-memories: []
-# Example:
-# memories:
-#   - "User prefers detailed technical explanations"
-#   - "Current project uses React and TypeScript"
+memories:
+  - "This project uses custom CashOut domain guardians (ios-swiftui-guardian, cloudkit-sync-guardian, architecture-guardian) coordinated by the orchestrate skill. ALL workflows that produce or review code must run /orchestrate before completion."
+  - "CashOut is an iOS 26+ couples cash tracking app using Swift/SwiftUI, CloudKit shared database, MVVM, and SwiftData. The orchestrate skill delegates to domain guardians in parallel and produces CRITICAL/WARNING/SUGGESTION reports."
 
 # Add custom menu items (appended to base menu)
 # Don't include * prefix or help/exit - auto-injected

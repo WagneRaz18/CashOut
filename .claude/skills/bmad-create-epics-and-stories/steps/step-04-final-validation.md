@@ -111,6 +111,14 @@ For each epic, review stories in order:
 - ❌ WRONG: Story references features not yet implemented
 - ✅ RIGHT: Each story builds only on previous stories
 
+### 5b. CashOut Domain Guardian Validation
+
+**CRITICAL:** Before completing, invoke the orchestrate skill at `@.claude/skills/orchestrate/` in VALIDATE mode to verify technical feasibility of all epics and stories against the project's architecture and domain constraints. This delegates to CashOut domain guardians (ios-swiftui-guardian, cloudkit-sync-guardian, architecture-guardian) in parallel.
+
+- CRITICAL findings indicate stories with infeasible acceptance criteria — these must be revised before completion.
+- WARNING findings should be noted as implementation guidance in affected stories.
+- Present the orchestrator report to the user before the final completion menu.
+
 ### 6. Complete and Save
 
 If all validations pass:

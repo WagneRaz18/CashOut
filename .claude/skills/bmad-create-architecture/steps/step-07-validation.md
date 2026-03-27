@@ -150,6 +150,14 @@ Identify and document any missing elements:
 - Tooling recommendations
 - Development workflow optimizations
 
+### 4b. CashOut Domain Guardian Validation
+
+**CRITICAL:** Before addressing validation issues, invoke the orchestrate skill at `@.claude/skills/orchestrate/` in VALIDATE mode on the architecture document. This delegates to CashOut domain guardians (ios-swiftui-guardian, cloudkit-sync-guardian, architecture-guardian) in parallel.
+
+- Include the orchestrator's CRITICAL/WARNING/SUGGESTION findings in the gap analysis.
+- CRITICAL findings from guardians must be resolved before completing validation.
+- Guardian findings should be merged into the validation results content in step 6.
+
 ### 5. Address Validation Issues
 
 For any issues found, facilitate resolution:

@@ -364,6 +364,14 @@ Load config from `{project-root}/_bmad/bmm/config.yaml` and resolve:
     <action>Run the full regression suite (do not skip)</action>
     <action>Confirm File List includes every changed file</action>
     <action>Execute enhanced definition-of-done validation</action>
+
+    <!-- CashOut Domain Guardian Validation -->
+    <critical>BEFORE marking story for review, invoke the orchestrate skill at @.claude/skills/orchestrate/ in REVIEW mode on all changed files. This delegates to CashOut domain guardians (ios-swiftui-guardian, cloudkit-sync-guardian, architecture-guardian) in parallel.</critical>
+    <action>Run /orchestrate review on all files in the story's File List</action>
+    <action>Present the orchestrator report to the user</action>
+    <action if="orchestrator report contains CRITICAL findings">HALT - Resolve all CRITICAL guardian findings before marking story for review</action>
+    <action>Include orchestrator WARNING findings in Dev Agent Record for reviewer awareness</action>
+
     <action>Update the story Status to: "review"</action>
 
     <!-- Enhanced Definition of Done Validation -->

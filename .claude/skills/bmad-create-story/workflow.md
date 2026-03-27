@@ -345,6 +345,13 @@ Load config from `{project-root}/_bmad/bmm/config.yaml` and resolve:
 
 <step n="6" goal="Update sprint status and finalize">
   <action>Validate the newly created story file {default_output_file} against `./checklist.md` and apply any required fixes before finalizing</action>
+
+  <!-- CashOut Domain Guardian Validation -->
+  <critical>Before finalizing, invoke the orchestrate skill at @.claude/skills/orchestrate/ in VALIDATE mode to verify technical feasibility of acceptance criteria against the project's architecture and domain constraints (ios-swiftui-guardian, cloudkit-sync-guardian, architecture-guardian).</critical>
+  <action>Run /orchestrate validate on the story's acceptance criteria and technical requirements</action>
+  <action if="orchestrator report contains CRITICAL findings">Flag infeasible acceptance criteria to the user and resolve before marking ready-for-dev</action>
+  <action>Include orchestrator WARNING/SUGGESTION findings in the story's Dev Notes as implementation guidance</action>
+
   <action>Save story document unconditionally</action>
 
   <!-- Update sprint status -->
