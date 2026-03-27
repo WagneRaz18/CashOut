@@ -1,0 +1,1151 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>CashOut — Design Direction Mockups</title>
+<style>
+  :root {
+    --bg: #1C1C1E;
+    --bg2: #2C2C2E;
+    --bg3: #3A3A3C;
+    --text: #FFFFFF;
+    --text2: #AEAEB2;
+    --text3: #636366;
+    --accent: #6B8AAE;
+    --sage: #7BA08A;
+    --slate: #7B8FA8;
+    --lavender: #9B8AB0;
+    --amber: #B09A7B;
+    --rose: #A8848B;
+    --gray: #8A8D94;
+    --partnerA: #6B8AAE;
+    --partnerB: #A89B8A;
+    --glass: rgba(120,120,128,0.16);
+    --glass-border: rgba(255,255,255,0.08);
+  }
+
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body {
+    font-family: -apple-system, 'SF Pro Display', 'SF Pro Text', system-ui, sans-serif;
+    background: #000;
+    color: var(--text);
+    line-height: 1.4;
+  }
+
+  .header {
+    text-align: center;
+    padding: 48px 24px 32px;
+    border-bottom: 1px solid var(--bg3);
+  }
+  .header h1 { font-size: 28px; font-weight: 600; margin-bottom: 8px; }
+  .header p { color: var(--text2); font-size: 15px; max-width: 600px; margin: 0 auto; }
+
+  .nav {
+    display: flex;
+    justify-content: center;
+    gap: 8px;
+    padding: 16px 24px;
+    position: sticky;
+    top: 0;
+    background: rgba(0,0,0,0.85);
+    backdrop-filter: blur(20px);
+    -webkit-backdrop-filter: blur(20px);
+    z-index: 100;
+    border-bottom: 1px solid var(--bg3);
+    flex-wrap: wrap;
+  }
+  .nav button {
+    background: var(--bg2);
+    border: 1px solid var(--bg3);
+    color: var(--text2);
+    padding: 8px 16px;
+    border-radius: 20px;
+    font-size: 13px;
+    cursor: pointer;
+    transition: all 0.2s;
+  }
+  .nav button:hover, .nav button.active {
+    background: var(--accent);
+    color: #fff;
+    border-color: var(--accent);
+  }
+
+  .section {
+    padding: 48px 24px;
+    border-bottom: 1px solid var(--bg3);
+    display: none;
+  }
+  .section.active { display: block; }
+  .section h2 { font-size: 22px; font-weight: 600; margin-bottom: 8px; }
+  .section .subtitle { color: var(--text2); font-size: 14px; margin-bottom: 32px; }
+
+  .mockup-row {
+    display: flex;
+    gap: 32px;
+    justify-content: center;
+    flex-wrap: wrap;
+    margin-bottom: 48px;
+  }
+
+  .mockup-card {
+    width: 320px;
+    flex-shrink: 0;
+  }
+  .mockup-card h3 {
+    font-size: 16px;
+    font-weight: 600;
+    margin-bottom: 4px;
+    color: var(--accent);
+  }
+  .mockup-card .desc {
+    font-size: 13px;
+    color: var(--text2);
+    margin-bottom: 12px;
+    min-height: 36px;
+  }
+
+  /* Phone frame */
+  .phone {
+    width: 300px;
+    height: 650px;
+    background: var(--bg);
+    border-radius: 40px;
+    border: 3px solid var(--bg3);
+    overflow: hidden;
+    position: relative;
+  }
+
+  /* Status bar */
+  .status-bar {
+    height: 50px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 14px 28px 0;
+    font-size: 14px;
+    font-weight: 600;
+  }
+  .status-bar .time { }
+  .status-bar .icons { display: flex; gap: 4px; font-size: 12px; }
+
+  /* Tab bar */
+  .tab-bar {
+    position: absolute;
+    bottom: 0;
+    left: 0;
+    right: 0;
+    height: 80px;
+    background: rgba(44,44,46,0.7);
+    backdrop-filter: blur(20px);
+    -webkit-backdrop-filter: blur(20px);
+    border-top: 1px solid var(--glass-border);
+    display: flex;
+    justify-content: space-around;
+    align-items: center;
+    padding-bottom: 16px;
+  }
+  .tab-item {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 2px;
+    font-size: 10px;
+    color: var(--text3);
+  }
+  .tab-item.active { color: var(--accent); }
+  .tab-icon { font-size: 22px; }
+
+  /* Screen content area */
+  .screen-content {
+    height: calc(100% - 50px - 80px);
+    overflow: hidden;
+    position: relative;
+  }
+
+  /* === ENTRY SCREEN STYLES === */
+
+  /* Direction A: Full Numpad Home */
+  .entry-a .amount-area {
+    height: 28%;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    align-items: center;
+    padding: 0 24px;
+  }
+  .amount-display {
+    font-size: 48px;
+    font-weight: 500;
+    font-variant-numeric: tabular-nums;
+    letter-spacing: -1px;
+  }
+  .amount-display.rounded {
+    font-family: -apple-system, 'SF Pro Rounded', system-ui, sans-serif;
+  }
+
+  .category-strip {
+    display: flex;
+    gap: 8px;
+    padding: 8px 16px;
+    overflow-x: auto;
+  }
+  .cat-chip {
+    display: flex;
+    align-items: center;
+    gap: 4px;
+    padding: 6px 12px;
+    border-radius: 16px;
+    font-size: 12px;
+    white-space: nowrap;
+    background: var(--bg2);
+    border: 1px solid var(--bg3);
+    color: var(--text2);
+  }
+  .cat-chip.selected {
+    border-color: var(--sage);
+    background: rgba(123,160,138,0.15);
+    color: var(--sage);
+  }
+  .cat-dot {
+    width: 8px;
+    height: 8px;
+    border-radius: 50%;
+  }
+
+  .numpad {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 8px;
+    padding: 8px 16px;
+  }
+  .numpad-key {
+    height: 52px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 22px;
+    font-weight: 400;
+    border-radius: 12px;
+    background: var(--bg2);
+    border: 1px solid var(--glass-border);
+  }
+  .numpad-key.glass {
+    background: var(--glass);
+    backdrop-filter: blur(10px);
+  }
+
+  .save-btn {
+    margin: 8px 16px;
+    padding: 14px;
+    border-radius: 14px;
+    text-align: center;
+    font-size: 17px;
+    font-weight: 600;
+    background: var(--accent);
+    color: #fff;
+  }
+  .save-btn.inactive {
+    background: var(--bg3);
+    color: var(--text3);
+  }
+
+  /* Direction B: Compact Entry with Note */
+  .entry-b .amount-area {
+    height: 22%;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    align-items: center;
+  }
+  .note-field {
+    margin: 0 16px 8px;
+    padding: 10px 14px;
+    background: var(--bg2);
+    border-radius: 10px;
+    font-size: 13px;
+    color: var(--text3);
+    border: 1px solid var(--bg3);
+  }
+
+  /* Direction C: Bottom Sheet Style */
+  .entry-c .recent-entries {
+    padding: 16px;
+  }
+  .entry-c .recent-header {
+    font-size: 13px;
+    color: var(--text3);
+    margin-bottom: 8px;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+  }
+  .entry-c .recent-row {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 10px 0;
+    border-bottom: 1px solid rgba(255,255,255,0.04);
+  }
+  .entry-c .recent-left {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+  }
+  .entry-c .recent-cat-icon {
+    width: 32px;
+    height: 32px;
+    border-radius: 8px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 14px;
+  }
+  .entry-c .recent-amount {
+    font-size: 16px;
+    font-weight: 500;
+    font-variant-numeric: tabular-nums;
+  }
+  .entry-c .bottom-sheet {
+    position: absolute;
+    bottom: 80px;
+    left: 0;
+    right: 0;
+    background: var(--bg2);
+    border-radius: 16px 16px 0 0;
+    border-top: 1px solid var(--glass-border);
+    padding: 12px 0 0;
+  }
+  .sheet-handle {
+    width: 36px;
+    height: 4px;
+    background: var(--bg3);
+    border-radius: 2px;
+    margin: 0 auto 12px;
+  }
+
+  /* === FEED SCREEN STYLES === */
+
+  .feed-header {
+    padding: 8px 16px;
+    font-size: 13px;
+    color: var(--text3);
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    background: var(--bg);
+  }
+
+  .feed-row {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding: 12px 16px;
+    border-bottom: 1px solid rgba(255,255,255,0.04);
+  }
+  .feed-avatar {
+    width: 34px;
+    height: 34px;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 13px;
+    font-weight: 600;
+    flex-shrink: 0;
+  }
+  .feed-info { flex: 1; }
+  .feed-cat { font-size: 15px; font-weight: 500; }
+  .feed-time { font-size: 12px; color: var(--text3); }
+  .feed-amount-col { text-align: right; }
+  .feed-amount { font-size: 17px; font-weight: 500; font-variant-numeric: tabular-nums; }
+  .feed-note { font-size: 12px; color: var(--text3); }
+
+  /* Compact feed */
+  .feed-compact .feed-row { padding: 8px 16px; gap: 10px; }
+  .feed-compact .feed-avatar { width: 28px; height: 28px; font-size: 11px; }
+  .feed-compact .feed-amount { font-size: 15px; }
+
+  /* Dense feed with inline icon */
+  .feed-dense .feed-row { padding: 10px 16px; }
+  .feed-dense .feed-cat-icon {
+    width: 28px;
+    height: 28px;
+    border-radius: 6px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 13px;
+    flex-shrink: 0;
+  }
+
+  /* FAB */
+  .fab {
+    position: absolute;
+    bottom: 90px;
+    right: 16px;
+    width: 52px;
+    height: 52px;
+    border-radius: 26px;
+    background: var(--glass);
+    backdrop-filter: blur(20px);
+    -webkit-backdrop-filter: blur(20px);
+    border: 1px solid var(--glass-border);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 24px;
+    color: var(--accent);
+    box-shadow: 0 4px 16px rgba(0,0,0,0.3);
+  }
+
+  /* === INSIGHTS SCREEN STYLES === */
+
+  .insights-segment {
+    display: flex;
+    margin: 12px 16px;
+    background: var(--bg2);
+    border-radius: 8px;
+    overflow: hidden;
+  }
+  .seg-item {
+    flex: 1;
+    text-align: center;
+    padding: 8px;
+    font-size: 13px;
+    color: var(--text3);
+  }
+  .seg-item.active {
+    background: var(--bg3);
+    color: var(--text);
+    border-radius: 7px;
+  }
+
+  .insights-hero {
+    text-align: center;
+    padding: 16px;
+  }
+  .insights-total {
+    font-size: 36px;
+    font-weight: 500;
+    font-variant-numeric: tabular-nums;
+  }
+  .insights-label {
+    font-size: 13px;
+    color: var(--text2);
+    margin-top: 2px;
+  }
+
+  /* Donut chart (CSS) */
+  .donut-container {
+    display: flex;
+    justify-content: center;
+    padding: 8px 0;
+  }
+  .donut {
+    width: 160px;
+    height: 160px;
+    border-radius: 50%;
+    position: relative;
+    background: conic-gradient(
+      var(--sage) 0deg 115deg,
+      var(--slate) 115deg 165deg,
+      var(--lavender) 165deg 215deg,
+      var(--amber) 215deg 265deg,
+      var(--rose) 265deg 310deg,
+      var(--gray) 310deg 360deg
+    );
+  }
+  .donut::after {
+    content: '';
+    position: absolute;
+    top: 35px; left: 35px;
+    width: 90px; height: 90px;
+    border-radius: 50%;
+    background: var(--bg);
+  }
+  .donut-small {
+    width: 120px;
+    height: 120px;
+  }
+  .donut-small::after {
+    top: 28px; left: 28px;
+    width: 64px; height: 64px;
+  }
+
+  /* Bar chart */
+  .bar-chart {
+    display: flex;
+    align-items: flex-end;
+    justify-content: space-around;
+    height: 80px;
+    padding: 0 16px;
+    margin: 12px 0;
+  }
+  .bar-day {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 4px;
+  }
+  .bar {
+    width: 28px;
+    border-radius: 4px 4px 0 0;
+    background: var(--accent);
+    opacity: 0.6;
+  }
+  .bar.today { opacity: 1; }
+  .bar-label { font-size: 10px; color: var(--text3); }
+
+  /* Category breakdown list */
+  .cat-breakdown {
+    padding: 0 16px;
+  }
+  .cat-row {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 10px 0;
+    border-bottom: 1px solid rgba(255,255,255,0.04);
+  }
+  .cat-row-icon {
+    width: 32px;
+    height: 32px;
+    border-radius: 8px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 14px;
+  }
+  .cat-row-info { flex: 1; }
+  .cat-row-name { font-size: 14px; }
+  .cat-row-bar {
+    height: 4px;
+    border-radius: 2px;
+    margin-top: 4px;
+    background: var(--bg3);
+  }
+  .cat-row-fill {
+    height: 100%;
+    border-radius: 2px;
+  }
+  .cat-row-amount {
+    font-size: 15px;
+    font-weight: 500;
+    font-variant-numeric: tabular-nums;
+  }
+
+  /* Pros/Cons */
+  .pros-cons {
+    display: flex;
+    gap: 16px;
+    margin-top: 16px;
+  }
+  .pros, .cons {
+    flex: 1;
+    font-size: 12px;
+    color: var(--text2);
+  }
+  .pros h4, .cons h4 {
+    font-size: 12px;
+    color: var(--text);
+    margin-bottom: 4px;
+  }
+  .pros li, .cons li {
+    margin-left: 16px;
+    margin-bottom: 2px;
+  }
+
+  /* Comparison highlight */
+  .recommendation {
+    background: rgba(107,138,174,0.1);
+    border: 1px solid rgba(107,138,174,0.3);
+    border-radius: 12px;
+    padding: 16px;
+    margin: 32px auto;
+    max-width: 700px;
+  }
+  .recommendation h3 {
+    color: var(--accent);
+    font-size: 16px;
+    margin-bottom: 8px;
+  }
+  .recommendation p {
+    font-size: 14px;
+    color: var(--text2);
+    line-height: 1.5;
+  }
+
+  @media (max-width: 700px) {
+    .mockup-row { flex-direction: column; align-items: center; }
+  }
+</style>
+</head>
+<body>
+
+<div class="header">
+  <h1>CashOut Design Directions</h1>
+  <p>Dark mode primary. Cool neutrals. iOS 26 Liquid Glass. Explore layout and density variations for Entry, Feed, and Insights screens.</p>
+</div>
+
+<div class="nav">
+  <button class="active" onclick="showSection('entry')">Entry Screen</button>
+  <button onclick="showSection('feed')">Feed Screen</button>
+  <button onclick="showSection('insights')">Insights Screen</button>
+  <button onclick="showSection('tabs')">Tab Structure</button>
+</div>
+
+<!-- ENTRY SCREEN DIRECTIONS -->
+<div id="entry" class="section active">
+  <h2>Entry Screen Directions</h2>
+  <p class="subtitle">The numpad-as-home screen. Three variations on layout density and information hierarchy.</p>
+
+  <div class="mockup-row">
+    <!-- Direction A: Pure Numpad -->
+    <div class="mockup-card">
+      <h3>A. Pure Numpad</h3>
+      <p class="desc">Maximum speed. Amount display and numpad dominate. Category is a thin strip. Nothing else.</p>
+      <div class="phone">
+        <div class="status-bar"><span>9:41</span><span class="icons">&#9679; &#9679; &#9679;</span></div>
+        <div class="screen-content entry-a">
+          <div class="amount-area">
+            <div class="amount-display rounded" style="color: var(--text);">$12.00</div>
+          </div>
+          <div class="category-strip">
+            <div class="cat-chip selected"><div class="cat-dot" style="background:var(--sage)"></div> Food & Drink</div>
+            <div class="cat-chip"><div class="cat-dot" style="background:var(--slate)"></div> Transport</div>
+            <div class="cat-chip"><div class="cat-dot" style="background:var(--lavender)"></div> Entertainment</div>
+            <div class="cat-chip"><div class="cat-dot" style="background:var(--amber)"></div> Household</div>
+          </div>
+          <div class="numpad">
+            <div class="numpad-key">1</div><div class="numpad-key">2</div><div class="numpad-key">3</div>
+            <div class="numpad-key">4</div><div class="numpad-key">5</div><div class="numpad-key">6</div>
+            <div class="numpad-key">7</div><div class="numpad-key">8</div><div class="numpad-key">9</div>
+            <div class="numpad-key">.</div><div class="numpad-key">0</div><div class="numpad-key" style="font-size:16px;">&larr;</div>
+          </div>
+          <div class="save-btn">Save</div>
+        </div>
+        <div class="tab-bar">
+          <div class="tab-item active"><span class="tab-icon">&#43;</span>Add</div>
+          <div class="tab-item"><span class="tab-icon">&#9776;</span>Feed</div>
+          <div class="tab-item"><span class="tab-icon">&#9673;</span>Insights</div>
+        </div>
+      </div>
+      <div class="pros-cons">
+        <div class="pros"><h4>Strengths</h4><ul><li>Fastest possible entry</li><li>Zero distractions</li><li>Largest numpad keys</li></ul></div>
+        <div class="cons"><h4>Trade-offs</h4><ul><li>No note field visible</li><li>No recent context</li><li>App feels "empty" before first use</li></ul></div>
+      </div>
+    </div>
+
+    <!-- Direction B: Numpad + Note -->
+    <div class="mockup-card">
+      <h3>B. Numpad + Note Field</h3>
+      <p class="desc">Adds an optional note field between categories and numpad. Slightly denser, more context per entry.</p>
+      <div class="phone">
+        <div class="status-bar"><span>9:41</span><span class="icons">&#9679; &#9679; &#9679;</span></div>
+        <div class="screen-content entry-b">
+          <div class="amount-area">
+            <div class="amount-display rounded" style="color: var(--text);">$12.00</div>
+          </div>
+          <div class="category-strip">
+            <div class="cat-chip selected"><div class="cat-dot" style="background:var(--sage)"></div> Food & Drink</div>
+            <div class="cat-chip"><div class="cat-dot" style="background:var(--slate)"></div> Transport</div>
+            <div class="cat-chip"><div class="cat-dot" style="background:var(--lavender)"></div> Entertainment</div>
+          </div>
+          <div class="note-field">Add a note (optional)...</div>
+          <div class="numpad" style="gap:6px; padding: 6px 16px;">
+            <div class="numpad-key" style="height:46px;">1</div><div class="numpad-key" style="height:46px;">2</div><div class="numpad-key" style="height:46px;">3</div>
+            <div class="numpad-key" style="height:46px;">4</div><div class="numpad-key" style="height:46px;">5</div><div class="numpad-key" style="height:46px;">6</div>
+            <div class="numpad-key" style="height:46px;">7</div><div class="numpad-key" style="height:46px;">8</div><div class="numpad-key" style="height:46px;">9</div>
+            <div class="numpad-key" style="height:46px;">.</div><div class="numpad-key" style="height:46px;">0</div><div class="numpad-key" style="height:46px; font-size:16px;">&larr;</div>
+          </div>
+          <div class="save-btn" style="margin-top:6px;">Save</div>
+        </div>
+        <div class="tab-bar">
+          <div class="tab-item active"><span class="tab-icon">&#43;</span>Add</div>
+          <div class="tab-item"><span class="tab-icon">&#9776;</span>Feed</div>
+          <div class="tab-item"><span class="tab-icon">&#9673;</span>Insights</div>
+        </div>
+      </div>
+      <div class="pros-cons">
+        <div class="pros"><h4>Strengths</h4><ul><li>Note always accessible</li><li>More context per entry</li><li>No extra screen needed</li></ul></div>
+        <div class="cons"><h4>Trade-offs</h4><ul><li>Smaller numpad keys</li><li>Note field is visual noise 90% of the time</li><li>Keyboard conflict when note focused</li></ul></div>
+      </div>
+    </div>
+
+    <!-- Direction C: Feed + Bottom Sheet -->
+    <div class="mockup-card">
+      <h3>C. Feed Home + Entry Sheet</h3>
+      <p class="desc">Feed is home. Numpad slides up as a bottom sheet from FAB. Entry is one tap away, not zero.</p>
+      <div class="phone">
+        <div class="status-bar"><span>9:41</span><span class="icons">&#9679; &#9679; &#9679;</span></div>
+        <div class="screen-content entry-c">
+          <div class="recent-entries">
+            <div class="recent-header">Today</div>
+            <div class="recent-row">
+              <div class="recent-left">
+                <div class="recent-cat-icon" style="background:rgba(123,160,138,0.15);">&#127860;</div>
+                <div><div style="font-size:14px;">Food & Drink</div><div style="font-size:11px; color:var(--text3);">Mark &middot; 2 min ago</div></div>
+              </div>
+              <div class="recent-amount">$12.00</div>
+            </div>
+            <div class="recent-row">
+              <div class="recent-left">
+                <div class="recent-cat-icon" style="background:rgba(123,143,168,0.15);">&#128663;</div>
+                <div><div style="font-size:14px;">Transport</div><div style="font-size:11px; color:var(--text3);">Sarah &middot; 45 min ago</div></div>
+              </div>
+              <div class="recent-amount">$8.00</div>
+            </div>
+          </div>
+          <div class="bottom-sheet">
+            <div class="sheet-handle"></div>
+            <div style="text-align:center; padding: 8px 0;">
+              <div class="amount-display rounded" style="font-size:36px;">$0.00</div>
+            </div>
+            <div class="category-strip" style="justify-content:center;">
+              <div class="cat-chip selected"><div class="cat-dot" style="background:var(--sage)"></div> Food</div>
+              <div class="cat-chip"><div class="cat-dot" style="background:var(--slate)"></div> Transport</div>
+              <div class="cat-chip"><div class="cat-dot" style="background:var(--lavender)"></div> Fun</div>
+            </div>
+            <div class="numpad" style="gap:4px; padding: 4px 12px;">
+              <div class="numpad-key glass" style="height:42px; font-size:20px;">1</div><div class="numpad-key glass" style="height:42px; font-size:20px;">2</div><div class="numpad-key glass" style="height:42px; font-size:20px;">3</div>
+              <div class="numpad-key glass" style="height:42px; font-size:20px;">4</div><div class="numpad-key glass" style="height:42px; font-size:20px;">5</div><div class="numpad-key glass" style="height:42px; font-size:20px;">6</div>
+              <div class="numpad-key glass" style="height:42px; font-size:20px;">7</div><div class="numpad-key glass" style="height:42px; font-size:20px;">8</div><div class="numpad-key glass" style="height:42px; font-size:20px;">9</div>
+              <div class="numpad-key glass" style="height:42px; font-size:20px;">.</div><div class="numpad-key glass" style="height:42px; font-size:20px;">0</div><div class="numpad-key glass" style="height:42px; font-size:14px;">&larr;</div>
+            </div>
+            <div class="save-btn" style="margin:6px 12px;">Save</div>
+          </div>
+        </div>
+        <div class="tab-bar">
+          <div class="tab-item active"><span class="tab-icon">&#9776;</span>Feed</div>
+          <div class="tab-item"><span class="tab-icon">&#9673;</span>Insights</div>
+        </div>
+      </div>
+      <div class="pros-cons">
+        <div class="pros"><h4>Strengths</h4><ul><li>Feed visible on launch (ambient awareness)</li><li>Glass numpad sheet feels native iOS 26</li><li>Only 2 tabs needed</li></ul></div>
+        <div class="cons"><h4>Trade-offs</h4><ul><li>One extra tap to start entry</li><li>Smaller numpad in sheet</li><li>Contradicts "numpad is home" decision</li></ul></div>
+      </div>
+    </div>
+  </div>
+
+  <div class="recommendation">
+    <h3>Recommendation: Direction A (Pure Numpad)</h3>
+    <p>Aligns with the "numpad is home" decision from Step 7. Maximum speed, zero distractions. Note field can be accessed via a small icon or long-press on Save — present but not visible by default. Direction C is shown as a comparison; it was explicitly not chosen in the earlier design decision.</p>
+  </div>
+</div>
+
+<!-- FEED SCREEN DIRECTIONS -->
+<div id="feed" class="section">
+  <h2>Feed Screen Directions</h2>
+  <p class="subtitle">The shared transaction feed. Three variations on density, attribution, and information hierarchy.</p>
+
+  <div class="mockup-row">
+    <!-- Feed A: Standard with Avatar -->
+    <div class="mockup-card">
+      <h3>A. Avatar-Led Rows</h3>
+      <p class="desc">Partner initials circle leads each row. Clear "who logged what" attribution. Standard density.</p>
+      <div class="phone">
+        <div class="status-bar"><span>9:41</span><span class="icons">&#9679; &#9679; &#9679;</span></div>
+        <div class="screen-content">
+          <div style="padding:12px 16px;"><span style="font-size:20px; font-weight:600;">Activity</span></div>
+          <div class="feed-header">Today</div>
+          <div class="feed-row">
+            <div class="feed-avatar" style="background:rgba(107,138,174,0.2); color:var(--partnerA);">M</div>
+            <div class="feed-info"><div class="feed-cat">Food & Drink</div><div class="feed-time">2 min ago</div></div>
+            <div class="feed-amount-col"><div class="feed-amount">$12.00</div></div>
+          </div>
+          <div class="feed-row">
+            <div class="feed-avatar" style="background:rgba(168,155,138,0.2); color:var(--partnerB);">S</div>
+            <div class="feed-info"><div class="feed-cat">Transport</div><div class="feed-time">45 min ago</div></div>
+            <div class="feed-amount-col"><div class="feed-amount">$8.00</div></div>
+          </div>
+          <div class="feed-row">
+            <div class="feed-avatar" style="background:rgba(107,138,174,0.2); color:var(--partnerA);">M</div>
+            <div class="feed-info"><div class="feed-cat">Entertainment</div><div class="feed-time">2 hrs ago</div></div>
+            <div class="feed-amount-col"><div class="feed-amount">$25.00</div><div class="feed-note">Movie tickets</div></div>
+          </div>
+          <div class="feed-row">
+            <div class="feed-avatar" style="background:rgba(168,155,138,0.2); color:var(--partnerB);">S</div>
+            <div class="feed-info"><div class="feed-cat">Shopping</div><div class="feed-time">3 hrs ago</div></div>
+            <div class="feed-amount-col"><div class="feed-amount">$34.50</div></div>
+          </div>
+          <div class="feed-header">Yesterday</div>
+          <div class="feed-row">
+            <div class="feed-avatar" style="background:rgba(107,138,174,0.2); color:var(--partnerA);">M</div>
+            <div class="feed-info"><div class="feed-cat">Food & Drink</div><div class="feed-time">Yesterday</div></div>
+            <div class="feed-amount-col"><div class="feed-amount">$6.50</div><div class="feed-note">Coffee</div></div>
+          </div>
+          <div class="fab">+</div>
+        </div>
+        <div class="tab-bar">
+          <div class="tab-item"><span class="tab-icon">&#43;</span>Add</div>
+          <div class="tab-item active"><span class="tab-icon">&#9776;</span>Feed</div>
+          <div class="tab-item"><span class="tab-icon">&#9673;</span>Insights</div>
+        </div>
+      </div>
+      <div class="pros-cons">
+        <div class="pros"><h4>Strengths</h4><ul><li>Clear partner attribution</li><li>Familiar list pattern</li><li>Comfortable density</li></ul></div>
+        <div class="cons"><h4>Trade-offs</h4><ul><li>Avatar takes horizontal space</li><li>Fewer rows visible</li></ul></div>
+      </div>
+    </div>
+
+    <!-- Feed B: Category Icon Led -->
+    <div class="mockup-card">
+      <h3>B. Category-Led Rows</h3>
+      <p class="desc">Category icon leads each row with color badge. Partner initials shown smaller. Prioritizes "what" over "who."</p>
+      <div class="phone">
+        <div class="status-bar"><span>9:41</span><span class="icons">&#9679; &#9679; &#9679;</span></div>
+        <div class="screen-content feed-dense">
+          <div style="padding:12px 16px;"><span style="font-size:20px; font-weight:600;">Activity</span></div>
+          <div class="feed-header">Today</div>
+          <div class="feed-row">
+            <div class="feed-cat-icon" style="background:rgba(123,160,138,0.15); color:var(--sage);">&#127860;</div>
+            <div class="feed-info"><div class="feed-cat">Food & Drink</div><div class="feed-time"><span style="color:var(--partnerA);">Mark</span> &middot; 2 min ago</div></div>
+            <div class="feed-amount-col"><div class="feed-amount">$12.00</div></div>
+          </div>
+          <div class="feed-row">
+            <div class="feed-cat-icon" style="background:rgba(123,143,168,0.15); color:var(--slate);">&#128663;</div>
+            <div class="feed-info"><div class="feed-cat">Transport</div><div class="feed-time"><span style="color:var(--partnerB);">Sarah</span> &middot; 45 min ago</div></div>
+            <div class="feed-amount-col"><div class="feed-amount">$8.00</div></div>
+          </div>
+          <div class="feed-row">
+            <div class="feed-cat-icon" style="background:rgba(155,138,176,0.15); color:var(--lavender);">&#127916;</div>
+            <div class="feed-info"><div class="feed-cat">Entertainment</div><div class="feed-time"><span style="color:var(--partnerA);">Mark</span> &middot; 2 hrs ago</div></div>
+            <div class="feed-amount-col"><div class="feed-amount">$25.00</div><div class="feed-note">Movie tickets</div></div>
+          </div>
+          <div class="feed-row">
+            <div class="feed-cat-icon" style="background:rgba(168,132,139,0.15); color:var(--rose);">&#128092;</div>
+            <div class="feed-info"><div class="feed-cat">Shopping</div><div class="feed-time"><span style="color:var(--partnerB);">Sarah</span> &middot; 3 hrs ago</div></div>
+            <div class="feed-amount-col"><div class="feed-amount">$34.50</div></div>
+          </div>
+          <div class="feed-row">
+            <div class="feed-cat-icon" style="background:rgba(176,154,123,0.15); color:var(--amber);">&#127968;</div>
+            <div class="feed-info"><div class="feed-cat">Household</div><div class="feed-time"><span style="color:var(--partnerA);">Mark</span> &middot; 5 hrs ago</div></div>
+            <div class="feed-amount-col"><div class="feed-amount">$15.00</div></div>
+          </div>
+          <div class="feed-header">Yesterday</div>
+          <div class="feed-row">
+            <div class="feed-cat-icon" style="background:rgba(123,160,138,0.15); color:var(--sage);">&#127860;</div>
+            <div class="feed-info"><div class="feed-cat">Food & Drink</div><div class="feed-time"><span style="color:var(--partnerB);">Sarah</span> &middot; Yesterday</div></div>
+            <div class="feed-amount-col"><div class="feed-amount">$6.50</div></div>
+          </div>
+          <div class="fab">+</div>
+        </div>
+        <div class="tab-bar">
+          <div class="tab-item"><span class="tab-icon">&#43;</span>Add</div>
+          <div class="tab-item active"><span class="tab-icon">&#9776;</span>Feed</div>
+          <div class="tab-item"><span class="tab-icon">&#9673;</span>Insights</div>
+        </div>
+      </div>
+      <div class="pros-cons">
+        <div class="pros"><h4>Strengths</h4><ul><li>Category color visible at a glance</li><li>More rows visible</li><li>Matches chart colors (consistency)</li></ul></div>
+        <div class="cons"><h4>Trade-offs</h4><ul><li>Partner name is smaller/subtler</li><li>Emoji icons may not match SF Symbols</li></ul></div>
+      </div>
+    </div>
+
+    <!-- Feed C: Compact -->
+    <div class="mockup-card">
+      <h3>C. Compact Departure Board</h3>
+      <p class="desc">Maximum density. Flighty-inspired: color-coded left border, all info on one line. Most rows visible.</p>
+      <div class="phone">
+        <div class="status-bar"><span>9:41</span><span class="icons">&#9679; &#9679; &#9679;</span></div>
+        <div class="screen-content">
+          <div style="padding:12px 16px; display:flex; justify-content:space-between; align-items:baseline;">
+            <span style="font-size:20px; font-weight:600;">Activity</span>
+            <span style="font-size:14px; color:var(--text2); font-variant-numeric:tabular-nums;">Today: $79.50</span>
+          </div>
+          <div style="padding:0 16px;">
+            <div style="display:flex; align-items:center; padding:10px 0; border-bottom:1px solid rgba(255,255,255,0.04); border-left:3px solid var(--partnerA); padding-left:12px;">
+              <div style="flex:1;"><span style="font-size:14px;">Food & Drink</span></div>
+              <div style="font-size:15px; font-weight:500; font-variant-numeric:tabular-nums; margin-right:8px;">$12.00</div>
+              <div style="font-size:11px; color:var(--text3); width:55px; text-align:right;">2 min</div>
+            </div>
+            <div style="display:flex; align-items:center; padding:10px 0; border-bottom:1px solid rgba(255,255,255,0.04); border-left:3px solid var(--partnerB); padding-left:12px;">
+              <div style="flex:1;"><span style="font-size:14px;">Transport</span></div>
+              <div style="font-size:15px; font-weight:500; font-variant-numeric:tabular-nums; margin-right:8px;">$8.00</div>
+              <div style="font-size:11px; color:var(--text3); width:55px; text-align:right;">45 min</div>
+            </div>
+            <div style="display:flex; align-items:center; padding:10px 0; border-bottom:1px solid rgba(255,255,255,0.04); border-left:3px solid var(--partnerA); padding-left:12px;">
+              <div style="flex:1;"><span style="font-size:14px;">Entertainment</span> <span style="font-size:11px; color:var(--text3);">Movie tickets</span></div>
+              <div style="font-size:15px; font-weight:500; font-variant-numeric:tabular-nums; margin-right:8px;">$25.00</div>
+              <div style="font-size:11px; color:var(--text3); width:55px; text-align:right;">2 hrs</div>
+            </div>
+            <div style="display:flex; align-items:center; padding:10px 0; border-bottom:1px solid rgba(255,255,255,0.04); border-left:3px solid var(--partnerB); padding-left:12px;">
+              <div style="flex:1;"><span style="font-size:14px;">Shopping</span></div>
+              <div style="font-size:15px; font-weight:500; font-variant-numeric:tabular-nums; margin-right:8px;">$34.50</div>
+              <div style="font-size:11px; color:var(--text3); width:55px; text-align:right;">3 hrs</div>
+            </div>
+            <div style="display:flex; align-items:center; padding:10px 0; border-bottom:1px solid rgba(255,255,255,0.04); border-left:3px solid var(--partnerA); padding-left:12px;">
+              <div style="flex:1;"><span style="font-size:14px;">Household</span></div>
+              <div style="font-size:15px; font-weight:500; font-variant-numeric:tabular-nums; margin-right:8px;">$15.00</div>
+              <div style="font-size:11px; color:var(--text3); width:55px; text-align:right;">5 hrs</div>
+            </div>
+            <div style="padding:8px 0; font-size:12px; color:var(--text3);">Yesterday</div>
+            <div style="display:flex; align-items:center; padding:10px 0; border-bottom:1px solid rgba(255,255,255,0.04); border-left:3px solid var(--partnerB); padding-left:12px;">
+              <div style="flex:1;"><span style="font-size:14px;">Food & Drink</span> <span style="font-size:11px; color:var(--text3);">Coffee</span></div>
+              <div style="font-size:15px; font-weight:500; font-variant-numeric:tabular-nums; margin-right:8px;">$6.50</div>
+              <div style="font-size:11px; color:var(--text3); width:55px; text-align:right;">Yest.</div>
+            </div>
+            <div style="display:flex; align-items:center; padding:10px 0; border-bottom:1px solid rgba(255,255,255,0.04); border-left:3px solid var(--partnerA); padding-left:12px;">
+              <div style="flex:1;"><span style="font-size:14px;">Food & Drink</span></div>
+              <div style="font-size:15px; font-weight:500; font-variant-numeric:tabular-nums; margin-right:8px;">$9.00</div>
+              <div style="font-size:11px; color:var(--text3); width:55px; text-align:right;">Yest.</div>
+            </div>
+          </div>
+          <div class="fab">+</div>
+        </div>
+        <div class="tab-bar">
+          <div class="tab-item"><span class="tab-icon">&#43;</span>Add</div>
+          <div class="tab-item active"><span class="tab-icon">&#9776;</span>Feed</div>
+          <div class="tab-item"><span class="tab-icon">&#9673;</span>Insights</div>
+        </div>
+      </div>
+      <div class="pros-cons">
+        <div class="pros"><h4>Strengths</h4><ul><li>Most rows visible at once</li><li>Color border = instant partner ID</li><li>Running daily total in header</li><li>Departure board aesthetic</li></ul></div>
+        <div class="cons"><h4>Trade-offs</h4><ul><li>No category icon/color</li><li>Denser = less comfortable to scan</li><li>Left border is subtle</li></ul></div>
+      </div>
+    </div>
+  </div>
+
+  <div class="recommendation">
+    <h3>Recommendation: Direction B (Category-Led) or hybrid B+C</h3>
+    <p>Category-led rows keep color consistency with insights charts (same color everywhere for same category). The category icon provides instant visual scanning. Partner name in the subtitle line is sufficient for a 2-person app. Consider adopting the running daily total header from Direction C. The departure board (C) is elegant but sacrifices category color — a key data dimension.</p>
+  </div>
+</div>
+
+<!-- INSIGHTS SCREEN DIRECTIONS -->
+<div id="insights" class="section">
+  <h2>Insights Screen Directions</h2>
+  <p class="subtitle">Spending breakdowns. Three variations on chart prominence and data hierarchy.</p>
+
+  <div class="mockup-row">
+    <!-- Insights A: Donut Hero -->
+    <div class="mockup-card">
+      <h3>A. Donut Hero</h3>
+      <p class="desc">Large donut chart dominates. Total in center. Category breakdown list below.</p>
+      <div class="phone">
+        <div class="status-bar"><span>9:41</span><span class="icons">&#9679; &#9679; &#9679;</span></div>
+        <div class="screen-content">
+          <div class="insights-segment">
+            <div class="seg-item">Day</div>
+            <div class="seg-item active">Week</div>
+            <div class="seg-item">Month</div>
+          </div>
+          <div class="insights-hero">
+            <div class="insights-total">$247.50</div>
+            <div class="insights-label">This Week</div>
+          </div>
+          <div class="donut-container"><div class="donut"></div></div>
+          <div class="cat-breakdown">
+            <div class="cat-row">
+              <div class="cat-row-icon" style="background:rgba(123,160,138,0.15); color:var(--sage);">&#127860;</div>
+              <div class="cat-row-info"><div class="cat-row-name">Food & Drink</div><div class="cat-row-bar"><div class="cat-row-fill" style="width:45%; background:var(--sage);"></div></div></div>
+              <div class="cat-row-amount">$112.00</div>
+            </div>
+            <div class="cat-row">
+              <div class="cat-row-icon" style="background:rgba(123,143,168,0.15); color:var(--slate);">&#128663;</div>
+              <div class="cat-row-info"><div class="cat-row-name">Transport</div><div class="cat-row-bar"><div class="cat-row-fill" style="width:22%; background:var(--slate);"></div></div></div>
+              <div class="cat-row-amount">$54.00</div>
+            </div>
+            <div class="cat-row">
+              <div class="cat-row-icon" style="background:rgba(155,138,176,0.15); color:var(--lavender);">&#127916;</div>
+              <div class="cat-row-info"><div class="cat-row-name">Entertainment</div><div class="cat-row-bar"><div class="cat-row-fill" style="width:18%; background:var(--lavender);"></div></div></div>
+              <div class="cat-row-amount">$45.00</div>
+            </div>
+          </div>
+        </div>
+        <div class="tab-bar">
+          <div class="tab-item"><span class="tab-icon">&#43;</span>Add</div>
+          <div class="tab-item"><span class="tab-icon">&#9776;</span>Feed</div>
+          <div class="tab-item active"><span class="tab-icon">&#9673;</span>Insights</div>
+        </div>
+      </div>
+      <div class="pros-cons">
+        <div class="pros"><h4>Strengths</h4><ul><li>Donut is the "aha moment" driver</li><li>Clear category proportions</li><li>Scannable breakdown list</li></ul></div>
+        <div class="cons"><h4>Trade-offs</h4><ul><li>No time trend visible</li><li>Large donut takes screen space</li></ul></div>
+      </div>
+    </div>
+
+    <!-- Insights B: Total + Bar + Breakdown -->
+    <div class="mockup-card">
+      <h3>B. Total + Daily Bars</h3>
+      <p class="desc">Headline total, daily bar chart showing the week, then category breakdown. Shows trends over time.</p>
+      <div class="phone">
+        <div class="status-bar"><span>9:41</span><span class="icons">&#9679; &#9679; &#9679;</span></div>
+        <div class="screen-content">
+          <div class="insights-segment">
+            <div class="seg-item">Day</div>
+            <div class="seg-item active">Week</div>
+            <div class="seg-item">Month</div>
+          </div>
+          <div class="insights-hero">
+            <div class="insights-total">$247.50</div>
+            <div class="insights-label">This Week &middot; $12 more than last week</div>
+          </div>
+          <div class="bar-chart">
+            <div class="bar-day"><div class="bar" style="height:35px;"></div><div class="bar-label">Mon</div></div>
+            <div class="bar-day"><div class="bar" style="height:55px;"></div><div class="bar-label">Tue</div></div>
+            <div class="bar-day"><div class="bar" style="height:25px;"></div><div class="bar-label">Wed</div></div>
+            <div class="bar-day"><div class="bar" style="height:45px;"></div><div class="bar-label">Thu</div></div>
+            <div class="bar-day"><div class="bar" style="height:60px;"></div><div class="bar-label">Fri</div></div>
+            <div class="bar-day"><div class="bar" style="height:20px;"></div><div class="bar-label">Sat</div></div>
+            <div class="bar-day"><div class="bar today" style="height:40px;"></div><div class="bar-label">Sun</div></div>
+          </div>
+          <div class="cat-breakdown">
+            <div class="cat-row">
+              <div class="cat-row-icon" style="background:rgba(123,160,138,0.15); color:var(--sage);">&#127860;</div>
+              <div class="cat-row-info"><div class="cat-row-name">Food & Drink</div><div class="cat-row-bar"><div class="cat-row-fill" style="width:45%; background:var(--sage);"></div></div></div>
+              <div class="cat-row-amount">$112.00</div>
+            </div>
+            <div class="cat-row">
+              <div class="cat-row-icon" style="background:rgba(123,143,168,0.15); color:var(--slate);">&#128663;</div>
+              <div class="cat-row-info"><div class="cat-row-name">Transport</div><div class="cat-row-bar"><div class="cat-row-fill" style="width:22%; background:var(--slate);"></div></div></div>
+              <div class="cat-row-amount">$54.00</div>
+            </div>
+            <div class="cat-row">
+              <div class="cat-row-icon" style="background:rgba(155,138,176,0.15); color:var(--lavender);">&#127916;</div>
+              <div class="cat-row-info"><div class="cat-row-name">Entertainment</div><div class="cat-row-bar"><div class="cat-row-fill" style="width:18%; background:var(--lavender);"></div></div></div>
+              <div class="cat-row-amount">$45.00</div>
+            </div>
+          </div>
+        </div>
+        <div class="tab-bar">
+          <div class="tab-item"><span class="tab-icon">&#43;</span>Add</div>
+          <div class="tab-item"><span class="tab-icon">&#9776;</span>Feed</div>
+          <div class="tab-item active"><span class="tab-icon">&#9673;</span>Insights</div>
+        </div>
+      </div>
+      <div class="pros-cons">
+        <div class="pros"><h4>Strengths</h4><ul><li>Shows daily spending pattern</li><li>Week-over-week comparison in subtitle</li><li>Balanced information hierarchy</li></ul></div>
+        <div class="cons"><h4>Trade-offs</h4><ul><li>No donut for proportions</li><li>Bar chart is single-color (no category split)</li></ul></div>
+      </div>
+    </div>
+
+    <!-- Insights C: Combined -->
+    <div class="mockup-card">
+      <h3>C. Combined: Donut + Bars</h3>
+      <p class="desc">Small donut alongside headline total, daily bars below, then category breakdown. Most complete view.</p>
+      <div class="phone">
+        <div class="status-bar"><span>9:41</span><span class="icons">&#9679; &#9679; &#9679;</span></div>
+        <div class="screen-content">
+          <div class="insights-segment">
+            <div class="seg-item">Day</div>
+            <div class="seg-item active">Week</div>
+            <div class="seg-item">Month</div>
+          </div>
+          <div style="display:flex; align-items:center; padding:12px 16px; gap:16px;">
+            <div class="donut donut-small"></div>
+            <div>
+              <div style="font-size:32px; font-weight:500; font-variant-numeric:tabular-nums;">$247.50</div>
+              <div style="font-size:13px; color:var(--text2);">This Week</div>
+              <div style="font-size:12px; color:var(--text3); margin-top:2px;">$12 more than last week</div>
+            </div>
+          </div>
+          <div class="bar-chart" style="height:60px;">
+            <div class="bar-day"><div class="bar" style="height:28px;"></div><div class="bar-label">M</div></div>
+            <div class="bar-day"><div class="bar" style="height:44px;"></div><div class="bar-label">T</div></div>
+            <div class="bar-day"><div class="bar" style="height:20px;"></div><div class="bar-label">W</div></div>
+            <div class="bar-day"><div class="bar" style="height:36px;"></div><div class="bar-label">T</div></div>
+            <div class="bar-day"><div class="bar" style="height:48px;"></div><div class="bar-label">F</div></div>
+            <div class="bar-day"><div class="bar" style="height:16px;"></div><div class="bar-label">S</div></div>
+            <div class="bar-day"><div class="bar today" style="height:32px;"></div><div class="bar-label">S</div></div>
+          </div>
+          <div class="cat-breakdown">
+            <div class="cat-row">
+              <div class="cat-row-icon" style="background:rgba(123,160,138,0.15); color:var(--sage);">&#127860;</div>
+              <div class="cat-row-info"><div class="cat-row-name">Food & Drink</div><div class="cat-row-bar"><div class="cat-row-fill" style="width:45%; background:var(--sage);"></div></div></div>
+              <div class="cat-row-amount">$112.00</div>
+            </div>
+            <div class="cat-row">
+              <div class="cat-row-icon" style="background:rgba(123,143,168,0.15); color:var(--slate);">&#128663;</div>
+              <div class="cat-row-info"><div class="cat-row-name">Transport</div><div class="cat-row-bar"><div class="cat-row-fill" style="width:22%; background:var(--slate);"></div></div></div>
+              <div class="cat-row-amount">$54.00</div>
+            </div>
+            <div class="cat-row">
+              <div class="cat-row-icon" style="background:rgba(155,138,176,0.15); color:var(--lavender);">&#127916;</div>
+              <div class="cat-row-info"><div class="cat-row-name">Entertainment</div><div class="cat-row-bar"><div class="cat-row-fill" style="width:18%; background:var(--lavender);"></div></div></div>
+              <div class="cat-row-amount">$45.00</div>
+            </div>
+            <div class="cat-row">
+              <div class="cat-row-icon" style="background:rgba(176,154,123,0.15); color:var(--amber);">&#127968;</div>
+              <div class="cat-row-info"><div class="cat-row-name">Household</div><div class="cat-row-bar"><div class="cat-row-fill" style="width:10%; background:var(--amber);"></div></div></div>
+              <div class="cat-row-amount">$24.50</div>
+            </div>
+          </div>
+        </div>
+        <div class="tab-bar">
+          <div class="tab-item"><span class="tab-icon">&#43;</span>Add</div>
+          <div class="tab-item"><span class="tab-icon">&#9776;</span>Feed</div>
+          <div class="tab-item active"><span class="tab-icon">&#9673;</span>Insights</div>
+        </div>
+      </div>
+      <div class="pros-cons">
+        <div class="pros"><h4>Strengths</h4><ul><li>Both proportion and trend visible</li><li>Most complete data story</li><li>Compact donut doesn't dominate</li></ul></div>
+        <div class="cons"><h4>Trade-offs</h4><ul><li>More information density</li><li>Small donut less impactful</li></ul></div>
+      </div>
+    </div>
+  </div>
+
+  <div class="recommendation">
+    <h3>Recommendation: Direction C (Combined)</h3>
+    <p>Shows both "what categories" (donut) and "which days" (bars) without requiring navigation. The compact donut next to the headline total is space-efficient. The week-over-week comparison subtitle adds context without editorializing. Tapping a donut slice or category row filters the feed (interactive charts = highest retention per research).</p>
+  </div>
+</div>
+
+<!-- TAB STRUCTURE -->
+<div id="tabs" class="section">
+  <h2>Tab Structure</h2>
+  <p class="subtitle">How the three main experiences are organized.</p>
+
+  <div class="mockup-row">
+    <div class="mockup-card">
+      <h3>3-Tab Structure</h3>
+      <p class="desc">Add (numpad) | Feed (shared activity) | Insights (charts). Clean separation of concerns.</p>
+      <div class="phone">
+        <div class="status-bar"><span>9:41</span><span class="icons">&#9679; &#9679; &#9679;</span></div>
+        <div class="screen-content" style="display:flex; flex-direction:column; justify-content:center; align-items:center; gap:24px; padding:24px;">
+          <div style="text-align:center;">
+            <div style="font-size:40px; margin-bottom:8px;">&#43;</div>
+            <div style="font-size:16px; font-weight:600;">Tab 1: Add</div>
+            <div style="font-size:13px; color:var(--text2); margin-top:4px;">Numpad home screen<br>Amount → Category → Save<br>The primary action</div>
+          </div>
+          <div style="width:80%; height:1px; background:var(--bg3);"></div>
+          <div style="text-align:center;">
+            <div style="font-size:40px; margin-bottom:8px;">&#9776;</div>
+            <div style="font-size:16px; font-weight:600;">Tab 2: Feed</div>
+            <div style="font-size:13px; color:var(--text2); margin-top:4px;">Shared activity list<br>Both partners' entries<br>Swipe to edit/delete</div>
+          </div>
+          <div style="width:80%; height:1px; background:var(--bg3);"></div>
+          <div style="text-align:center;">
+            <div style="font-size:40px; margin-bottom:8px;">&#9673;</div>
+            <div style="font-size:16px; font-weight:600;">Tab 3: Insights</div>
+            <div style="font-size:13px; color:var(--text2); margin-top:4px;">Charts & breakdowns<br>Daily / Weekly / Monthly<br>Category totals</div>
+          </div>
+        </div>
+        <div class="tab-bar">
+          <div class="tab-item active"><span class="tab-icon">&#43;</span>Add</div>
+          <div class="tab-item"><span class="tab-icon">&#9776;</span>Feed</div>
+          <div class="tab-item"><span class="tab-icon">&#9673;</span>Insights</div>
+        </div>
+      </div>
+      <div class="pros-cons">
+        <div class="pros"><h4>Strengths</h4><ul><li>Each tab has one job</li><li>Numpad is default (Tab 1)</li><li>3 tabs = minimal cognitive load</li><li>Standard iOS pattern</li></ul></div>
+        <div class="cons"><h4>Trade-offs</h4><ul><li>Settings/categories need a 4th tab or gear icon</li><li>Feed has FAB (redundant with Tab 1)</li></ul></div>
+      </div>
+    </div>
+  </div>
+
+  <div class="recommendation">
+    <h3>Recommendation: 3-Tab Structure</h3>
+    <p>Three tabs, three jobs, zero ambiguity. Settings (categories, household) lives behind a gear icon in Feed or Insights navigation bar — not a tab. The FAB on the Feed tab is intentional redundancy: users in the Feed who want to quickly add without switching tabs can tap the glass button to open the entry sheet.</p>
+  </div>
+</div>
+
+<script>
+function showSection(id) {
+  document.querySelectorAll('.section').forEach(s => s.classList.remove('active'));
+  document.querySelectorAll('.nav button').forEach(b => b.classList.remove('active'));
+  document.getElementById(id).classList.add('active');
+  event.target.classList.add('active');
+}
+</script>
+</body>
+</html>
