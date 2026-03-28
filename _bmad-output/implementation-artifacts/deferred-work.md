@@ -14,3 +14,7 @@
 ## Deferred from: code review of 1-2-sign-in-with-apple-authentication (2026-03-28)
 
 - **D2: AC #5 "local user profile data cleared" only clears Keychain items** — `AuthenticationService.swift:92-95`. When `.revoked` detected, `clearKeychain()` + `clearProfileKeychain()` remove Keychain entries, but `PersistenceController.handleAccountChange()` remains a no-op from Story 1.1 (W4). Local Core Data records for the previous user are not cleared. Acceptable for v1 (single-device, two known users) but MUST be addressed in Story 4.x alongside the PersistenceController data reconciliation work.
+
+## Deferred from: code review of 1-3-app-shell-and-tab-navigation (2026-03-28)
+
+- **iPad orientation not locked** — `TARGETED_DEVICE_FAMILY = "1,2"` in project.pbxproj includes iPad, but `Info.plist` only defines `UISupportedInterfaceOrientations` (iPhone key). iPad ignores this and requires `UISupportedInterfaceOrientations~ipad`. App is iPhone-only per product brief — consider changing `TARGETED_DEVICE_FAMILY` to `"1"` to eliminate iPad concerns entirely. Pre-existing from Story 1.1 project setup.

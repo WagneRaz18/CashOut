@@ -1,6 +1,6 @@
 # Story 1.3: App Shell & Tab Navigation
 
-Status: review
+Status: done
 
 ## Story
 
@@ -290,6 +290,11 @@ Claude Opus 4.6 (1M context)
 - `CashOut/Info.plist` — added `UISupportedInterfaceOrientations` (portrait only)
 - `CashOut.xcodeproj/project.pbxproj` — registered 3 new files and groups
 
+### Review Findings
+
+- [x] [Review][Defer] iPad orientation not locked — `TARGETED_DEVICE_FAMILY = "1,2"` includes iPad but `UISupportedInterfaceOrientations~ipad` key is missing [project.pbxproj] — deferred, pre-existing from Story 1.1
+
 ### Change Log
 
 - 2026-03-28: Implemented app shell with 3-tab navigation (Add/Feed/Insights), empty state views, and portrait orientation lock. All ACs satisfied, all tasks complete, zero regressions.
+- 2026-03-28: Code review completed — 0 critical, 0 patches, 1 deferred (iPad orientation pre-existing). Status → done.
