@@ -29,6 +29,10 @@
 ## SwiftData Threading
 - N/A — CashOut uses Core Data.
 
+## Core Data Testing
+- **2026-03-28**: `PersistenceController(inMemory: true)` already disables CloudKit (sets `cloudKitContainerOptions = nil` and URL to `/dev/null`) — no need for a separate plain `NSPersistentContainer` test helper. Reuse the existing controller.
+- **2026-03-28**: Asset catalog colorset group folders (e.g., `CategoryColors/`) are NOT part of the `Color(_ name:)` lookup — Xcode resolves by colorset name only. `Color("Sage")` works regardless of folder nesting depth.
+
 ## iOS Platform Patterns
 - For Liquid Glass buttons: use .buttonStyle(.glass) or .buttonStyle(.glassProminent) — never combine with .glassEffect() modifier on the same element.
 - .glassEffect() is for non-button views. Button styles auto-apply glass.

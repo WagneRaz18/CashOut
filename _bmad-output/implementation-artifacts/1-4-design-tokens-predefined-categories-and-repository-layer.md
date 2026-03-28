@@ -1,6 +1,6 @@
 # Story 1.4: Design Tokens, Predefined Categories & Repository Layer
 
-Status: ready-for-dev
+Status: review
 
 ## Story
 
@@ -28,101 +28,101 @@ so that I can quickly categorize my cash expenses using familiar labels and colo
 
 ## Tasks / Subtasks
 
-- [ ] Task 1: Create category color sets in asset catalog (AC: #2)
-  - [ ] 1.1 Create `Assets.xcassets/CategoryColors/` group
-  - [ ] 1.2 Create `Sage.colorset` — Dark: #7BA08A (R:123 G:160 B:138), Light: #5C8A6E (R:92 G:138 B:110)
-  - [ ] 1.3 Create `Slate.colorset` — Dark: #7B8FA8 (R:123 G:143 B:168), Light: #5A7490 (R:90 G:116 B:144)
-  - [ ] 1.4 Create `Lavender.colorset` — Dark: #9B8AB0 (R:155 G:138 B:176), Light: #7D6E95 (R:125 G:110 B:149)
-  - [ ] 1.5 Create `Amber.colorset` — Dark: #B09A7B (R:176 G:154 B:123), Light: #957F60 (R:149 G:127 B:96)
-  - [ ] 1.6 Create `DustyRose.colorset` — Dark: #A8848B (R:168 G:132 B:139), Light: #8E6B73 (R:142 G:107 B:115)
-  - [ ] 1.7 Create `CoolGray.colorset` — Dark: #8A8D94 (R:138 G:141 B:148), Light: #6E7178 (R:110 G:113 B:120)
-  - [ ] 1.8 Each colorset JSON must use `"appearances": [{"appearance": "luminosity", "value": "dark"}]` for dark variant and the base (no appearance) for light
+- [x]Task 1: Create category color sets in asset catalog (AC: #2)
+  - [x]1.1 Create `Assets.xcassets/CategoryColors/` group
+  - [x]1.2 Create `Sage.colorset` — Dark: #7BA08A (R:123 G:160 B:138), Light: #5C8A6E (R:92 G:138 B:110)
+  - [x]1.3 Create `Slate.colorset` — Dark: #7B8FA8 (R:123 G:143 B:168), Light: #5A7490 (R:90 G:116 B:144)
+  - [x]1.4 Create `Lavender.colorset` — Dark: #9B8AB0 (R:155 G:138 B:176), Light: #7D6E95 (R:125 G:110 B:149)
+  - [x]1.5 Create `Amber.colorset` — Dark: #B09A7B (R:176 G:154 B:123), Light: #957F60 (R:149 G:127 B:96)
+  - [x]1.6 Create `DustyRose.colorset` — Dark: #A8848B (R:168 G:132 B:139), Light: #8E6B73 (R:142 G:107 B:115)
+  - [x]1.7 Create `CoolGray.colorset` — Dark: #8A8D94 (R:138 G:141 B:148), Light: #6E7178 (R:110 G:113 B:120)
+  - [x]1.8 Each colorset JSON must use `"appearances": [{"appearance": "luminosity", "value": "dark"}]` for dark variant and the base (no appearance) for light
 
-- [ ] Task 2: Update app accent color in asset catalog (AC: #3)
-  - [ ] 2.1 Edit existing `Assets.xcassets/AccentColor.colorset/Contents.json`
-  - [ ] 2.2 Set Light (base): #4A6D8C (R:74 G:109 B:140), Dark: #6B8AAE (R:107 G:138 B:174)
-  - [ ] 2.3 Use sRGB color space, `"components"` format with float values (0-1 range)
+- [x]Task 2: Update app accent color in asset catalog (AC: #3)
+  - [x]2.1 Edit existing `Assets.xcassets/AccentColor.colorset/Contents.json`
+  - [x]2.2 Set Light (base): #4A6D8C (R:74 G:109 B:140), Dark: #6B8AAE (R:107 G:138 B:174)
+  - [x]2.3 Use sRGB color space, `"components"` format with float values (0-1 range)
 
-- [ ] Task 3: Create CategoryColor enum (AC: #8)
-  - [ ] 3.1 Create `CashOut/Utilities/Extensions/Color+CategoryTokens.swift`
-  - [ ] 3.2 Define `enum CategoryColor: String, CaseIterable` with cases: `sage`, `slate`, `lavender`, `amber`, `dustyRose`, `coolGray`
-  - [ ] 3.3 Add `var color: Color` computed property that returns `Color(self.rawValue)` — this calls `Color.init(_ name: String)` which resolves from the asset catalog by name. The rawValue string IS the asset catalog lookup key.
-  - [ ] 3.4 Enum rawValues MUST match the asset catalog colorset names EXACTLY (case-sensitive). Use capitalized rawValues: `case sage = "Sage"`, `case dustyRose = "DustyRose"`, etc. The group folder name (`CategoryColors/`) is NOT part of the lookup — Xcode resolves by colorset name only.
-  - [ ] 3.5 Add `init?(from colorName: String)` failable initializer to resolve Core Data `colorName` strings to the enum
+- [x]Task 3: Create CategoryColor enum (AC: #8)
+  - [x]3.1 Create `CashOut/Utilities/Extensions/Color+CategoryTokens.swift`
+  - [x]3.2 Define `enum CategoryColor: String, CaseIterable` with cases: `sage`, `slate`, `lavender`, `amber`, `dustyRose`, `coolGray`
+  - [x]3.3 Add `var color: Color` computed property that returns `Color(self.rawValue)` — this calls `Color.init(_ name: String)` which resolves from the asset catalog by name. The rawValue string IS the asset catalog lookup key.
+  - [x]3.4 Enum rawValues MUST match the asset catalog colorset names EXACTLY (case-sensitive). Use capitalized rawValues: `case sage = "Sage"`, `case dustyRose = "DustyRose"`, etc. The group folder name (`CategoryColors/`) is NOT part of the lookup — Xcode resolves by colorset name only.
+  - [x]3.5 Add `init?(from colorName: String)` failable initializer to resolve Core Data `colorName` strings to the enum
 
-- [ ] Task 4: Create spacing tokens and default category data (AC: #7, partial #1)
-  - [ ] 4.1 Create `CashOut/Utilities/Constants.swift`
-  - [ ] 4.2 Define `enum Spacing` with static constants: `xs: CGFloat = 4`, `sm: CGFloat = 8`, `md: CGFloat = 16`, `lg: CGFloat = 24`, `xl: CGFloat = 32`
-  - [ ] 4.3 Define `enum DefaultCategory: CaseIterable` with cases for each predefined category, providing `name: String`, `iconName: String`, `colorName: String`, `sortOrder: Int16` properties (sortOrder MUST be Int16 to match Core Data entity attribute type)
-  - [ ] 4.4 DefaultCategory data: Food & Drink (fork.knife, Sage, 0), Transport (car.fill, Slate, 1), Entertainment (film.fill, Lavender, 2), Household (house.fill, Amber, 3), Shopping (bag.fill, Dusty Rose, 4), Other (ellipsis.circle.fill, Cool Gray, 5)
-  - [ ] 4.5 The `colorName` values in DefaultCategory MUST match the CategoryColor enum rawValues EXACTLY — these are the strings stored in Core Data
+- [x]Task 4: Create spacing tokens and default category data (AC: #7, partial #1)
+  - [x]4.1 Create `CashOut/Utilities/Constants.swift`
+  - [x]4.2 Define `enum Spacing` with static constants: `xs: CGFloat = 4`, `sm: CGFloat = 8`, `md: CGFloat = 16`, `lg: CGFloat = 24`, `xl: CGFloat = 32`
+  - [x]4.3 Define `enum DefaultCategory: CaseIterable` with cases for each predefined category, providing `name: String`, `iconName: String`, `colorName: String`, `sortOrder: Int16` properties (sortOrder MUST be Int16 to match Core Data entity attribute type)
+  - [x]4.4 DefaultCategory data: Food & Drink (fork.knife, Sage, 0), Transport (car.fill, Slate, 1), Entertainment (film.fill, Lavender, 2), Household (house.fill, Amber, 3), Shopping (bag.fill, Dusty Rose, 4), Other (ellipsis.circle.fill, Cool Gray, 5)
+  - [x]4.5 The `colorName` values in DefaultCategory MUST match the CategoryColor enum rawValues EXACTLY — these are the strings stored in Core Data
 
-- [ ] Task 5: Create Int64 currency extension (AC: #6)
-  - [ ] 5.1 Create `CashOut/Utilities/Extensions/Int64+Currency.swift`
-  - [ ] 5.2 Add `var displayAmount: String` computed property: `Double(self) / 100.0` formatted with `.currency(code: "USD")`
-  - [ ] 5.3 NEVER manually concatenate "$" — always use Foundation.FormatStyle
-  - [ ] 5.4 Use `formatted(.currency(code: "USD"))` on the Double value
+- [x]Task 5: Create Int64 currency extension (AC: #6)
+  - [x]5.1 Create `CashOut/Utilities/Extensions/Int64+Currency.swift`
+  - [x]5.2 Add `var displayAmount: String` computed property: `Double(self) / 100.0` formatted with `.currency(code: "USD")`
+  - [x]5.3 NEVER manually concatenate "$" — always use Foundation.FormatStyle
+  - [x]5.4 Use `formatted(.currency(code: "USD"))` on the Double value
 
-- [ ] Task 6: Create CategoryData DTO and CategoryRepositoryProtocol (AC: #5, #1)
-  - [ ] 6.1 Create `CashOut/Models/CategoryData.swift` — plain `Sendable` struct: `id: UUID`, `name: String`, `iconName: String`, `colorName: String`, `isDefault: Bool`, `sortOrder: Int16`
-  - [ ] 6.2 Create `CashOut/Repositories/CategoryRepositoryProtocol.swift`
-  - [ ] 6.3 Define `@MainActor` protocol with: `func fetchCategories() async throws -> [CategoryData]` and `func saveCategory(_ data: CategoryData) async throws`
-  - [ ] 6.4 Create `CashOut/Repositories/CategoryRepository.swift`
-  - [ ] 6.5 Implement `@MainActor CategoryRepository` receiving `PersistenceController` via init parameter with default `.shared`
-  - [ ] 6.6 `fetchCategories()` uses `NSFetchRequest<Category>` sorted by `sortOrder` ascending, then converts each `Category` NSManagedObject → `CategoryData` DTO before returning
-  - [ ] 6.7 `saveCategory(_:)` creates or updates a `Category` managed object from the `CategoryData` DTO using `Category(context: viewContext)` initializer (Core Data pattern — NOT `Category()` which crashes), then calls `viewContext.save()`
-  - [ ] 6.8 Add `func seedDefaultCategoriesIfNeeded() async throws` — checks if any categories exist via fetch count; if zero, creates all 6 from `DefaultCategory.allCases` using `Category(context: viewContext)` for each, then saves context
-  - [ ] 6.9 Seeding must be idempotent — if categories already exist (from previous launch or sync), do NOT re-seed
-  - [ ] 6.10 `seedDefaultCategoriesIfNeeded()` is an implementation detail — NOT part of `CategoryRepositoryProtocol`
+- [x]Task 6: Create CategoryData DTO and CategoryRepositoryProtocol (AC: #5, #1)
+  - [x]6.1 Create `CashOut/Models/CategoryData.swift` — plain `Sendable` struct: `id: UUID`, `name: String`, `iconName: String`, `colorName: String`, `isDefault: Bool`, `sortOrder: Int16`
+  - [x]6.2 Create `CashOut/Repositories/CategoryRepositoryProtocol.swift`
+  - [x]6.3 Define `@MainActor` protocol with: `func fetchCategories() async throws -> [CategoryData]` and `func saveCategory(_ data: CategoryData) async throws`
+  - [x]6.4 Create `CashOut/Repositories/CategoryRepository.swift`
+  - [x]6.5 Implement `@MainActor CategoryRepository` receiving `PersistenceController` via init parameter with default `.shared`
+  - [x]6.6 `fetchCategories()` uses `NSFetchRequest<Category>` sorted by `sortOrder` ascending, then converts each `Category` NSManagedObject → `CategoryData` DTO before returning
+  - [x]6.7 `saveCategory(_:)` creates or updates a `Category` managed object from the `CategoryData` DTO using `Category(context: viewContext)` initializer (Core Data pattern — NOT `Category()` which crashes), then calls `viewContext.save()`
+  - [x]6.8 Add `func seedDefaultCategoriesIfNeeded() async throws` — checks if any categories exist via fetch count; if zero, creates all 6 from `DefaultCategory.allCases` using `Category(context: viewContext)` for each, then saves context
+  - [x]6.9 Seeding must be idempotent — if categories already exist (from previous launch or sync), do NOT re-seed
+  - [x]6.10 `seedDefaultCategoriesIfNeeded()` is an implementation detail — NOT part of `CategoryRepositoryProtocol`
 
-- [ ] Task 7: Create ExpenseData DTO and ExpenseRepositoryProtocol (AC: #4)
-  - [ ] 7.1 Create `CashOut/Models/ExpenseData.swift` — plain `Sendable` struct: `id: UUID`, `amount: Int64`, `note: String?`, `categoryID: UUID`, `createdByUserID: String`, `createdAt: Date`, `modifiedAt: Date`
-  - [ ] 7.2 Create `CashOut/Repositories/ExpenseRepositoryProtocol.swift`
-  - [ ] 7.3 Define `@MainActor` protocol with: `func fetchExpenses(for period: DateInterval) async throws -> [ExpenseData]`, `func saveExpense(_ data: ExpenseData) async throws`, `func deleteExpense(id: UUID) async throws`
-  - [ ] 7.4 Create `CashOut/Repositories/ExpenseRepository.swift`
-  - [ ] 7.5 Implement `@MainActor ExpenseRepository` receiving `PersistenceController` via init parameter with default `.shared`
-  - [ ] 7.6 `fetchExpenses(for:)` uses `NSFetchRequest<Expense>` with `NSPredicate` filtering by `createdAt` within the DateInterval, sorted by `createdAt` descending, then converts each `Expense` NSManagedObject → `ExpenseData` DTO before returning
-  - [ ] 7.7 `saveExpense(_:)` accepts `ExpenseData` DTO, creates new `Expense(context: viewContext)`, sets all attributes (amount as Int64 cents, createdAt/modifiedAt from DTO or Date()), then saves context
-  - [ ] 7.8 `deleteExpense(id:)` fetches by id predicate, deletes the object, saves context — hard delete (no soft delete flag)
-  - [ ] 7.9 NOTE: NSFetchedResultsController integration is NOT in this story. The basic fetch/save/delete is sufficient. FRC comes in Story 2.1 when the Feed needs animated row updates.
-  - [ ] 7.10 NOTE: `updateExpense` is omitted from the protocol — Story 2.3 (Edit Expense Flow) will add it when needed. Keep the protocol minimal for now.
+- [x]Task 7: Create ExpenseData DTO and ExpenseRepositoryProtocol (AC: #4)
+  - [x]7.1 Create `CashOut/Models/ExpenseData.swift` — plain `Sendable` struct: `id: UUID`, `amount: Int64`, `note: String?`, `categoryID: UUID`, `createdByUserID: String`, `createdAt: Date`, `modifiedAt: Date`
+  - [x]7.2 Create `CashOut/Repositories/ExpenseRepositoryProtocol.swift`
+  - [x]7.3 Define `@MainActor` protocol with: `func fetchExpenses(for period: DateInterval) async throws -> [ExpenseData]`, `func saveExpense(_ data: ExpenseData) async throws`, `func deleteExpense(id: UUID) async throws`
+  - [x]7.4 Create `CashOut/Repositories/ExpenseRepository.swift`
+  - [x]7.5 Implement `@MainActor ExpenseRepository` receiving `PersistenceController` via init parameter with default `.shared`
+  - [x]7.6 `fetchExpenses(for:)` uses `NSFetchRequest<Expense>` with `NSPredicate` filtering by `createdAt` within the DateInterval, sorted by `createdAt` descending, then converts each `Expense` NSManagedObject → `ExpenseData` DTO before returning
+  - [x]7.7 `saveExpense(_:)` accepts `ExpenseData` DTO, creates new `Expense(context: viewContext)`, sets all attributes (amount as Int64 cents, createdAt/modifiedAt from DTO or Date()), then saves context
+  - [x]7.8 `deleteExpense(id:)` fetches by id predicate, deletes the object, saves context — hard delete (no soft delete flag)
+  - [x]7.9 NOTE: NSFetchedResultsController integration is NOT in this story. The basic fetch/save/delete is sufficient. FRC comes in Story 2.1 when the Feed needs animated row updates.
+  - [x]7.10 NOTE: `updateExpense` is omitted from the protocol — Story 2.3 (Edit Expense Flow) will add it when needed. Keep the protocol minimal for now.
 
-- [ ] Task 8: Wire category seeding into app startup (AC: #1)
-  - [ ] 8.1 Call `CategoryRepository().seedDefaultCategoriesIfNeeded()` from `CashOutApp` body's `.task` modifier
-  - [ ] 8.2 Location: MUST be in `CashOutApp.body` `.task {}` — this is `@MainActor`-isolated (required for viewContext), runs after stores are loaded, and avoids circular dependency with PersistenceController
-  - [ ] 8.3 Call seeding early in the `.task` block, before or alongside the auth check. The idempotency guard in `seedDefaultCategoriesIfNeeded()` makes repeated `.task` re-fires safe.
-  - [ ] 8.4 Do NOT seed from PersistenceController.init — this creates a circular dependency (repository takes controller in init) and violates layer separation (infrastructure referencing repository layer)
-  - [ ] 8.5 Do NOT seed in CategoryRepository init — repositories should be lightweight with no side effects in init
+- [x]Task 8: Wire category seeding into app startup (AC: #1)
+  - [x]8.1 Call `CategoryRepository().seedDefaultCategoriesIfNeeded()` from `CashOutApp` body's `.task` modifier
+  - [x]8.2 Location: MUST be in `CashOutApp.body` `.task {}` — this is `@MainActor`-isolated (required for viewContext), runs after stores are loaded, and avoids circular dependency with PersistenceController
+  - [x]8.3 Call seeding early in the `.task` block, before or alongside the auth check. The idempotency guard in `seedDefaultCategoriesIfNeeded()` makes repeated `.task` re-fires safe.
+  - [x]8.4 Do NOT seed from PersistenceController.init — this creates a circular dependency (repository takes controller in init) and violates layer separation (infrastructure referencing repository layer)
+  - [x]8.5 Do NOT seed in CategoryRepository init — repositories should be lightweight with no side effects in init
 
-- [ ] Task 9: Register new files in Xcode project (all ACs)
-  - [ ] 9.1 Add all new .swift files to `project.pbxproj` (PBXFileReference, PBXBuildFile, PBXGroup, PBXSourcesBuildPhase)
-  - [ ] 9.2 Add colorset directories to the Assets.xcassets group in project.pbxproj
-  - [ ] 9.3 Verify files appear under correct groups: Repositories/, Utilities/Extensions/, Utilities/
+- [x]Task 9: Register new files in Xcode project (all ACs)
+  - [x]9.1 Add all new .swift files to `project.pbxproj` (PBXFileReference, PBXBuildFile, PBXGroup, PBXSourcesBuildPhase)
+  - [x]9.2 Add colorset directories to the Assets.xcassets group in project.pbxproj
+  - [x]9.3 Verify files appear under correct groups: Repositories/, Utilities/Extensions/, Utilities/
 
-- [ ] Task 10: Unit tests (all ACs)
-  - [ ] 10.1 Create test helper: `CashOutTests/Helpers/TestPersistenceHelper.swift` — provides in-memory `NSPersistentContainer` (NOT NSPersistentCloudKitContainer) for test isolation using `NSInMemoryStoreType`
-  - [ ] 10.2 Create `CashOutTests/Repositories/CategoryRepositoryTests.swift`
-  - [ ] 10.3 Test: `seedDefaultCategoriesIfNeeded()` creates exactly 6 CategoryData entries on empty database
-  - [ ] 10.4 Test: `seedDefaultCategoriesIfNeeded()` is idempotent — calling twice does not create duplicates
-  - [ ] 10.5 Test: `fetchCategories()` returns CategoryData array sorted by sortOrder
-  - [ ] 10.6 Test: seeded categories have correct names, iconNames, colorNames, and isDefault=true
-  - [ ] 10.7 Create `CashOutTests/Repositories/ExpenseRepositoryTests.swift`
-  - [ ] 10.8 Test: `saveExpense(_:)` with ExpenseData DTO creates a persisted expense retrievable by fetch
-  - [ ] 10.9 Test: `deleteExpense(id:)` removes the expense — subsequent fetch returns empty
-  - [ ] 10.10 Test: `fetchExpenses(for:)` returns only ExpenseData within the DateInterval
-  - [ ] 10.11 Create `CashOutTests/Extensions/Int64CurrencyTests.swift`
-  - [ ] 10.12 Test: `Int64(1250).displayAmount` contains "12.50" (use contains/locale-safe assertion, or force en_US locale in extension)
-  - [ ] 10.13 Test: `Int64(0).displayAmount` contains "0.00"
-  - [ ] 10.14 Test: `Int64(99).displayAmount` contains "0.99"
-  - [ ] 10.15 All tests use `@MainActor` on test methods (established pattern from Story 1.2)
-  - [ ] 10.16 Tests call repository methods with `await` (async throws protocol)
+- [x]Task 10: Unit tests (all ACs)
+  - [x]10.1 Create test helper: `CashOutTests/Helpers/TestPersistenceHelper.swift` — provides in-memory `NSPersistentContainer` (NOT NSPersistentCloudKitContainer) for test isolation using `NSInMemoryStoreType`
+  - [x]10.2 Create `CashOutTests/Repositories/CategoryRepositoryTests.swift`
+  - [x]10.3 Test: `seedDefaultCategoriesIfNeeded()` creates exactly 6 CategoryData entries on empty database
+  - [x]10.4 Test: `seedDefaultCategoriesIfNeeded()` is idempotent — calling twice does not create duplicates
+  - [x]10.5 Test: `fetchCategories()` returns CategoryData array sorted by sortOrder
+  - [x]10.6 Test: seeded categories have correct names, iconNames, colorNames, and isDefault=true
+  - [x]10.7 Create `CashOutTests/Repositories/ExpenseRepositoryTests.swift`
+  - [x]10.8 Test: `saveExpense(_:)` with ExpenseData DTO creates a persisted expense retrievable by fetch
+  - [x]10.9 Test: `deleteExpense(id:)` removes the expense — subsequent fetch returns empty
+  - [x]10.10 Test: `fetchExpenses(for:)` returns only ExpenseData within the DateInterval
+  - [x]10.11 Create `CashOutTests/Extensions/Int64CurrencyTests.swift`
+  - [x]10.12 Test: `Int64(1250).displayAmount` contains "12.50" (use contains/locale-safe assertion, or force en_US locale in extension)
+  - [x]10.13 Test: `Int64(0).displayAmount` contains "0.00"
+  - [x]10.14 Test: `Int64(99).displayAmount` contains "0.99"
+  - [x]10.15 All tests use `@MainActor` on test methods (established pattern from Story 1.2)
+  - [x]10.16 Tests call repository methods with `await` (async throws protocol)
 
-- [ ] Task 11: Build verification (all ACs)
-  - [ ] 11.1 Clean build succeeds with zero errors and zero warnings
-  - [ ] 11.2 All existing tests still pass (17 from Stories 1.1-1.3) — zero regressions
-  - [ ] 11.3 All new tests pass
-  - [ ] 11.4 App launches, authenticates, shows TabView — no crashes from category seeding
-  - [ ] 11.5 Verify in debug console or breakpoint: 6 categories exist in Core Data after first launch
+- [x]Task 11: Build verification (all ACs)
+  - [x]11.1 Clean build succeeds with zero errors and zero warnings
+  - [x]11.2 All existing tests still pass (17 from Stories 1.1-1.3) — zero regressions
+  - [x]11.3 All new tests pass
+  - [x]11.4 App launches, authenticates, shows TabView — no crashes from category seeding
+  - [x]11.5 Verify in debug console or breakpoint: 6 categories exist in Core Data after first launch
 
 ## Dev Notes
 
@@ -360,9 +360,71 @@ CashOut.xcodeproj/project.pbxproj                           # Register all new f
 ## Dev Agent Record
 
 ### Agent Model Used
+Claude Opus 4.6 (1M context)
 
 ### Debug Log References
+- Core Data "Failed to find unique match" warnings in test output — cosmetic; caused by multiple NSPersistentContainer instances in test process. All tests pass.
+- Used PersistenceController(inMemory: true) for tests instead of raw NSPersistentContainer — the existing inMemory mode already disables CloudKit (sets cloudKitContainerOptions = nil).
 
 ### Completion Notes List
+- ✅ Task 1: Created 6 category colorsets (Sage, Slate, Lavender, Amber, DustyRose, CoolGray) with dark/light variants under Assets.xcassets/CategoryColors/
+- ✅ Task 2: Updated AccentColor.colorset with muted blue-gray dark (#6B8AAE) and light (#4A6D8C) variants
+- ✅ Task 3: Created CategoryColor enum with asset catalog lookup via Color(rawValue) and failable init(from:)
+- ✅ Task 4: Created Spacing enum (8pt grid: xs/sm/md/lg/xl) and DefaultCategory enum with 6 predefined categories
+- ✅ Task 5: Created Int64.displayAmount extension using Foundation.FormatStyle with hardcoded en_US locale
+- ✅ Task 6: Created CategoryData DTO, CategoryRepositoryProtocol, CategoryRepository with seedDefaultCategoriesIfNeeded()
+- ✅ Task 7: Created ExpenseData DTO, ExpenseRepositoryProtocol, ExpenseRepository with fetch/save/delete
+- ✅ Task 8: Wired category seeding into CashOutApp.body .task modifier before auth check
+- ✅ Task 9: Registered all 13 new files in project.pbxproj (file references, build files, groups, source build phases)
+- ✅ Task 10: Created 16 unit tests across 3 test files (CategoryRepositoryTests, ExpenseRepositoryTests, Int64CurrencyTests) + TestPersistenceHelper
+- ✅ Task 11: Clean build succeeded, all 36 tests pass (20 existing + 16 new), zero regressions
+
+### Orchestrator Review (Guardian Findings)
+
+**Resolved CRITICAL (2):**
+- Fixed `saveExpense` always inserting — now uses fetch-or-create upsert pattern matching `saveCategory`
+- Fixed `try?` silently swallowing seeding errors — now logs with `print()` in do/catch
+
+**Out-of-scope CRITICAL (pre-existing/deferred):**
+- Category sync race condition (W8) — deferred to Story 4.x
+- Entity store routing undefined (W9) — deferred to Story 4.1
+- `seedDefaultCategoriesIfNeeded()` not on protocol — by design per task 6.10
+- Anonymous `CategoryRepository()` at call site — by design per task 8.1
+
+**Acknowledged WARNINGS:**
+- Hard delete tombstone window — documented in Dev Notes, acceptable for Epic 1 solo mode
+- `handleAccountChange` no-op, `purgeOldHistory` on init, shared store URL match — pre-existing in PersistenceController, not introduced by this story
+- `categoryID ?? UUID()` fallback — defensive for nil Core Data attribute; acceptable since all expenses are created with valid categoryID
+
+### Change Log
+- 2026-03-28: Implemented Story 1.4 — design tokens, predefined categories, repository layer. 13 new source files, 3 modified files.
+- 2026-03-28: Fixed 2 CRITICAL guardian findings — saveExpense upsert pattern, seeding error logging.
 
 ### File List
+
+**New files:**
+- CashOut/Assets.xcassets/CategoryColors/Contents.json
+- CashOut/Assets.xcassets/CategoryColors/Sage.colorset/Contents.json
+- CashOut/Assets.xcassets/CategoryColors/Slate.colorset/Contents.json
+- CashOut/Assets.xcassets/CategoryColors/Lavender.colorset/Contents.json
+- CashOut/Assets.xcassets/CategoryColors/Amber.colorset/Contents.json
+- CashOut/Assets.xcassets/CategoryColors/DustyRose.colorset/Contents.json
+- CashOut/Assets.xcassets/CategoryColors/CoolGray.colorset/Contents.json
+- CashOut/Models/CategoryData.swift
+- CashOut/Models/ExpenseData.swift
+- CashOut/Utilities/Constants.swift
+- CashOut/Utilities/Extensions/Color+CategoryTokens.swift
+- CashOut/Utilities/Extensions/Int64+Currency.swift
+- CashOut/Repositories/CategoryRepositoryProtocol.swift
+- CashOut/Repositories/CategoryRepository.swift
+- CashOut/Repositories/ExpenseRepositoryProtocol.swift
+- CashOut/Repositories/ExpenseRepository.swift
+- CashOutTests/Helpers/TestPersistenceHelper.swift
+- CashOutTests/Repositories/CategoryRepositoryTests.swift
+- CashOutTests/Repositories/ExpenseRepositoryTests.swift
+- CashOutTests/Extensions/Int64CurrencyTests.swift
+
+**Modified files:**
+- CashOut/Assets.xcassets/AccentColor.colorset/Contents.json
+- CashOut/App/CashOutApp.swift
+- CashOut.xcodeproj/project.pbxproj

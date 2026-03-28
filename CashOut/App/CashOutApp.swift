@@ -24,7 +24,14 @@ struct CashOutApp: App {
                 \.managedObjectContext,
                 persistenceController.container.viewContext
             )
-            .task { await authViewModel.checkAuth() }
+            .task {
+                do {
+                    try await CategoryRepository().seedDefaultCategoriesIfNeeded()
+                } catch {
+                    print("Category seeding failed: \(error)")
+                }
+                await authViewModel.checkAuth()
+            }
         }
     }
 }

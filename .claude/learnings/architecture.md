@@ -18,6 +18,8 @@
 - All Repository methods must be @MainActor-isolated when using viewContext (main-thread-only context).
 - For insights aggregation: single NSFetchRequest with date-range predicate + in-memory grouping by categoryID in Swift. No NSExpression aggregate queries.
 - Use versioned .xcdatamodeld with lightweight (inferred) migration as default strategy.
+- **2026-03-28**: Repository `save` methods must always use fetch-or-create (upsert) pattern — fetch by `id` first, update existing or create new. Never unconditionally `init(context:)` — causes duplicates on retry or re-sync.
+- **2026-03-28**: Bootstrap-only methods like `seedDefaultCategoriesIfNeeded()` belong on the concrete repository class, NOT on the protocol — they are app-startup concerns, not part of the repository contract for consumers.
 
 ## Dependency Injection
 - Repositories should be transient instances (not singletons) — only PersistenceController is a singleton.
