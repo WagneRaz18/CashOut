@@ -25,12 +25,15 @@ struct CashOutApp: App {
                 persistenceController.container.viewContext
             )
             .task {
-                do {
-                    try await CategoryRepository().seedDefaultCategoriesIfNeeded()
-                } catch {
-                    print("Category seeding failed: \(error)")
-                }
-                await authViewModel.checkAuth()
+                async let seeding: Void = {
+                    do {
+                        try await CategoryRepository().seedDefaultCategoriesIfNeeded()
+                    } catch {
+                        print("Category seeding failed: \(error)")
+                    }
+                }()
+                async let auth: Void = authViewModel.checkAuth()
+                _ = await (seeding, auth)
             }
         }
     }

@@ -20,6 +20,8 @@
 - Use versioned .xcdatamodeld with lightweight (inferred) migration as default strategy.
 - **2026-03-28**: Repository `save` methods must always use fetch-or-create (upsert) pattern — fetch by `id` first, update existing or create new. Never unconditionally `init(context:)` — causes duplicates on retry or re-sync.
 - **2026-03-28**: Bootstrap-only methods like `seedDefaultCategoriesIfNeeded()` belong on the concrete repository class, NOT on the protocol — they are app-startup concerns, not part of the repository contract for consumers.
+- **2026-03-28**: When mapping optional Core Data attributes to non-optional DTO fields, throw `RepositoryError.missingRequiredField` — never use `?? UUID()` (generates different value each fetch) or nil UUID sentinel (silently produces lookup misses). The DTO should represent a valid domain object; if it exists, it is complete.
+- **2026-03-28**: Date range predicates in `fetchExpenses(for:)` must use exclusive upper bound (`createdAt < end`) not inclusive (`<= end`). Inclusive upper bound double-counts expenses at period boundaries when using contiguous intervals.
 
 ## Dependency Injection
 - Repositories should be transient instances (not singletons) — only PersistenceController is a singleton.

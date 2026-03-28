@@ -1,5 +1,9 @@
 @preconcurrency import CoreData
 
+enum RepositoryError: Error {
+    case missingRequiredField(entity: String, field: String)
+}
+
 @MainActor
 final class ExpenseRepository: ExpenseRepositoryProtocol {
     private let persistence: PersistenceController
@@ -11,19 +15,22 @@ final class ExpenseRepository: ExpenseRepositoryProtocol {
     func fetchExpenses(for period: DateInterval) async throws -> [ExpenseData] {
         let request: NSFetchRequest<Expense> = Expense.fetchRequest()
         request.predicate = NSPredicate(
-            format: "createdAt >= %@ AND createdAt <= %@",
+            format: "createdAt >= %@ AND createdAt < %@",
             period.start as NSDate,
             period.end as NSDate
         )
         request.sortDescriptors = [NSSortDescriptor(key: "createdAt", ascending: false)]
 
         let results = try persistence.container.viewContext.fetch(request)
-        return results.map { expense in
-            ExpenseData(
+        return try results.map { expense in
+            guard let categoryID = expense.categoryID else {
+                throw RepositoryError.missingRequiredField(entity: "Expense", field: "categoryID")
+            }
+            return ExpenseData(
                 id: expense.wrappedID,
                 amount: expense.amount,
                 note: expense.note,
-                categoryID: expense.categoryID ?? UUID(),
+                categoryID: categoryID,
                 createdByUserID: expense.wrappedCreatedByUserID,
                 createdAt: expense.wrappedCreatedAt,
                 modifiedAt: expense.wrappedModifiedAt

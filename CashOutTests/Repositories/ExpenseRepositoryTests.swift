@@ -97,6 +97,32 @@ final class ExpenseRepositoryTests: XCTestCase {
     }
 
     @MainActor
+    func testSaveExpenseUpdatesExisting() async throws {
+        let expense = try await makeSampleExpense(amount: 500)
+        try await repository.saveExpense(expense)
+
+        let updated = ExpenseData(
+            id: expense.id,
+            amount: 999,
+            note: "Updated note",
+            categoryID: expense.categoryID,
+            createdByUserID: expense.createdByUserID,
+            createdAt: expense.createdAt,
+            modifiedAt: Date()
+        )
+        try await repository.saveExpense(updated)
+
+        let period = DateInterval(
+            start: Calendar.current.date(byAdding: .day, value: -1, to: Date())!,
+            end: Calendar.current.date(byAdding: .day, value: 1, to: Date())!
+        )
+        let results = try await repository.fetchExpenses(for: period)
+        XCTAssertEqual(results.count, 1, "Saving same ID twice should not create duplicates")
+        XCTAssertEqual(results.first?.amount, 999)
+        XCTAssertEqual(results.first?.note, "Updated note")
+    }
+
+    @MainActor
     func testDeleteNonExistentExpenseDoesNotThrow() async throws {
         try await repository.deleteExpense(id: UUID())
     }

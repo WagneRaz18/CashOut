@@ -1,6 +1,6 @@
 # Story 1.4: Design Tokens, Predefined Categories & Repository Layer
 
-Status: review
+Status: done
 
 ## Story
 
@@ -399,6 +399,19 @@ Claude Opus 4.6 (1M context)
 ### Change Log
 - 2026-03-28: Implemented Story 1.4 — design tokens, predefined categories, repository layer. 13 new source files, 3 modified files.
 - 2026-03-28: Fixed 2 CRITICAL guardian findings — saveExpense upsert pattern, seeding error logging.
+
+### Review Findings
+
+- [x] [Review][Decision→Patch] F1: `categoryID ?? UUID()` → throw `RepositoryError.missingRequiredField` on nil — FIXED [`ExpenseRepository.swift:26-28`]
+- [x] [Review][Patch] F2: Seeding blocks auth check → parallel via `async let` — FIXED [`CashOutApp.swift:28-37`]
+- [x] [Review][Patch] F3: `fetchExpenses` date predicate `<=` → `<` for upper bound — FIXED [`ExpenseRepository.swift:18`]
+- [x] [Review][Patch] F4: Added `testSaveExpenseUpdatesExisting` upsert test — FIXED [`ExpenseRepositoryTests.swift:100-123`]
+- [x] [Review][Patch] F5: Added `@MainActor` to all `Int64CurrencyTests` methods — FIXED [`Int64CurrencyTests.swift`]
+- [x] [Review][Defer] F6: `wrappedID` generates new UUID on nil — identity instability [`Category+CoreDataProperties.swift:18`] — deferred, pre-existing (W1)
+- [x] [Review][Defer] F7: `seedDefaultCategoriesIfNeeded` race condition on multi-device [`CategoryRepository.swift:48-67`] — deferred, documented W8 for Story 4.x
+- [x] [Review][Defer] F8: `CategoryColor.init?(from:)` returns nil for `wrappedColorName` fallback "gray" [`Color+CategoryTokens.swift:15-17`] — deferred, pre-existing mismatch in CoreDataProperties
+- [x] [Review][Defer] F9: Hard delete tombstone propagation window [`ExpenseRepository.swift:63`] — deferred, pre-existing, acceptable for Epic 1
+- [x] [Review][Defer] F10: Entity store routing undefined for shared store — deferred, documented W9 for Story 4.1
 
 ### File List
 
