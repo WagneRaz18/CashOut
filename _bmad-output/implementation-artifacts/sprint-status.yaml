@@ -35,7 +35,7 @@
 # - Dev moves story to 'review', then runs code-review (fresh context, different LLM recommended)
 
 generated: 2026-03-27
-last_updated: "2026-03-28"
+last_updated: "2026-03-28T2"
 project: CashOut
 project_key: NOKEY
 tracking_system: file-system
@@ -47,7 +47,7 @@ development_status:
   1-1-xcode-project-setup-with-core-data-and-cloudkit: done
   1-2-sign-in-with-apple-authentication: done
   1-3-app-shell-and-tab-navigation: done
-  1-4-design-tokens-predefined-categories-and-repository-layer: backlog
+  1-4-design-tokens-predefined-categories-and-repository-layer: ready-for-dev
   1-5-numpad-and-amount-display: backlog
   1-6-category-picker-save-flow-and-expense-persistence: backlog
   1-7-entry-screen-haptics-accessibility-and-dynamic-type: backlog
