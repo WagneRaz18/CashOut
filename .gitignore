@@ -37,3 +37,9 @@ __pycache__/
 # Environment
 .env
 *.pem
+
+# Firebase
+firebase-debug.log
+
+# Claude Code
+.claude/settings.local.json
