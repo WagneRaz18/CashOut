@@ -323,7 +323,7 @@ So that I can quickly categorize my cash expenses using familiar labels and colo
 
 **Given** ExpenseRepositoryProtocol
 **When** implemented
-**Then** it exposes fetchExpenses(for:), saveExpense(_:), updateExpense(_:), and deleteExpense(id:) methods
+**Then** it exposes fetchExpenses(for:), saveExpense(_:), and deleteExpense(id:) methods
 **And** the implementation receives PersistenceController via init parameter
 
 **Given** CategoryRepositoryProtocol
