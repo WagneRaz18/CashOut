@@ -34,6 +34,9 @@
 - .glassEffect() is for non-button views. Button styles auto-apply glass.
 - Use view-associated UIImpactFeedbackGenerator(style:view:) for iOS 26+ (correct Taptic Engine routing), not legacy initializer.
 
+## Testing Async Notification Handlers
+- **2026-03-28**: `Task { }` on `@MainActor` doesn't start until the caller yields. `NotificationCenter.notifications(named:)` only receives notifications posted AFTER `for await` begins iteration. In tests: `await Task.yield()` before posting notifications so observer Tasks register their async sequence listeners first. Without this, tests pass as false positives (asserting on already-default-nil state).
+
 ## Swift 6 Strict Concurrency
 - `static var` with closure init is not concurrency-safe — use `static let` for singletons/previews.
 - CoreData's `NSMergeByPropertyStoreTrumpMergePolicy` triggers "shared mutable state" error in Swift 6 — use `@preconcurrency import CoreData`.

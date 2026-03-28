@@ -45,7 +45,7 @@ development_status:
   # Epic 1: Solo Cash Entry
   epic-1: in-progress
   1-1-xcode-project-setup-with-core-data-and-cloudkit: done
-  1-2-sign-in-with-apple-authentication: ready-for-dev
+  1-2-sign-in-with-apple-authentication: done
   1-3-app-shell-and-tab-navigation: backlog
   1-4-design-tokens-predefined-categories-and-repository-layer: backlog
   1-5-numpad-and-amount-display: backlog

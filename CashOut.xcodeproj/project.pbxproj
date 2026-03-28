@@ -16,6 +16,12 @@
 		7DD905A08B1776BF9F570222 /* CashOut.xcdatamodeld in Sources */ = {isa = PBXBuildFile; fileRef = 1220D06E7CDAED7C785E2D19 /* CashOut.xcdatamodeld */; };
 		85E20F790EF30AB6FCFBCD36 /* ContentView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3E9EFA06CBD5754CC782E9DF /* ContentView.swift */; };
 		973CA059EE0ABF8FD8E660D2 /* AppDelegate.swift in Sources */ = {isa = PBXBuildFile; fileRef = E633E5716F4D140FB5FA20A7 /* AppDelegate.swift */; };
+		A1B2C3D4E5F60718A1B2C3D4 /* AuthenticationService.swift in Sources */ = {isa = PBXBuildFile; fileRef = A1B2C3D4E5F60718A1B2C3D5 /* AuthenticationService.swift */; };
+		A1B2C3D4E5F60718A1B2C3D6 /* AuthenticationViewModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = A1B2C3D4E5F60718A1B2C3D7 /* AuthenticationViewModel.swift */; };
+		A1B2C3D4E5F60718A1B2C3D8 /* SignInView.swift in Sources */ = {isa = PBXBuildFile; fileRef = A1B2C3D4E5F60718A1B2C3D9 /* SignInView.swift */; };
+		A1B2C3D4E5F60718A1B2C3DA /* MockAuthenticationService.swift in Sources */ = {isa = PBXBuildFile; fileRef = A1B2C3D4E5F60718A1B2C3DB /* MockAuthenticationService.swift */; };
+		A1B2C3D4E5F60718A1B2C3DC /* AuthenticationServiceTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = A1B2C3D4E5F60718A1B2C3DD /* AuthenticationServiceTests.swift */; };
+		A1B2C3D4E5F60718A1B2C3DE /* AuthenticationViewModelTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = A1B2C3D4E5F60718A1B2C3DF /* AuthenticationViewModelTests.swift */; };
 		A9EC672858AA8781D85C18BD /* Expense+CoreDataProperties.swift in Sources */ = {isa = PBXBuildFile; fileRef = 121674B557835F802877762E /* Expense+CoreDataProperties.swift */; };
 		C1217C5E650CA41F443A3640 /* Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = AB06BAEA67571D4668ABE7C9 /* Assets.xcassets */; };
 		CE0F7A7346704A2E853F35DB /* CashOutUITestsLaunchTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5D63F6B24BAF5CB941FE4A06 /* CashOutUITestsLaunchTests.swift */; };
@@ -56,6 +62,12 @@
 		E633E5716F4D140FB5FA20A7 /* AppDelegate.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AppDelegate.swift; sourceTree = "<group>"; };
 		F0AF4C3E7DFCE872871D084A /* CashOutApp.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CashOutApp.swift; sourceTree = "<group>"; };
 		F66C8939ADD473080B92C0BF /* Category+CoreDataClass.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "Category+CoreDataClass.swift"; sourceTree = "<group>"; };
+		A1B2C3D4E5F60718A1B2C3D5 /* AuthenticationService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AuthenticationService.swift; sourceTree = "<group>"; };
+		A1B2C3D4E5F60718A1B2C3D7 /* AuthenticationViewModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AuthenticationViewModel.swift; sourceTree = "<group>"; };
+		A1B2C3D4E5F60718A1B2C3D9 /* SignInView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SignInView.swift; sourceTree = "<group>"; };
+		A1B2C3D4E5F60718A1B2C3DB /* MockAuthenticationService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MockAuthenticationService.swift; sourceTree = "<group>"; };
+		A1B2C3D4E5F60718A1B2C3DD /* AuthenticationServiceTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AuthenticationServiceTests.swift; sourceTree = "<group>"; };
+		A1B2C3D4E5F60718A1B2C3DF /* AuthenticationViewModelTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AuthenticationViewModelTests.swift; sourceTree = "<group>"; };
 		FB95C1BC0B1661A70F1E16D9 /* Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist; path = Info.plist; sourceTree = "<group>"; };
 		FC2F5586AE7BDD3457264666 /* CashOut.xcdatamodel */ = {isa = PBXFileReference; lastKnownFileType = wrapper.xcdatamodel; path = CashOut.xcdatamodel; sourceTree = "<group>"; };
 /* End PBXFileReference section */
@@ -73,6 +85,7 @@
 		45ED82BDB642B1D334D48513 /* Services */ = {
 			isa = PBXGroup;
 			children = (
+				A1B2C3D4E5F60718A1B2C3D5 /* AuthenticationService.swift */,
 				9727F81F696E1B13C570B543 /* PersistenceController.swift */,
 			);
 			path = Services;
@@ -98,6 +111,39 @@
 			path = App;
 			sourceTree = "<group>";
 		};
+		A1B2C3D4E5F60718A1B2C3E0 /* ViewModels */ = {
+			isa = PBXGroup;
+			children = (
+				A1B2C3D4E5F60718A1B2C3D7 /* AuthenticationViewModel.swift */,
+			);
+			path = ViewModels;
+			sourceTree = "<group>";
+		};
+		A1B2C3D4E5F60718A1B2C3E1 /* Auth */ = {
+			isa = PBXGroup;
+			children = (
+				A1B2C3D4E5F60718A1B2C3D9 /* SignInView.swift */,
+			);
+			path = Auth;
+			sourceTree = "<group>";
+		};
+		A1B2C3D4E5F60718A1B2C3E2 /* Services */ = {
+			isa = PBXGroup;
+			children = (
+				A1B2C3D4E5F60718A1B2C3DB /* MockAuthenticationService.swift */,
+				A1B2C3D4E5F60718A1B2C3DD /* AuthenticationServiceTests.swift */,
+			);
+			path = Services;
+			sourceTree = "<group>";
+		};
+		A1B2C3D4E5F60718A1B2C3E3 /* ViewModels */ = {
+			isa = PBXGroup;
+			children = (
+				A1B2C3D4E5F60718A1B2C3DF /* AuthenticationViewModelTests.swift */,
+			);
+			path = ViewModels;
+			sourceTree = "<group>";
+		};
 		9474A916B72794BA91DBAE18 /* Utilities */ = {
 			isa = PBXGroup;
 			children = (
@@ -109,6 +155,8 @@
 			isa = PBXGroup;
 			children = (
 				6C03FD3DF779E759B6D1D285 /* CashOutTests.swift */,
+				A1B2C3D4E5F60718A1B2C3E2 /* Services */,
+				A1B2C3D4E5F60718A1B2C3E3 /* ViewModels */,
 			);
 			path = CashOutTests;
 			sourceTree = "<group>";
@@ -135,6 +183,7 @@
 				BA3899836D46465D6E5929F9 /* Models */,
 				45ED82BDB642B1D334D48513 /* Services */,
 				9474A916B72794BA91DBAE18 /* Utilities */,
+				A1B2C3D4E5F60718A1B2C3E0 /* ViewModels */,
 				E2D8EE5F7A8B4BF6B1ADCC68 /* Views */,
 			);
 			path = CashOut;
@@ -143,6 +192,7 @@
 		E2D8EE5F7A8B4BF6B1ADCC68 /* Views */ = {
 			isa = PBXGroup;
 			children = (
+				A1B2C3D4E5F60718A1B2C3E1 /* Auth */,
 			);
 			path = Views;
 			sourceTree = "<group>";
@@ -268,7 +318,10 @@
 			isa = PBXSourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				A1B2C3D4E5F60718A1B2C3DC /* AuthenticationServiceTests.swift in Sources */,
+				A1B2C3D4E5F60718A1B2C3DE /* AuthenticationViewModelTests.swift in Sources */,
 				153E0DEA326A83544928E75A /* CashOutTests.swift in Sources */,
+				A1B2C3D4E5F60718A1B2C3DA /* MockAuthenticationService.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -286,6 +339,8 @@
 			buildActionMask = 2147483647;
 			files = (
 				973CA059EE0ABF8FD8E660D2 /* AppDelegate.swift in Sources */,
+				A1B2C3D4E5F60718A1B2C3D4 /* AuthenticationService.swift in Sources */,
+				A1B2C3D4E5F60718A1B2C3D6 /* AuthenticationViewModel.swift in Sources */,
 				7DD905A08B1776BF9F570222 /* CashOut.xcdatamodeld in Sources */,
 				1427B370ADC3A495B615546B /* CashOutApp.swift in Sources */,
 				54D174F9E2C240C0B83279C7 /* Category+CoreDataClass.swift in Sources */,
@@ -294,6 +349,7 @@
 				D8603C613DDB5F138D3CBF76 /* Expense+CoreDataClass.swift in Sources */,
 				A9EC672858AA8781D85C18BD /* Expense+CoreDataProperties.swift in Sources */,
 				308A95AE3C8416E2C787B499 /* PersistenceController.swift in Sources */,
+				A1B2C3D4E5F60718A1B2C3D8 /* SignInView.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};

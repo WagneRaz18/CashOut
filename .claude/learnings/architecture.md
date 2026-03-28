@@ -11,6 +11,8 @@
 - Long-running async ViewModel methods must check Task.checkCancellation() at natural boundaries.
 - Remote change notification subscriptions must use NotificationCenter.notifications(named:) async sequence inside .task {} — never addObserver in init().
 - .task handlers in TabView-hosted views re-fire on every tab appear — guard with loaded-state check.
+- **2026-03-28**: When a service handles async events (notifications) that must propagate to the ViewModel, add an `onSessionInvalidated`-style callback closure to the protocol — @Observable tracking doesn't flow through @ObservationIgnored protocol references, so the ViewModel has no other way to learn about service-side state changes.
+- **2026-03-28**: `CheckedContinuation` must never be overwritten — storing a new continuation before the previous is resumed crashes in debug. Guard with `signInContinuation != nil` before starting a new async bridge.
 
 ## Data Layer
 - All Repository methods must be @MainActor-isolated when using viewContext (main-thread-only context).
