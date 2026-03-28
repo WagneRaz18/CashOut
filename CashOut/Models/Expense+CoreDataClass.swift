@@ -1,4 +1,4 @@
-import CoreData
+@preconcurrency import CoreData
 
 @objc(Expense)
 public class Expense: NSManagedObject {

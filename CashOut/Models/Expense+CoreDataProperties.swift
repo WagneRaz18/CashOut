@@ -1,4 +1,4 @@
-import CoreData
+@preconcurrency import CoreData
 
 extension Expense {
     @nonobjc public class func fetchRequest() -> NSFetchRequest<Expense> {

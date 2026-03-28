@@ -17,7 +17,8 @@
 - Use zone-level sharing (CKShare per zone), not hierarchical record sharing — simpler for 2-user household.
 - UICloudSharingController is UIKit — needs UIViewControllerRepresentable wrapper for SwiftUI.
 - **CAUTION:** `container.share()` deadlocks on iOS 17+ unless called from `CKShareTransferRepresentation.prepareShare`. Prefer `ShareLink` + `CKShareTransferRepresentation` over `UICloudSharingController` for new SwiftUI code.
-- App must implement `userDidAcceptCloudKitShareWith` and call `container.accept(metadata)` for partner join flow.
+- App must implement `userDidAcceptCloudKitShareWith` and call `container.acceptShareInvitations(from:into:)` for partner join flow. There is NO `container.accept(metadata)` convenience method on NSPersistentCloudKitContainer.
+- `.onCKShareAccepted` is NOT a real SwiftUI scene modifier — use `UIApplicationDelegate.userDidAcceptCloudKitShareWith` for share acceptance.
 
 ## Conflict Resolution (Last-Write-Wins)
 - NSPersistentCloudKitContainer uses CKRecord change tags for framework-level LWW — NOT any custom `modifiedAt` field.
@@ -48,3 +49,5 @@
 - `usesScalarValueType` in .xcdatamodel does NOT affect CloudKit sync — it only controls Swift codegen (Bool vs NSNumber?). What CloudKit requires is `optional="YES"` on the attribute in the model editor. Scalar types with `optional="YES"` are valid for CloudKit sync.
 - The iOS 18+ iCloud data-loss guard (`ubiquityIdentityToken == nil`) must protect BOTH the private AND shared store descriptions — don't nil out only the private store's cloudKitContainerOptions while leaving the shared store's options active.
 - Must call `UIApplication.shared.registerForRemoteNotifications()` in `didFinishLaunchingWithOptions` — without it, silent push for CloudKit sync is never delivered.
+- `NSPersistentCloudKitContainer` has NO `handleRemoteNotification` method. It auto-processes silent pushes via `NSPersistentStoreRemoteChangeNotificationPostOptionKey`. The `didReceiveRemoteNotification` delegate just needs to call `completionHandler(.newData)`.
+- Explicitly set `cloudKitContainerOptions` with `containerIdentifier` on BOTH private and shared store descriptions — do not rely on auto-detection from the model/entitlements.

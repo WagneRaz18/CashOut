@@ -39,3 +39,5 @@
 - CoreData's `NSMergeByPropertyStoreTrumpMergePolicy` triggers "shared mutable state" error in Swift 6 — use `@preconcurrency import CoreData`.
 - XCUITest methods (`launch()`, `.staticTexts[]`, `.exists`) are MainActor-isolated in Swift 6 — annotate test methods with `@MainActor`.
 - `NSPersistentCloudKitContainerOptionsKey` is NOT a public API — don't try to read CloudKit options from persistent store's options dict. Identify stores by URL instead.
+- Core Data `codeGenerationType` absent from `.xcdatamodel` XML defaults to Manual/None when using xcodegen — do NOT add `codeGenerationType="category"` as it causes duplicate symbol errors with manually written +CoreDataProperties files.
+- `@preconcurrency import CoreData` should be used on ALL files that reference Core Data types, not just PersistenceController — keeps Swift 6 strict concurrency consistent across model files.

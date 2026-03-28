@@ -33,9 +33,14 @@ final class PersistenceController: @unchecked Sendable {
         if !inMemory {
             let iCloudAvailable = FileManager.default.ubiquityIdentityToken != nil
 
-            // Guard against iOS 18+ data-loss bug when iCloud is disabled/signed out
-            // (Apple Developer Forums thread 772015)
-            if !iCloudAvailable {
+            // Explicitly set CloudKit container on private store
+            if iCloudAvailable {
+                privateDesc.cloudKitContainerOptions = NSPersistentCloudKitContainerOptions(
+                    containerIdentifier: "iCloud.com.wagneraz.CashOut"
+                )
+            } else {
+                // Guard against iOS 18+ data-loss bug when iCloud is disabled/signed out
+                // (Apple Developer Forums thread 772015)
                 privateDesc.cloudKitContainerOptions = nil
             }
 

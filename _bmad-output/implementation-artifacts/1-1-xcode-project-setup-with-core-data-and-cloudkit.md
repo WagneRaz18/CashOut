@@ -1,6 +1,6 @@
 # Story 1.1: Xcode Project Setup with Core Data & CloudKit
 
-Status: review
+Status: done
 
 ## Story
 
@@ -396,6 +396,23 @@ Claude Opus 4.6 (1M context)
 - Guardian false positive: scalar `usesScalarValueType` does NOT affect CloudKit sync — `optional="YES"` is what matters
 - Fixed: iCloud guard now protects both private and shared store descriptions
 - Fixed: Added `registerForRemoteNotifications()` in AppDelegate
+
+### Review Findings
+
+- [x] [Review][Defer] D1: Share acceptance falls back to private store when no shared store loaded — `AppDelegate.swift:32-34`. Deferred to Story 4-1 (CloudKit shared zone & partner invitation).
+- [x] [Review][Decision] D2: Share acceptance via AppDelegate vs `.onCKShareAccepted` per spec — RESOLVED: Kept AppDelegate approach. `.onCKShareAccepted` is not a real SwiftUI API — spec had incorrect reference. `userDidAcceptCloudKitShareWith` is the correct pattern for NSPersistentCloudKitContainer.
+- [x] [Review][Patch] P2: `codeGenerationType` in Core Data model — REVERTED: Absent attribute defaults to Manual/None in xcodegen context. Adding `codeGenerationType="category"` caused duplicate symbol build errors. Original behavior is correct.
+- [x] [Review][Patch] P1: AppDelegate remote notification handling — REVERTED: `handleRemoteNotification` does not exist on `NSPersistentCloudKitContainer`. The container auto-processes via `NSPersistentStoreRemoteChangeNotificationPostOptionKey`. Original `completionHandler(.newData)` is correct. Spec had incorrect API reference.
+- [x] [Review][Patch] P3: Changed `import CoreData` to `@preconcurrency import CoreData` on all 4 model files — consistent with PersistenceController.swift for Swift 6 strict concurrency.
+- [x] [Review][Patch] P4: Added `@MainActor` to unit test method — correct isolation for viewContext access.
+- [x] [Review][Patch] P5: Private store now explicitly sets `cloudKitContainerOptions` with container identifier — removes auto-detection ambiguity.
+- [x] [Review][Defer] W1: `wrappedID` returns new UUID on every nil access [Category+CoreDataProperties.swift:18, Expense+CoreDataProperties.swift:19] — deferred, no ForEach usage yet in this story
+- [x] [Review][Defer] W2: `fatalError` on store load failure [PersistenceController.swift:66] — deferred, to be improved in future story with graceful degradation
+- [x] [Review][Defer] W3: `@unchecked Sendable` on PersistenceController [PersistenceController.swift:4] — deferred, acceptable singleton pattern per guardian review
+- [x] [Review][Defer] W4: `handleAccountChange` observer is a no-op [PersistenceController.swift:94-97] — deferred, placeholder for future async sequence replacement
+- [x] [Review][Defer] W5: `purgeOldHistory` runs synchronously on main thread during init [PersistenceController.swift:73] — deferred, performance optimization for later
+- [x] [Review][Defer] W6: `wrappedCreatedAt`/`wrappedModifiedAt` return `Date()` on nil [Expense+CoreDataProperties.swift:22-28] — deferred, same category as wrappedID
+- [x] [Review][Defer] W7: Category entity missing timestamps/attribution fields [CashOut.xcdatamodel/contents:3-10] — deferred, spec intentionally excludes; revisit if custom category attribution is needed
 
 ### File List
 - CashOut/App/CashOutApp.swift

@@ -16,8 +16,7 @@ class AppDelegate: NSObject, UIApplicationDelegate {
         fetchCompletionHandler completionHandler: @escaping (UIBackgroundFetchResult) -> Void
     ) {
         // NSPersistentCloudKitContainer processes silent pushes automatically via
-        // NSPersistentStoreRemoteChangeNotificationPostOptionKey. Calling the
-        // completion handler is required so the system knows the fetch is done.
+        // NSPersistentStoreRemoteChangeNotificationPostOptionKey.
         completionHandler(.newData)
     }
 
@@ -27,13 +26,9 @@ class AppDelegate: NSObject, UIApplicationDelegate {
     ) {
         let container = PersistenceController.shared.container
         let stores = container.persistentStoreCoordinator.persistentStores
-        // The shared store is added second in PersistenceController init —
-        // identify it by its URL containing "shared".
         guard let sharedStore = stores.first(where: {
             $0.url?.lastPathComponent.contains("shared") ?? false
-        }) ?? stores.last else {
-            return
-        }
+        }) else { return }
         container.acceptShareInvitations(
             from: [cloudKitShareMetadata],
             into: sharedStore
