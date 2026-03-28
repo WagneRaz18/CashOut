@@ -13,9 +13,21 @@ xcuserdata/
 *.perspectivev3
 *.xccheckout
 *.moved-aside
+*.xcodeproj/project.xcworkspace/
+*.xcodeproj/xcuserdata/
+*.xcworkspace/xcuserdata/
 build/
 *.ipa
 *.dSYM.zip
+*.dSYM
+*.hmap
+
+# CocoaPods
+Pods/
+
+# SPM
+.build/
+.swiftpm/
 
 # Python (memory system)
 tools/memory/.venv/

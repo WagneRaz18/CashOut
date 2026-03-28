@@ -1,0 +1,82 @@
+# generated: 2026-03-27
+# last_updated: 2026-03-27
+# project: CashOut
+# project_key: NOKEY
+# tracking_system: file-system
+# story_location: {project-root}/_bmad-output/implementation-artifacts
+
+# STATUS DEFINITIONS:
+# ==================
+# Epic Status:
+#   - backlog: Epic not yet started
+#   - in-progress: Epic actively being worked on
+#   - done: All stories in epic completed
+#
+# Epic Status Transitions:
+#   - backlog → in-progress: Automatically when first story is created (via create-story)
+#   - in-progress → done: Manually when all stories reach 'done' status
+#
+# Story Status:
+#   - backlog: Story only exists in epic file
+#   - ready-for-dev: Story file created in stories folder
+#   - in-progress: Developer actively working on implementation
+#   - review: Ready for code review (via Dev's code-review workflow)
+#   - done: Story completed
+#
+# Retrospective Status:
+#   - optional: Can be completed but not required
+#   - done: Retrospective has been completed
+#
+# WORKFLOW NOTES:
+# ===============
+# - Epic transitions to 'in-progress' automatically when first story is created
+# - Stories can be worked in parallel if team capacity allows
+# - SM typically creates next story after previous one is 'done' to incorporate learnings
+# - Dev moves story to 'review', then runs code-review (fresh context, different LLM recommended)
+
+generated: 2026-03-27
+last_updated: 2026-03-28
+project: CashOut
+project_key: NOKEY
+tracking_system: file-system
+story_location: "{project-root}/_bmad-output/implementation-artifacts"
+
+development_status:
+  # Epic 1: Solo Cash Entry
+  epic-1: in-progress
+  1-1-xcode-project-setup-with-core-data-and-cloudkit: review
+  1-2-sign-in-with-apple-authentication: backlog
+  1-3-app-shell-and-tab-navigation: backlog
+  1-4-design-tokens-predefined-categories-and-repository-layer: backlog
+  1-5-numpad-and-amount-display: backlog
+  1-6-category-picker-save-flow-and-expense-persistence: backlog
+  1-7-entry-screen-haptics-accessibility-and-dynamic-type: backlog
+  epic-1-retrospective: optional
+
+  # Epic 2: Expense Feed & Management
+  epic-2: backlog
+  2-1-expense-feed-with-partner-attribution: backlog
+  2-2-floating-add-button: backlog
+  2-3-edit-expense-flow: backlog
+  2-4-delete-expense-flow: backlog
+  epic-2-retrospective: optional
+
+  # Epic 3: Spending Insights
+  epic-3: backlog
+  3-1-insights-screen-with-time-period-switching: backlog
+  3-2-category-donut-chart: backlog
+  3-3-daily-bar-chart-and-category-breakdown-list: backlog
+  epic-3-retrospective: optional
+
+  # Epic 4: Household Sharing & Real-Time Sync
+  epic-4: backlog
+  4-1-cloudkit-shared-zone-and-partner-invitation: backlog
+  4-2-partner-share-acceptance-and-data-sync: backlog
+  4-3-real-time-feed-updates-and-sync-management: backlog
+  epic-4-retrospective: optional
+
+  # Epic 5: Category Customization & Settings
+  epic-5: backlog
+  5-1-settings-screen: backlog
+  5-2-custom-category-creation-and-editing: backlog
+  epic-5-retrospective: optional

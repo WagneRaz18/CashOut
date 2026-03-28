@@ -21,6 +21,11 @@
 - Repositories should be transient instances (not singletons) — only PersistenceController is a singleton.
 - Use init(repository: Protocol = ConcreteType()) — transient, not .shared.
 - Every service consumed by ViewModels must have a protocol (including HapticServiceProtocol) with a Mock in test targets.
+- App-wide services (PersistenceController) injected at @main App via .environment(\.managedObjectContext). Add EnvironmentKey for PersistenceController itself when repositories need both viewContext and newBackgroundContext().
+
+## Project Generation
+- xcodegen (project.yml) can fully replace manual Xcode project creation including Core Data + CloudKit setup. Generates valid .xcodeproj with proper build phases for .xcdatamodeld files.
+- .xcdatamodeld is a directory with XML contents that can be created programmatically — no Xcode GUI required.
 
 ## State Modeling
 - Use independent data + errorMessage properties, never a combined enum ViewState.

@@ -16,6 +16,7 @@
 ## CKShare & Participant Management
 - Use zone-level sharing (CKShare per zone), not hierarchical record sharing — simpler for 2-user household.
 - UICloudSharingController is UIKit — needs UIViewControllerRepresentable wrapper for SwiftUI.
+- **CAUTION:** `container.share()` deadlocks on iOS 17+ unless called from `CKShareTransferRepresentation.prepareShare`. Prefer `ShareLink` + `CKShareTransferRepresentation` over `UICloudSharingController` for new SwiftUI code.
 - App must implement `userDidAcceptCloudKitShareWith` and call `container.accept(metadata)` for partner join flow.
 
 ## Conflict Resolution (Last-Write-Wins)
@@ -36,3 +37,14 @@
 ## Security & Zone Permissions
 - Observe CKAccountChanged notification to detect iCloud account change — flush cached tokens and reconcile local state.
 - Household data must never be stored in publicCloudDatabase — only private + shared scopes.
+
+## Known Bugs
+- **iOS 18+ data-loss bug (ACTIVE, no fix):** When iCloud is disabled/signed out, NSPersistentCloudKitContainer can delete local data on first init (Apple Forums thread 772015). Guard with `FileManager.default.ubiquityIdentityToken != nil` check before setting cloudKitContainerOptions.
+- **mergePolicy:** Use `NSMergeByPropertyStoreTrumpMergePolicy` (not ObjectTrump) on viewContext — lets the persistent store's CloudKit-merged state win over stale in-memory copies.
+- All Core Data attributes MUST be Optional in the model editor — NSPersistentCloudKitContainer cannot sync non-optional attributes (silent failure).
+- UUID attributes must have "Uses Scalar Type" UNCHECKED in Xcode model editor.
+- `CKSharingSupported` Info.plist key must be added manually — not in Xcode autocomplete dropdown.
+- Deploy schema from Development to Production in CloudKit Console before TestFlight — `initializeCloudKitSchema()` only pushes to Development.
+- `usesScalarValueType` in .xcdatamodel does NOT affect CloudKit sync — it only controls Swift codegen (Bool vs NSNumber?). What CloudKit requires is `optional="YES"` on the attribute in the model editor. Scalar types with `optional="YES"` are valid for CloudKit sync.
+- The iOS 18+ iCloud data-loss guard (`ubiquityIdentityToken == nil`) must protect BOTH the private AND shared store descriptions — don't nil out only the private store's cloudKitContainerOptions while leaving the shared store's options active.
+- Must call `UIApplication.shared.registerForRemoteNotifications()` in `didFinishLaunchingWithOptions` — without it, silent push for CloudKit sync is never delivered.

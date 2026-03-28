@@ -1,0 +1,56 @@
+name: CashOut
+options:
+  bundleIdPrefix: com.wagneraz
+  deploymentTarget:
+    iOS: "26.0"
+  createIntermediateGroups: true
+  generateEmptyDirectories: true
+  defaultConfig: Debug
+
+settings:
+  base:
+    SWIFT_VERSION: "6.0"
+    SWIFT_STRICT_CONCURRENCY: complete
+
+targets:
+  CashOut:
+    type: application
+    platform: iOS
+    sources:
+      - path: CashOut
+        excludes:
+          - "**/.gitkeep"
+    settings:
+      base:
+        CODE_SIGN_ENTITLEMENTS: CashOut/CashOut.entitlements
+        INFOPLIST_FILE: CashOut/Info.plist
+        GENERATE_INFOPLIST_FILE: "YES"
+        PRODUCT_BUNDLE_IDENTIFIER: com.wagneraz.CashOut
+        MARKETING_VERSION: "1.0"
+        CURRENT_PROJECT_VERSION: 1
+        CODE_SIGN_STYLE: Automatic
+
+  CashOutTests:
+    type: bundle.unit-test
+    platform: iOS
+    sources:
+      - CashOutTests
+    dependencies:
+      - target: CashOut
+    settings:
+      base:
+        GENERATE_INFOPLIST_FILE: "YES"
+        PRODUCT_BUNDLE_IDENTIFIER: com.wagneraz.CashOutTests
+
+  CashOutUITests:
+    type: bundle.ui-testing
+    platform: iOS
+    sources:
+      - CashOutUITests
+    dependencies:
+      - target: CashOut
+    settings:
+      base:
+        GENERATE_INFOPLIST_FILE: "YES"
+        PRODUCT_BUNDLE_IDENTIFIER: com.wagneraz.CashOutUITests
+        TEST_TARGET_NAME: CashOut

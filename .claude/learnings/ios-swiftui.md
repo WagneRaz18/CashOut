@@ -33,3 +33,9 @@
 - For Liquid Glass buttons: use .buttonStyle(.glass) or .buttonStyle(.glassProminent) — never combine with .glassEffect() modifier on the same element.
 - .glassEffect() is for non-button views. Button styles auto-apply glass.
 - Use view-associated UIImpactFeedbackGenerator(style:view:) for iOS 26+ (correct Taptic Engine routing), not legacy initializer.
+
+## Swift 6 Strict Concurrency
+- `static var` with closure init is not concurrency-safe — use `static let` for singletons/previews.
+- CoreData's `NSMergeByPropertyStoreTrumpMergePolicy` triggers "shared mutable state" error in Swift 6 — use `@preconcurrency import CoreData`.
+- XCUITest methods (`launch()`, `.staticTexts[]`, `.exists`) are MainActor-isolated in Swift 6 — annotate test methods with `@MainActor`.
+- `NSPersistentCloudKitContainerOptionsKey` is NOT a public API — don't try to read CloudKit options from persistent store's options dict. Identify stores by URL instead.
