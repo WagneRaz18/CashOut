@@ -9,6 +9,7 @@ deferred_work_file: '{implementation_artifacts}/deferred-work.md'
 - YOU MUST ALWAYS SPEAK OUTPUT in your Agent communication style with the config `{communication_language}`
 - When `{spec_file}` is set, always write findings to the story file before offering action choices.
 - `decision-needed` findings must be resolved before handling `patch` findings.
+- **MANDATORY**: When `{spec_file}` is set, you MUST update the story file status AND sync sprint-status.yaml before finishing. This is NOT optional — section 6 must always execute when a spec file exists. If all issues are resolved, move the story to `done`.
 
 ## INSTRUCTIONS
 
@@ -83,16 +84,21 @@ If `{spec_file}` is **not** set, present only options 1 and 3 (omit option 2 —
 - Deferred: <W>
 - Dismissed: <R>
 
-### 6. Update story status and sync sprint tracking
+### 6. Update story status and sync sprint tracking (MANDATORY when `{spec_file}` is set)
 
-Skip this section if `{spec_file}` is not set.
+**This section is NOT optional.** If `{spec_file}` is set, you MUST execute all subsections below before proceeding to section 7. Skip ONLY if `{spec_file}` is not set.
 
 #### Determine new status based on review outcome
 
-- If all `decision-needed` and `patch` findings were resolved (fixed or dismissed) AND no unresolved HIGH/MEDIUM issues remain: set `{new_status}` = `done`. Update the story file Status section to `done`.
-- If `patch` findings were left as action items, or unresolved issues remain: set `{new_status}` = `in-progress`. Update the story file Status section to `in-progress`.
+- If all `decision-needed` and `patch` findings were resolved (fixed or dismissed) AND no unresolved HIGH/MEDIUM issues remain: set `{new_status}` = `done`.
+- If the review was clean (zero findings after triage): set `{new_status}` = `done`.
+- If `patch` findings were left as action items, or unresolved issues remain: set `{new_status}` = `in-progress`.
 
-Save the story file.
+#### Update the story file
+
+1. Find the `Status:` line near the top of `{spec_file}`.
+2. Update it to `Status: {new_status}`.
+3. Save the story file.
 
 #### Sync sprint-status.yaml
 
@@ -112,6 +118,8 @@ If `{sprint_status}` file does not exist, note that story status was updated in 
 > **Review Complete!**
 >
 > **Story Status:** `{new_status}`
+> **Story File Updated:** Yes — `{spec_file}`
+> **Sprint Status Synced:** Yes/No — `{sprint_status}`
 > **Issues Fixed:** <fixed_count>
 > **Action Items Created:** <action_count>
 > **Deferred:** <W>
