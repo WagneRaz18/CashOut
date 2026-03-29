@@ -92,8 +92,8 @@ NFR14: Deletes and edits must propagate fully to both devices — no orphaned or
 
 ### UX Design Requirements
 
-UX-DR1: NumpadView — 3x4 grid with .glassEffect(.regular.interactive()) keys, 60pt+ height per key, full-width with 8pt gaps, light haptic per key tap, backspace key
-UX-DR2: AmountDisplayView — SF Pro Rounded 48pt medium weight with .monospacedDigit(), "$0.00" default in secondary color, active amount in primary color, centered horizontally
+UX-DR1: NumpadView — 3x4 grid with .buttonStyle(.glass) keys, 60pt+ height per key, full-width with 8pt gaps, light haptic per key tap, backspace key
+UX-DR2: AmountDisplayView — SF Pro Rounded 48pt medium weight (no .monospacedDigit() — reserved for feed rows per architecture; rounded + monospaced may conflict), "$0.00" default in secondary color, active amount in primary color, centered horizontally
 UX-DR3: CategoryPickerView — horizontal ScrollView of chips with category color dot (8pt circle) + label, selected chip with tinted background + colored border, most-recently-used pre-selected
 UX-DR4: FeedRowView — leading category icon in colored badge (28x28pt), center with category name + partner name + relative timestamp, trailing amount with .monospacedDigit() + optional note indicator
 UX-DR5: FloatingAddButton — 52x52pt circle with .glassEffect(.regular.interactive()), SF Symbol "plus" in accent color, bottom-trailing 16pt from edges above tab bar, hidden on Add tab
@@ -353,11 +353,11 @@ So that I can type cash amounts quickly with a calculator-style interface.
 
 **Given** the entry screen (Add tab)
 **When** displayed
-**Then** NumpadView shows a 3x4 grid of digit keys (1-9, ".", 0, backspace) with .glassEffect(.regular.interactive()) and 60pt+ key height with 8pt gaps (UX-DR1)
+**Then** NumpadView shows a 3x4 grid of digit keys (1-9, ".", 0, backspace) with .buttonStyle(.glass) and 60pt+ key height with 8pt gaps (UX-DR1)
 
 **Given** the entry screen
 **When** displayed
-**Then** AmountDisplayView shows "$0.00" in SF Pro Rounded 48pt medium weight with .monospacedDigit(), centered horizontally, in .secondaryLabel color (UX-DR2)
+**Then** AmountDisplayView shows "$0.00" in SF Pro Rounded 48pt medium weight, centered horizontally, in .secondary color (UX-DR2 — no .monospacedDigit() per architecture; reserved for feed rows)
 
 **Given** a numpad key tap
 **When** a digit is pressed
