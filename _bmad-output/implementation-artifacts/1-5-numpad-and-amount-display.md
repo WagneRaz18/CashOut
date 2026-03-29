@@ -1,6 +1,6 @@
 # Story 1.5: Numpad & Amount Display
 
-Status: review
+Status: done
 
 ## Story
 
@@ -68,12 +68,12 @@ So that I can type cash amounts quickly with a calculator-style interface.
 
 ### Review Findings
 
-- [ ] [Review][Patch] F1: GeometryReader/LazyVGrid circular layout — interpose VStack between GeometryReader and LazyVGrid to break circular sizing [NumpadView.swift:21] (CRITICAL — ios-swiftui-guardian + blind + architecture-guardian)
-- [ ] [Review][Patch] F2: `displayAmount` uses `Double` — violates "no floating-point for money" rule; switch to `Decimal(self) / 100` [Int64+Currency.swift:7] (CRITICAL — architecture-guardian + edge)
-- [ ] [Review][Patch] F3: Missing cap boundary test — add test for `amountInCents = 999_999` then append to verify max reachable value `9_999_999` [ExpenseEntryViewModelTests.swift] (WARNING — blind + architecture-guardian)
-- [ ] [Review][Patch] F4: `maxBeforeAppend` naming + instance vs static — rename/clarify comment and make `private static let` [ExpenseEntryViewModel.swift:19] (WARNING — blind + edge + auditor + architecture-guardian)
-- [ ] [Review][Patch] F5: `@MainActor` missing at test class level — add class-level annotation to prevent future setUp/tearDown actor-boundary issues [ExpenseEntryViewModelTests.swift:4, Int64CurrencyTests.swift:4] (WARNING — architecture-guardian)
-- [ ] [Review][Patch] F6: NumpadView preview has no height constraint — `GeometryReader` gets 0 height in preview; add `.frame(height: 300)` [NumpadView.swift:84] (WARNING — ios-swiftui-guardian)
+- [x] [Review][Patch] F1: GeometryReader/LazyVGrid circular layout — interpose VStack between GeometryReader and LazyVGrid to break circular sizing [NumpadView.swift:21] (CRITICAL — ios-swiftui-guardian + blind + architecture-guardian) ✅ Fixed
+- [x] [Review][Patch] F2: `displayAmount` uses `Double` — violates "no floating-point for money" rule; switch to `Decimal(self) / 100` [Int64+Currency.swift:7] (CRITICAL — architecture-guardian + edge) ✅ Fixed
+- [x] [Review][Patch] F3: Missing cap boundary test — add test for `amountInCents = 999_999` then append to verify max reachable value `9_999_999` [ExpenseEntryViewModelTests.swift] (WARNING — blind + architecture-guardian) ✅ Fixed
+- [x] [Review][Patch] F4: `maxBeforeAppend` naming + instance vs static — rename/clarify comment and make `private static let` [ExpenseEntryViewModel.swift:19] (WARNING — blind + edge + auditor + architecture-guardian) ✅ Fixed
+- [x] [Review][Patch] F5: `@MainActor` missing at test class level — add class-level annotation to prevent future setUp/tearDown actor-boundary issues [ExpenseEntryViewModelTests.swift:4, Int64CurrencyTests.swift:4] (WARNING — architecture-guardian) ✅ Fixed
+- [x] [Review][Patch] F6: NumpadView preview has no height constraint — `GeometryReader` gets 0 height in preview; add `.frame(height: 300)` [NumpadView.swift:84] (WARNING — ios-swiftui-guardian) ✅ Fixed
 - [x] [Review][Defer] D1: Negative `amountInCents` not guarded [ExpenseEntryViewModel.swift:9] — deferred, no UI path to negative values; validate at persistence boundary in Story 1.6
 - [x] [Review][Defer] D2: `appendDigit` accepts multi-character strings [ExpenseEntryViewModel.swift:22] — deferred, only called from hardcoded NumpadKey; validate at caller boundary if new callers added
 - [x] [Review][Defer] D3: Locale-dependent test assertions fragile for Thai digit rendering [Int64CurrencyTests.swift] — deferred, explicit th_TH locale produces consistent Western Arabic digits; monitor on future OS versions
@@ -262,12 +262,26 @@ No debug issues encountered. Build and all 48 tests passed on first run.
 - Orchestrator review: 0 CRITICAL findings. Addressed suggestions: extracted named constant `maxBeforeAppend` for cap threshold, added locale intent comment to `Int64+Currency.swift`.
 - Post-commit: Currency switched from USD to THB (Thai Baht). `Int64+Currency.swift` now formats as THB/th_TH locale. Comments and test messages updated to use ฿ and satang terminology.
 
+### Code Review (2026-03-29)
+
+- 5-layer adversarial review: Blind Hunter, Edge Case Hunter, Acceptance Auditor, Architecture Guardian, iOS/SwiftUI Guardian
+- 36 raw findings → 11 unique after dedup → 6 patches applied, 5 deferred, 14 dismissed
+- **F1 (CRITICAL):** GeometryReader/LazyVGrid circular layout — interposed `VStack` between GeometryReader and LazyVGrid
+- **F2 (CRITICAL):** `displayAmount` used `Double` violating "no floating-point for money" — switched to `Decimal(self) / 100`
+- **F3:** Added missing cap boundary test at `999_999` → `9_999_999`
+- **F4:** Made `maxBeforeAppend` a `private static let` with clarified comment
+- **F5:** Added `@MainActor` at test class level, removed per-method annotations
+- **F6:** Added `.frame(height: 300)` to NumpadView preview
+- All 50 tests pass (9 ViewModel + 6 Currency + 6 Repo + other unit + 3 UI). Zero regressions.
+
 ### File List
 
 - `CashOut/ViewModels/ExpenseEntryViewModel.swift` (new)
 - `CashOut/Views/Entry/AmountDisplayView.swift` (new)
 - `CashOut/Views/Entry/NumpadView.swift` (new)
 - `CashOut/Views/Entry/EntryView.swift` (modified)
-- `CashOut/Utilities/Extensions/Int64+Currency.swift` (modified — added locale intent comment)
-- `CashOutTests/ViewModels/ExpenseEntryViewModelTests.swift` (new)
+- `CashOut/Utilities/Extensions/Int64+Currency.swift` (modified — THB locale, Decimal arithmetic)
+- `CashOut/Views/Insights/InsightsView.swift` (modified — uses displayAmount extension)
+- `CashOutTests/ViewModels/ExpenseEntryViewModelTests.swift` (new — 9 tests)
+- `CashOutTests/Extensions/Int64CurrencyTests.swift` (modified — THB assertions, 6 tests)
 - `CashOut.xcodeproj/project.pbxproj` (modified)

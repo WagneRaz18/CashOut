@@ -1,11 +1,11 @@
 import XCTest
 @testable import CashOut
 
+@MainActor
 final class ExpenseEntryViewModelTests: XCTestCase {
 
     // MARK: - appendDigit Tests (AC #3, #4)
 
-    @MainActor
     func testAppendDigitBuildsCorrectCentsValue() {
         let viewModel = ExpenseEntryViewModel()
 
@@ -22,7 +22,6 @@ final class ExpenseEntryViewModelTests: XCTestCase {
 
     // MARK: - deleteLastDigit Tests (AC #5)
 
-    @MainActor
     func testDeleteLastDigitRemovesRightmostDigit() {
         let viewModel = ExpenseEntryViewModel()
         viewModel.amountInCents = 1250
@@ -35,7 +34,6 @@ final class ExpenseEntryViewModelTests: XCTestCase {
         )
     }
 
-    @MainActor
     func testDeleteLastDigitFromZeroStaysZero() {
         let viewModel = ExpenseEntryViewModel()
 
@@ -49,7 +47,6 @@ final class ExpenseEntryViewModelTests: XCTestCase {
 
     // MARK: - Cap Tests
 
-    @MainActor
     func testAppendDigitEnforcesCap() {
         let viewModel = ExpenseEntryViewModel()
         viewModel.amountInCents = 1_000_000
@@ -62,9 +59,20 @@ final class ExpenseEntryViewModelTests: XCTestCase {
         )
     }
 
+    func testAppendDigitAllowsLastValueBeforeCap() {
+        let viewModel = ExpenseEntryViewModel()
+        viewModel.amountInCents = 999_999
+
+        viewModel.appendDigit("9")
+
+        XCTAssertEqual(
+            viewModel.amountInCents, 9_999_999,
+            "999_999 is the last value that allows append; 999_999 * 10 + 9 = 9_999_999 (฿99,999.99)"
+        )
+    }
+
     // MARK: - resetAmount Tests
 
-    @MainActor
     func testResetAmountSetsToZero() {
         let viewModel = ExpenseEntryViewModel()
         viewModel.amountInCents = 5000
@@ -79,7 +87,6 @@ final class ExpenseEntryViewModelTests: XCTestCase {
 
     // MARK: - isAmountZero Tests
 
-    @MainActor
     func testIsAmountZeroWhenZero() {
         let viewModel = ExpenseEntryViewModel()
 
@@ -89,7 +96,6 @@ final class ExpenseEntryViewModelTests: XCTestCase {
         )
     }
 
-    @MainActor
     func testIsAmountZeroWhenNonZero() {
         let viewModel = ExpenseEntryViewModel()
         viewModel.amountInCents = 100
@@ -102,7 +108,6 @@ final class ExpenseEntryViewModelTests: XCTestCase {
 
     // MARK: - appendDecimalPoint Tests
 
-    @MainActor
     func testAppendDecimalPointIsNoOp() {
         let viewModel = ExpenseEntryViewModel()
         viewModel.amountInCents = 500

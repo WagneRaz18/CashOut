@@ -1,8 +1,8 @@
 import XCTest
 @testable import CashOut
 
+@MainActor
 final class Int64CurrencyTests: XCTestCase {
-    @MainActor
     func testDisplayAmountFormatsTypicalValue() {
         let amount: Int64 = 1250
         XCTAssertTrue(
@@ -11,7 +11,6 @@ final class Int64CurrencyTests: XCTestCase {
         )
     }
 
-    @MainActor
     func testDisplayAmountFormatsZero() {
         let amount: Int64 = 0
         XCTAssertTrue(
@@ -20,7 +19,6 @@ final class Int64CurrencyTests: XCTestCase {
         )
     }
 
-    @MainActor
     func testDisplayAmountFormatsSatangOnly() {
         let amount: Int64 = 99
         XCTAssertTrue(
@@ -29,7 +27,6 @@ final class Int64CurrencyTests: XCTestCase {
         )
     }
 
-    @MainActor
     func testDisplayAmountFormatsLargeValue() {
         let amount: Int64 = 100000
         XCTAssertTrue(
@@ -38,7 +35,6 @@ final class Int64CurrencyTests: XCTestCase {
         )
     }
 
-    @MainActor
     func testDisplayAmountFormatsSingleSatang() {
         let amount: Int64 = 1
         XCTAssertTrue(
@@ -47,7 +43,6 @@ final class Int64CurrencyTests: XCTestCase {
         )
     }
 
-    @MainActor
     func testDisplayAmountUsesTHBCurrency() {
         let amount: Int64 = 1250
         let display = amount.displayAmount

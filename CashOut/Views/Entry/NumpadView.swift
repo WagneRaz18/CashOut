@@ -21,16 +21,18 @@ struct NumpadView: View {
         GeometryReader { geo in
             let keyHeight = max(60, (geo.size.height - Spacing.sm * 3) / 4)
 
-            LazyVGrid(columns: columns, spacing: Spacing.sm) {
-                ForEach(rows.flatMap { $0 }) { key in
-                    Button {
-                        handleTap(key)
-                    } label: {
-                        keyLabel(key)
-                            .frame(maxWidth: .infinity)
-                            .frame(height: keyHeight)
+            VStack(spacing: 0) {
+                LazyVGrid(columns: columns, spacing: Spacing.sm) {
+                    ForEach(rows.flatMap { $0 }) { key in
+                        Button {
+                            handleTap(key)
+                        } label: {
+                            keyLabel(key)
+                                .frame(maxWidth: .infinity)
+                                .frame(height: keyHeight)
+                        }
+                        .buttonStyle(.glass)
                     }
-                    .buttonStyle(.glass)
                 }
             }
         }
@@ -87,5 +89,6 @@ private enum NumpadKey: Identifiable {
         onDecimal: {},
         onBackspace: {}
     )
+    .frame(height: 300)
     .padding()
 }

@@ -13,6 +13,7 @@
 - .task handlers in TabView-hosted views re-fire on every tab appear — guard with loaded-state check.
 - **2026-03-28**: When a service handles async events (notifications) that must propagate to the ViewModel, add an `onSessionInvalidated`-style callback closure to the protocol — @Observable tracking doesn't flow through @ObservationIgnored protocol references, so the ViewModel has no other way to learn about service-side state changes.
 - **2026-03-28**: `CheckedContinuation` must never be overwritten — storing a new continuation before the previous is resumed crashes in debug. Guard with `signInContinuation != nil` before starting a new async bridge.
+- **2026-03-29**: Apply `@MainActor` at the XCTestCase class level, not per-method, when testing `@MainActor`-isolated ViewModels — prevents actor-boundary issues in future `setUp()`/`tearDown()` overrides.
 
 ## Data Layer
 - All Repository methods must be @MainActor-isolated when using viewContext (main-thread-only context).
@@ -37,6 +38,8 @@
 - Use independent data + errorMessage properties, never a combined enum ViewState.
 - On error, preserve stale data and set errorMessage — view shows both simultaneously.
 - **2026-03-29**: Fixed-point satang cap: `guard amountInCents < 1_000_000` before `amount * 10 + digit` enforces a ceiling of 9_999_999 (฿99,999.99) — the guard fires before multiply, so max(999_999) * 10 + 9 = 9_999_999. Extract guard threshold as a named constant (`maxBeforeAppend`) to make the math self-documenting.
+- **2026-03-29**: Currency display formatting must use `Decimal(self) / 100` not `Double(self) / 100.0` — enforces "no floating-point for money" even in display-only contexts. `Decimal.FormatStyle.Currency` works identically to `FloatingPointFormatStyle.Currency`.
+- **2026-03-29**: In `@Observable` classes, declare constants as `private static let` not `private let` — instance `let` occupies heap per instance unnecessarily. Access via `Self.constant`.
 
 ## Navigation Coordination
 - For simple apps (3 tabs + sheets): TabView selection is @State in ContentView, sheet presentation is @State on presenting View. Full Coordinator pattern is unnecessary.
