@@ -14,6 +14,7 @@
 - **2026-03-28**: When a service handles async events (notifications) that must propagate to the ViewModel, add an `onSessionInvalidated`-style callback closure to the protocol — @Observable tracking doesn't flow through @ObservationIgnored protocol references, so the ViewModel has no other way to learn about service-side state changes.
 - **2026-03-28**: `CheckedContinuation` must never be overwritten — storing a new continuation before the previous is resumed crashes in debug. Guard with `signInContinuation != nil` before starting a new async bridge.
 - **2026-03-29**: Apply `@MainActor` at the XCTestCase class level, not per-method, when testing `@MainActor`-isolated ViewModels — prevents actor-boundary issues in future `setUp()`/`tearDown()` overrides.
+- **2026-03-29**: After `try await repository.save()`, add `guard !Task.isCancelled else { return }` before post-save state mutations (UI reset, UserDefaults write) — the view that spawned the Task may be gone (tab switch/dismiss), making the mutations pointless or dangerously late.
 
 ## Data Layer
 - All Repository methods must be @MainActor-isolated when using viewContext (main-thread-only context).
@@ -29,6 +30,7 @@
 - Use init(repository: Protocol = ConcreteType()) — transient, not .shared.
 - Every service consumed by ViewModels must have a protocol (including HapticServiceProtocol) with a Mock in test targets.
 - App-wide services (PersistenceController) injected at @main App via .environment(\.managedObjectContext). Add EnvironmentKey for PersistenceController itself when repositories need both viewContext and newBackgroundContext().
+- **2026-03-29**: Inject `UserDefaults` via init parameter (`userDefaults: UserDefaults = .standard`) for test isolation ��� tests use `UserDefaults(suiteName:)` with `removePersistentDomain(forName:)` in tearDown to avoid cross-test pollution of MRU/preference state.
 
 ## Project Generation
 - xcodegen (project.yml) can fully replace manual Xcode project creation including Core Data + CloudKit setup. Generates valid .xcodeproj with proper build phases for .xcdatamodeld files.

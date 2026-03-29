@@ -38,6 +38,9 @@
 - For Liquid Glass buttons: use .buttonStyle(.glass) or .buttonStyle(.glassProminent) — never combine with .glassEffect() modifier on the same element.
 - .glassEffect() is for non-button views. Button styles auto-apply glass.
 - Use view-associated UIImpactFeedbackGenerator(style:view:) for iOS 26+ (correct Taptic Engine routing), not legacy initializer.
+- **2026-03-29**: Custom-styled buttons (manual background/border) must use `.buttonStyle(.plain)` explicitly — `.buttonBorderShape(.capsule)` only works with `.bordered`/`.borderedProminent` styles and has no effect on plain `Button`. Without explicit `.buttonStyle(.plain)`, iOS 26 Liquid Glass may override custom visuals.
+- **2026-03-29**: Icon-only buttons (e.g., note pencil icon) need `.frame(width: 44, height: 44)` on the label — SF Symbol intrinsic size is ~22pt, below the 44pt accessibility minimum tap target.
+- **2026-03-29**: Use `.task(id: selectedID)` not `.onAppear` for `ScrollViewReader.scrollTo()` — synchronous `.onAppear` fires before SwiftUI completes layout, so `scrollTo` silently does nothing. `.task(id:)` defers to next run loop tick AND re-fires on selection change.
 
 ## Testing Async Notification Handlers
 - **2026-03-28**: `Task { }` on `@MainActor` doesn't start until the caller yields. `NotificationCenter.notifications(named:)` only receives notifications posted AFTER `for await` begins iteration. In tests: `await Task.yield()` before posting notifications so observer Tasks register their async sequence listeners first. Without this, tests pass as false positives (asserting on already-default-nil state).

@@ -1,6 +1,6 @@
 # Story 1.6: Category Picker, Save Flow & Expense Persistence
 
-Status: ready-for-dev
+Status: review
 Readiness: approved (2026-03-29)
 Readiness Report: _bmad-output/planning-artifacts/implementation-readiness-report-2026-03-29-story-1-6.md
 
@@ -30,74 +30,74 @@ So that logging a purchase is fast and the data is immediately stored.
 
 ## Tasks / Subtasks
 
-- [ ] Task 1: Expand ExpenseEntryViewModel with dependencies and save logic (AC: #2, #5, #8)
-  - [ ] 1.1 Add `@ObservationIgnored private let expenseRepository: ExpenseRepositoryProtocol` with default `ExpenseRepository()`
-  - [ ] 1.2 Add `@ObservationIgnored private let categoryRepository: CategoryRepositoryProtocol` with default `CategoryRepository()`
-  - [ ] 1.3 Add `@ObservationIgnored private let authService: AuthenticationServiceProtocol` with default `AuthenticationService()` — NOTE: existing 9 tests use zero-arg init which will create real AuthenticationService; this is acceptable (Keychain returns nil in test, observers are harmless) but new tests MUST inject MockAuthenticationService
-  - [ ] 1.4 Add `var categories: [CategoryData] = []` observable property
-  - [ ] 1.5 Add `var selectedCategoryID: UUID?` observable property
-  - [ ] 1.6 Add `var noteText: String = ""` observable property
-  - [ ] 1.7 Add `var isSaving: Bool = false` guard to prevent double-tap
-  - [ ] 1.8 Add `@ObservationIgnored private let userDefaults: UserDefaults` with default `.standard` — injectable for test isolation
-  - [ ] 1.9 Implement `loadCategories()` async — guard `categories.isEmpty` (prevents re-fetch on tab re-appear), fetches from `categoryRepository.fetchCategories()`, guard `!Task.isCancelled` after await, sets `categories`, restores MRU from UserDefaults, falls back to first category if no MRU
-  - [ ] 1.10 Implement `selectCategory(_ id: UUID)` — sets `selectedCategoryID`
-  - [ ] 1.11 Implement `saveExpense()` async throws — set `isSaving = true` then `defer { isSaving = false }` (ensures reset even on throw), guards `!isAmountZero && selectedCategoryID != nil`, guard `let userID = authService.currentUserID` (throw if nil — never use `?? ""`), builds `ExpenseData`, calls `expenseRepository.saveExpense(_:)`, persists MRU to UserDefaults, calls `resetAmount()`, clears `noteText`
-  - [ ] 1.12 MRU key: `"lastUsedCategoryID"` — store/restore `UUID.uuidString` via injected `userDefaults` [Source: architecture.md line 296]
-  - [ ] 1.13 Validate `amountInCents > 0` at persistence boundary (Deferred D1 from story 1.5)
+- [x] Task 1: Expand ExpenseEntryViewModel with dependencies and save logic (AC: #2, #5, #8)
+  - [x] 1.1 Add `@ObservationIgnored private let expenseRepository: ExpenseRepositoryProtocol` with default `ExpenseRepository()`
+  - [x] 1.2 Add `@ObservationIgnored private let categoryRepository: CategoryRepositoryProtocol` with default `CategoryRepository()`
+  - [x] 1.3 Add `@ObservationIgnored private let authService: AuthenticationServiceProtocol` with default `AuthenticationService()` — NOTE: existing 9 tests use zero-arg init which will create real AuthenticationService; this is acceptable (Keychain returns nil in test, observers are harmless) but new tests MUST inject MockAuthenticationService
+  - [x] 1.4 Add `var categories: [CategoryData] = []` observable property
+  - [x] 1.5 Add `var selectedCategoryID: UUID?` observable property
+  - [x] 1.6 Add `var noteText: String = ""` observable property
+  - [x] 1.7 Add `var isSaving: Bool = false` guard to prevent double-tap
+  - [x] 1.8 Add `@ObservationIgnored private let userDefaults: UserDefaults` with default `.standard` — injectable for test isolation
+  - [x] 1.9 Implement `loadCategories()` async — guard `categories.isEmpty` (prevents re-fetch on tab re-appear), fetches from `categoryRepository.fetchCategories()`, guard `!Task.isCancelled` after await, sets `categories`, restores MRU from UserDefaults, falls back to first category if no MRU
+  - [x] 1.10 Implement `selectCategory(_ id: UUID)` — sets `selectedCategoryID`
+  - [x] 1.11 Implement `saveExpense()` async throws — set `isSaving = true` then `defer { isSaving = false }` (ensures reset even on throw), guards `!isAmountZero && selectedCategoryID != nil`, guard `let userID = authService.currentUserID` (throw if nil — never use `?? ""`), builds `ExpenseData`, calls `expenseRepository.saveExpense(_:)`, persists MRU to UserDefaults, calls `resetAmount()`, clears `noteText`
+  - [x] 1.12 MRU key: `"lastUsedCategoryID"` — store/restore `UUID.uuidString` via injected `userDefaults` [Source: architecture.md line 296]
+  - [x] 1.13 Validate `amountInCents > 0` at persistence boundary (Deferred D1 from story 1.5)
 
-- [ ] Task 2: Create CategoryPickerView (AC: #1, #3)
-  - [ ] 2.1 Create `Views/Entry/CategoryPickerView.swift`
-  - [ ] 2.2 Accept `categories: [CategoryData]`, `selectedCategoryID: UUID?`, `onSelect: (UUID) -> Void`
-  - [ ] 2.3 `ScrollView(.horizontal, showsIndicators: false)` with `HStack(spacing: Spacing.sm)`
-  - [ ] 2.4 Each chip: `Button` with `HStack` of color dot (`Circle().fill(Color(category.colorName)).frame(width: 8, height: 8)`) + `Text(category.name)` in `.subheadline`
-  - [ ] 2.5 Selected state: tinted background using `Color(category.colorName).opacity(0.15)` + colored border `RoundedRectangle` stroke, `.capsule` shape
-  - [ ] 2.6 Unselected state: `.secondary` text, no background tint, subtle border or none
-  - [ ] 2.7 Auto-scroll to selected chip using `ScrollViewReader` + `.id(category.id)` + `.task(id: selectedCategoryID) { proxy.scrollTo(selectedCategoryID, anchor: .center) }` — use `.task(id:)` NOT `.onAppear` (synchronous onAppear fires before layout, scroll silently ignored)
-  - [ ] 2.8 Chip minimum 44pt height (accessibility tap target)
-  - [ ] 2.9 No haptic on tap (deferred to Story 1.7 — HapticService does not exist yet)
-  - [ ] 2.10 Add `#Preview` with `.frame(height: 60)` to prevent blank preview (established pattern from Story 1.5 NumpadView preview fix)
-  - [ ] 2.11 Plain `HStack` is intentional for 6 predefined categories — use `LazyHStack` if Story 5.2 (custom categories) grows the list significantly
+- [x] Task 2: Create CategoryPickerView (AC: #1, #3)
+  - [x] 2.1 Create `Views/Entry/CategoryPickerView.swift`
+  - [x] 2.2 Accept `categories: [CategoryData]`, `selectedCategoryID: UUID?`, `onSelect: (UUID) -> Void`
+  - [x] 2.3 `ScrollView(.horizontal, showsIndicators: false)` with `HStack(spacing: Spacing.sm)`
+  - [x] 2.4 Each chip: `Button` with `HStack` of color dot (`Circle().fill(Color(category.colorName)).frame(width: 8, height: 8)`) + `Text(category.name)` in `.subheadline`
+  - [x] 2.5 Selected state: tinted background using `Color(category.colorName).opacity(0.15)` + colored border `RoundedRectangle` stroke, `.capsule` shape
+  - [x] 2.6 Unselected state: `.secondary` text, no background tint, subtle border or none
+  - [x] 2.7 Auto-scroll to selected chip using `ScrollViewReader` + `.id(category.id)` + `.task(id: selectedCategoryID) { proxy.scrollTo(selectedCategoryID, anchor: .center) }` — use `.task(id:)` NOT `.onAppear` (synchronous onAppear fires before layout, scroll silently ignored)
+  - [x] 2.8 Chip minimum 44pt height (accessibility tap target)
+  - [x] 2.9 No haptic on tap (deferred to Story 1.7 — HapticService does not exist yet)
+  - [x] 2.10 Add `#Preview` with `.frame(height: 60)` to prevent blank preview (established pattern from Story 1.5 NumpadView preview fix)
+  - [x] 2.11 Plain `HStack` is intentional for 6 predefined categories — use `LazyHStack` if Story 5.2 (custom categories) grows the list significantly
 
-- [ ] Task 3: Create NoteEntrySheet (AC: #6)
-  - [ ] 3.1 Create `Views/Entry/NoteEntrySheet.swift`
-  - [ ] 3.2 Accept `@Binding var noteText: String` and `dismiss` environment action
-  - [ ] 3.3 Simple layout: `TextField("Add a note", text: $noteText, axis: .vertical)` with `.lineLimit(3...6)` + Done button
-  - [ ] 3.4 Done button dismisses the sheet
-  - [ ] 3.5 No cancel/discard logic — text binding updates live
+- [x] Task 3: Create NoteEntrySheet (AC: #6)
+  - [x] 3.1 Create `Views/Entry/NoteEntrySheet.swift`
+  - [x] 3.2 Accept `@Binding var noteText: String` and `dismiss` environment action
+  - [x] 3.3 Simple layout: `TextField("Add a note", text: $noteText, axis: .vertical)` with `.lineLimit(3...6)` + Done button
+  - [x] 3.4 Done button dismisses the sheet
+  - [x] 3.5 No cancel/discard logic — text binding updates live
 
-- [ ] Task 4: Create SaveButtonView (AC: #4, #5)
-  - [ ] 4.1 Create `Views/Entry/SaveButtonView.swift`
-  - [ ] 4.2 Accept `isDisabled: Bool`, `onSave: () -> Void`, `onNoteTap: () -> Void`
-  - [ ] 4.3 Layout: `HStack` — small note icon (`Image(systemName: "square.and.pencil")` button, leading) + full-width Save `Button` (`.buttonStyle(.glassProminent)`, `.headline` text)
-  - [ ] 4.4 Save button disabled when `isDisabled` is true — grayed out, not tappable
-  - [ ] 4.5 Note icon: subtle `.secondary` color, tapping opens note sheet
-  - [ ] 4.6 No haptic on save (deferred to Story 1.7)
+- [x] Task 4: Create SaveButtonView (AC: #4, #5)
+  - [x] 4.1 Create `Views/Entry/SaveButtonView.swift`
+  - [x] 4.2 Accept `isDisabled: Bool`, `onSave: () -> Void`, `onNoteTap: () -> Void`
+  - [x] 4.3 Layout: `HStack` — small note icon (`Image(systemName: "square.and.pencil")` button, leading) + full-width Save `Button` (`.buttonStyle(.glassProminent)`, `.headline` text)
+  - [x] 4.4 Save button disabled when `isDisabled` is true — grayed out, not tappable
+  - [x] 4.5 Note icon: subtle `.secondary` color, tapping opens note sheet
+  - [x] 4.6 No haptic on save (deferred to Story 1.7)
 
-- [ ] Task 5: Wire EntryView composition (AC: #1, #2, #4, #5, #6)
-  - [ ] 5.1 Replace `Spacer()` comment in `EntryView.swift` with `CategoryPickerView`
-  - [ ] 5.2 Add `SaveButtonView` below `NumpadView`
-  - [ ] 5.3 Add `@State private var showingNoteSheet = false`
-  - [ ] 5.4 Add `.sheet(isPresented: $showingNoteSheet) { NoteEntrySheet(noteText: $viewModel.noteText).presentationDetents([.large]) }` — `.presentationDetents([.large])` required per UX nav patterns; `$viewModel.noteText` works because `@State` on `@Observable` supports `$` binding syntax
-  - [ ] 5.5 Wire save action: `Task { try await viewModel.saveExpense() }` — do NOT use `try?` (errors need logging); wrap in `do/catch` with `print()` in DEBUG for save failure diagnostics
-  - [ ] 5.6 Wire note tap to toggle `showingNoteSheet`
-  - [ ] 5.7 Add `.task { await viewModel.loadCategories() }` for initial category load — `loadCategories()` has an internal `guard categories.isEmpty` to prevent re-fetch on tab re-appear
-  - [ ] 5.8 Let ViewModel create its own `AuthenticationService()` instance via default parameter (reads `currentUserID` from Keychain — same value regardless of instance; the app-level `authViewModel` is not needed here)
+- [x] Task 5: Wire EntryView composition (AC: #1, #2, #4, #5, #6)
+  - [x] 5.1 Replace `Spacer()` comment in `EntryView.swift` with `CategoryPickerView`
+  - [x] 5.2 Add `SaveButtonView` below `NumpadView`
+  - [x] 5.3 Add `@State private var showingNoteSheet = false`
+  - [x] 5.4 Add `.sheet(isPresented: $showingNoteSheet) { NoteEntrySheet(noteText: $viewModel.noteText).presentationDetents([.large]) }` — `.presentationDetents([.large])` required per UX nav patterns; `$viewModel.noteText` works because `@State` on `@Observable` supports `$` binding syntax
+  - [x] 5.5 Wire save action: `Task { try await viewModel.saveExpense() }` — do NOT use `try?` (errors need logging); wrap in `do/catch` with `print()` in DEBUG for save failure diagnostics
+  - [x] 5.6 Wire note tap to toggle `showingNoteSheet`
+  - [x] 5.7 Add `.task { await viewModel.loadCategories() }` for initial category load — `loadCategories()` has an internal `guard categories.isEmpty` to prevent re-fetch on tab re-appear
+  - [x] 5.8 Let ViewModel create its own `AuthenticationService()` instance via default parameter (reads `currentUserID` from Keychain — same value regardless of instance; the app-level `authViewModel` is not needed here)
 
-- [ ] Task 6: Unit tests for ExpenseEntryViewModel save flow (AC: #2, #5, #8)
-  - [ ] 6.1 Create mock: `MockExpenseRepository` in `CashOutTests/Repositories/MockExpenseRepository.swift` implementing `ExpenseRepositoryProtocol` with call tracking
-  - [ ] 6.2 Create mock: `MockCategoryRepository` in `CashOutTests/Repositories/MockCategoryRepository.swift` implementing `CategoryRepositoryProtocol` with configurable return data
-  - [ ] 6.3 Test: `saveExpense()` calls `expenseRepository.saveExpense(_:)` with correct amount, categoryID, createdByUserID
-  - [ ] 6.4 Test: `saveExpense()` resets `amountInCents` to 0 after save
-  - [ ] 6.5 Test: `saveExpense()` clears `noteText` after save
-  - [ ] 6.6 Test: `saveExpense()` does NOT save when `isAmountZero` (guard)
-  - [ ] 6.7 Test: `saveExpense()` does NOT save when `selectedCategoryID` is nil (guard)
-  - [ ] 6.8 Test: `loadCategories()` populates `categories` array from mock repository
-  - [ ] 6.9 Test: `loadCategories()` restores MRU categoryID from UserDefaults
-  - [ ] 6.10 Test: `saveExpense()` persists selected categoryID as MRU to UserDefaults
-  - [ ] 6.11 Test: `selectCategory(_:)` updates `selectedCategoryID`
-  - [ ] 6.12 Test: double-tap guard — `saveExpense()` during active save is no-op
-  - [ ] 6.13 Test: `saveExpense()` when repository throws — verify `isSaving` resets to `false` (defer pattern)
-  - [ ] 6.14 Test: `saveExpense()` when `authService.currentUserID == nil` — verify throws, does NOT save with empty string
+- [x] Task 6: Unit tests for ExpenseEntryViewModel save flow (AC: #2, #5, #8)
+  - [x] 6.1 Create mock: `MockExpenseRepository` in `CashOutTests/Repositories/MockExpenseRepository.swift` implementing `ExpenseRepositoryProtocol` with call tracking
+  - [x] 6.2 Create mock: `MockCategoryRepository` in `CashOutTests/Repositories/MockCategoryRepository.swift` implementing `CategoryRepositoryProtocol` with configurable return data
+  - [x] 6.3 Test: `saveExpense()` calls `expenseRepository.saveExpense(_:)` with correct amount, categoryID, createdByUserID
+  - [x] 6.4 Test: `saveExpense()` resets `amountInCents` to 0 after save
+  - [x] 6.5 Test: `saveExpense()` clears `noteText` after save
+  - [x] 6.6 Test: `saveExpense()` does NOT save when `isAmountZero` (guard)
+  - [x] 6.7 Test: `saveExpense()` does NOT save when `selectedCategoryID` is nil (guard)
+  - [x] 6.8 Test: `loadCategories()` populates `categories` array from mock repository
+  - [x] 6.9 Test: `loadCategories()` restores MRU categoryID from UserDefaults
+  - [x] 6.10 Test: `saveExpense()` persists selected categoryID as MRU to UserDefaults
+  - [x] 6.11 Test: `selectCategory(_:)` updates `selectedCategoryID`
+  - [x] 6.12 Test: double-tap guard — `saveExpense()` during active save is no-op
+  - [x] 6.13 Test: `saveExpense()` when repository throws — verify `isSaving` resets to `false` (defer pattern)
+  - [x] 6.14 Test: `saveExpense()` when `authService.currentUserID == nil` — verify throws, does NOT save with empty string
 
 ## Dev Notes
 
@@ -396,8 +396,58 @@ Recent commits show established patterns:
 
 ### Agent Model Used
 
+Claude Opus 4.6 (1M context)
+
 ### Debug Log References
+
+- Build verified: `xcodebuild build -target CashOut -sdk iphonesimulator26.4` — BUILD SUCCEEDED
+- Tests verified: 59 tests, 0 failures (47 existing + 12 new save flow tests)
 
 ### Completion Notes List
 
+- Task 1: Expanded ExpenseEntryViewModel with 4 injected dependencies (expenseRepository, categoryRepository, authService, userDefaults), all with default parameters preserving backward compatibility with existing 9 tests. Added categories, selectedCategoryID, noteText, isSaving properties. Implemented loadCategories() with MRU restore, selectCategory(), and saveExpense() with defer-based isSaving reset, auth guard (throws on nil — never empty string), and amount > 0 validation (D1 from Story 1.5).
+- Task 2: Created CategoryPickerView with horizontal ScrollView, category chips using color dot + label, selected/unselected states via capsule shape with tinted background + colored border. ScrollViewReader with .task(id:) for auto-scroll. 44pt min height for accessibility.
+- Task 3: Created NoteEntrySheet with TextField (axis: .vertical, lineLimit 3...6), NavigationStack with Done toolbar button. Binding updates live, no cancel/discard logic.
+- Task 4: Created SaveButtonView with HStack of note icon (square.and.pencil) + full-width Save button using .buttonStyle(.glassProminent). Disabled state when isDisabled is true. No haptic (deferred to 1.7).
+- Task 5: Wired EntryView — replaced Spacer with CategoryPickerView, added SaveButtonView below NumpadView, added .sheet for NoteEntrySheet with .presentationDetents([.large]), wired save with do/catch + DEBUG print, wired .task for loadCategories().
+- Task 6: Created MockExpenseRepository and MockCategoryRepository with call tracking and configurable behavior. Added 12 new test cases covering: save with correct data, amount reset, note clear, zero-amount guard, nil-category guard, loadCategories population, MRU restore from UserDefaults, MRU persist on save, selectCategory, double-tap guard, isSaving reset on throw, auth nil throws error. Used injectable UserDefaults(suiteName:) for test isolation.
+
+### Orchestrator Review (2026-03-29)
+
+**Guardians run**: ios-swiftui-guardian, architecture-guardian, cloudkit-sync-guardian
+
+**CRITICALs resolved:**
+- SaveButtonView note icon lacked 44pt tap target → added `.frame(width: 44, height: 44)`
+- CategoryPickerView `.buttonBorderShape(.capsule)` without explicit button style → replaced with `.buttonStyle(.plain)`
+
+**WARNINGs resolved:**
+- Double-tap not guarded at UI layer → `SaveButtonView.isDisabled` now includes `viewModel.isSaving`
+- Post-await state mutation without cancellation check → added `guard !Task.isCancelled` after `expenseRepository.saveExpense`
+
+**WARNINGs noted (out of scope):**
+- PersistenceController `handleAccountChange` is a no-op (existing code, not Story 1.6)
+- PersistenceController force-unwrap on private store URL (existing code)
+- ExpenseRepository writes on viewContext (existing code)
+- Error state surfacing (saveError, categoryLoadError) — story spec says no error messages (UX-DR26)
+- `$viewModel.noteText` binding pattern — works correctly with `@State` on `@Observable` in Swift 5.9+
+- NoteEntrySheet NavigationStack — confirmed acceptable (sheets create independent hierarchy)
+
+### Change Log
+
+- 2026-03-29: Story 1.6 implementation complete — all 6 tasks, all 8 ACs satisfied, 12 new tests added (59 total, 0 failures)
+- 2026-03-29: Resolved 2 CRITICAL and 2 WARNING findings from domain guardian review
+
 ### File List
+
+New files:
+- CashOut/Views/Entry/CategoryPickerView.swift
+- CashOut/Views/Entry/NoteEntrySheet.swift
+- CashOut/Views/Entry/SaveButtonView.swift
+- CashOutTests/Repositories/MockExpenseRepository.swift
+- CashOutTests/Repositories/MockCategoryRepository.swift
+
+Modified files:
+- CashOut/ViewModels/ExpenseEntryViewModel.swift
+- CashOut/Views/Entry/EntryView.swift
+- CashOut.xcodeproj/project.pbxproj
+- CashOutTests/ViewModels/ExpenseEntryViewModelTests.swift

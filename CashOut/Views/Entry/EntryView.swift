@@ -2,6 +2,7 @@ import SwiftUI
 
 struct EntryView: View {
     @State private var viewModel = ExpenseEntryViewModel()
+    @State private var showingNoteSheet = false
 
     var body: some View {
         VStack(spacing: 0) {
@@ -9,7 +10,12 @@ struct EntryView: View {
                 .padding(.top, Spacing.lg)
                 .padding(.horizontal, Spacing.md)
 
-            Spacer() // Reserved for CategoryPickerView (Story 1.6)
+            CategoryPickerView(
+                categories: viewModel.categories,
+                selectedCategoryID: viewModel.selectedCategoryID,
+                onSelect: { viewModel.selectCategory($0) }
+            )
+            .padding(.vertical, Spacing.sm)
 
             NumpadView(
                 onDigit: { viewModel.appendDigit($0) },
@@ -17,7 +23,32 @@ struct EntryView: View {
                 onBackspace: { viewModel.deleteLastDigit() }
             )
             .padding(.horizontal, Spacing.md)
+            .padding(.bottom, Spacing.sm)
+
+            SaveButtonView(
+                isDisabled: viewModel.isAmountZero || viewModel.isSaving,
+                onSave: {
+                    Task {
+                        do {
+                            try await viewModel.saveExpense()
+                        } catch {
+                            #if DEBUG
+                            print("Save failed: \(error)")
+                            #endif
+                        }
+                    }
+                },
+                onNoteTap: { showingNoteSheet = true }
+            )
+            .padding(.horizontal, Spacing.md)
             .padding(.bottom, Spacing.md)
+        }
+        .task {
+            await viewModel.loadCategories()
+        }
+        .sheet(isPresented: $showingNoteSheet) {
+            NoteEntrySheet(noteText: $viewModel.noteText)
+                .presentationDetents([.large])
         }
     }
 }

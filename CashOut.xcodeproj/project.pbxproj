@@ -46,6 +46,11 @@
 		D1E2F3A4B5C60112 /* AmountDisplayView.swift in Sources */ = {isa = PBXBuildFile; fileRef = D1E2F3A4B5C60102 /* AmountDisplayView.swift */; };
 		D1E2F3A4B5C60113 /* NumpadView.swift in Sources */ = {isa = PBXBuildFile; fileRef = D1E2F3A4B5C60103 /* NumpadView.swift */; };
 		D1E2F3A4B5C60114 /* ExpenseEntryViewModelTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = D1E2F3A4B5C60104 /* ExpenseEntryViewModelTests.swift */; };
+		E1F2A3B4C5D60211E1F2A3B4 /* CategoryPickerView.swift in Sources */ = {isa = PBXBuildFile; fileRef = E1F2A3B4C5D60201E1F2A3B4 /* CategoryPickerView.swift */; };
+		E1F2A3B4C5D60212E1F2A3B4 /* NoteEntrySheet.swift in Sources */ = {isa = PBXBuildFile; fileRef = E1F2A3B4C5D60202E1F2A3B4 /* NoteEntrySheet.swift */; };
+		E1F2A3B4C5D60213E1F2A3B4 /* SaveButtonView.swift in Sources */ = {isa = PBXBuildFile; fileRef = E1F2A3B4C5D60203E1F2A3B4 /* SaveButtonView.swift */; };
+		F1A2B3C4D5E60311F1A2B3C4 /* MockCategoryRepository.swift in Sources */ = {isa = PBXBuildFile; fileRef = F1A2B3C4D5E60301F1A2B3C4 /* MockCategoryRepository.swift */; };
+		F1A2B3C4D5E60312F1A2B3C4 /* MockExpenseRepository.swift in Sources */ = {isa = PBXBuildFile; fileRef = F1A2B3C4D5E60302F1A2B3C4 /* MockExpenseRepository.swift */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXContainerItemProxy section */
@@ -110,6 +115,11 @@
 		D1E2F3A4B5C60102 /* AmountDisplayView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AmountDisplayView.swift; sourceTree = "<group>"; };
 		D1E2F3A4B5C60103 /* NumpadView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = NumpadView.swift; sourceTree = "<group>"; };
 		D1E2F3A4B5C60104 /* ExpenseEntryViewModelTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ExpenseEntryViewModelTests.swift; sourceTree = "<group>"; };
+		E1F2A3B4C5D60201E1F2A3B4 /* CategoryPickerView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CategoryPickerView.swift; sourceTree = "<group>"; };
+		E1F2A3B4C5D60202E1F2A3B4 /* NoteEntrySheet.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = NoteEntrySheet.swift; sourceTree = "<group>"; };
+		E1F2A3B4C5D60203E1F2A3B4 /* SaveButtonView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SaveButtonView.swift; sourceTree = "<group>"; };
+		F1A2B3C4D5E60301F1A2B3C4 /* MockCategoryRepository.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MockCategoryRepository.swift; sourceTree = "<group>"; };
+		F1A2B3C4D5E60302F1A2B3C4 /* MockExpenseRepository.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MockExpenseRepository.swift; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXGroup section */
@@ -241,6 +251,8 @@
 			children = (
 				C1D2E3F4A5B6000BC1D2E3F4 /* CategoryRepositoryTests.swift */,
 				C1D2E3F4A5B6000CC1D2E3F4 /* ExpenseRepositoryTests.swift */,
+				F1A2B3C4D5E60301F1A2B3C4 /* MockCategoryRepository.swift */,
+				F1A2B3C4D5E60302F1A2B3C4 /* MockExpenseRepository.swift */,
 			);
 			path = Repositories;
 			sourceTree = "<group>";
@@ -288,8 +300,11 @@
 			isa = PBXGroup;
 			children = (
 				D1E2F3A4B5C60102 /* AmountDisplayView.swift */,
+				E1F2A3B4C5D60201E1F2A3B4 /* CategoryPickerView.swift */,
 				B1C2D3E4F5061829B1C2D3E1 /* EntryView.swift */,
+				E1F2A3B4C5D60202E1F2A3B4 /* NoteEntrySheet.swift */,
 				D1E2F3A4B5C60103 /* NumpadView.swift */,
+				E1F2A3B4C5D60203E1F2A3B4 /* SaveButtonView.swift */,
 			);
 			path = Entry;
 			sourceTree = "<group>";
@@ -451,6 +466,8 @@
 				C1D2E3F4A5B6001CC1D2E3F4 /* ExpenseRepositoryTests.swift in Sources */,
 				C1D2E3F4A5B6001DC1D2E3F4 /* Int64CurrencyTests.swift in Sources */,
 				D1E2F3A4B5C60114 /* ExpenseEntryViewModelTests.swift in Sources */,
+				F1A2B3C4D5E60311F1A2B3C4 /* MockCategoryRepository.swift in Sources */,
+				F1A2B3C4D5E60312F1A2B3C4 /* MockExpenseRepository.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -493,7 +510,10 @@
 				C1D2E3F4A5B60019C1D2E3F4 /* ExpenseRepository.swift in Sources */,
 				D1E2F3A4B5C60111 /* ExpenseEntryViewModel.swift in Sources */,
 				D1E2F3A4B5C60112 /* AmountDisplayView.swift in Sources */,
+				E1F2A3B4C5D60211E1F2A3B4 /* CategoryPickerView.swift in Sources */,
+				E1F2A3B4C5D60212E1F2A3B4 /* NoteEntrySheet.swift in Sources */,
 				D1E2F3A4B5C60113 /* NumpadView.swift in Sources */,
+				E1F2A3B4C5D60213E1F2A3B4 /* SaveButtonView.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
