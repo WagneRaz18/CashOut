@@ -36,6 +36,8 @@
 
 generated: 2026-03-27
 last_updated: "2026-03-29"
+# Story 1-7 created 2026-03-29
+# Sprint planning refreshed 2026-03-29
 # Story 1-6 done (code review passed) 2026-03-29
 # Story 1-6 review 2026-03-29
 # Story 1-6 in-progress 2026-03-29
@@ -57,7 +59,7 @@ development_status:
   1-4-design-tokens-predefined-categories-and-repository-layer: done
   1-5-numpad-and-amount-display: done
   1-6-category-picker-save-flow-and-expense-persistence: done
-  1-7-entry-screen-haptics-accessibility-and-dynamic-type: backlog
+  1-7-entry-screen-haptics-accessibility-and-dynamic-type: ready-for-dev
   epic-1-retrospective: optional
 
   # Epic 2: Expense Feed & Management
