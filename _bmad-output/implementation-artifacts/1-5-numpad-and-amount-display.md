@@ -1,6 +1,6 @@
 # Story 1.5: Numpad & Amount Display
 
-Status: ready-for-dev (readiness check passed 2026-03-29)
+Status: review
 
 ## Story
 
@@ -22,49 +22,49 @@ So that I can type cash amounts quickly with a calculator-style interface.
 
 ## Tasks / Subtasks
 
-- [ ] Task 1: Create ExpenseEntryViewModel (AC: #3, #4, #5)
-  - [ ] 1.1 Create `ViewModels/ExpenseEntryViewModel.swift` — `@MainActor @Observable final class`
-  - [ ] 1.2 Implement `amountInCents: Int64` property (default 0)
-  - [ ] 1.3 Implement `appendDigit(_ digit: String)` — appends digit to raw cents integer; guard `amountInCents < 1_000_000` before append to enforce cap of 9_999_999 ($99,999.99); use `guard let value = Int64(digit) else { return }` (no force-unwrap)
-  - [ ] 1.4 Implement `deleteLastDigit()` — removes rightmost digit via integer division by 10
-  - [ ] 1.5 Implement `appendDecimalPoint()` — no-op (decimal is implicit in fixed-point; included for grid completeness)
-  - [ ] 1.6 Implement computed `isAmountZero: Bool`
-  - [ ] 1.7 Implement `resetAmount()`
+- [x] Task 1: Create ExpenseEntryViewModel (AC: #3, #4, #5)
+  - [x] 1.1 Create `ViewModels/ExpenseEntryViewModel.swift` — `@MainActor @Observable final class`
+  - [x] 1.2 Implement `amountInCents: Int64` property (default 0)
+  - [x] 1.3 Implement `appendDigit(_ digit: String)` — appends digit to raw cents integer; guard `amountInCents < 1_000_000` before append to enforce cap of 9_999_999 ($99,999.99); use `guard let value = Int64(digit) else { return }` (no force-unwrap)
+  - [x] 1.4 Implement `deleteLastDigit()` — removes rightmost digit via integer division by 10
+  - [x] 1.5 Implement `appendDecimalPoint()` — no-op (decimal is implicit in fixed-point; included for grid completeness)
+  - [x] 1.6 Implement computed `isAmountZero: Bool`
+  - [x] 1.7 Implement `resetAmount()`
 
-- [ ] Task 2: Create AmountDisplayView (AC: #2, #3)
-  - [ ] 2.1 Create `Views/Entry/AmountDisplayView.swift`
-  - [ ] 2.2 Accept `amount: Int64` as parameter (read-only display)
-  - [ ] 2.3 Display via `Int64.displayAmount` extension (already exists)
-  - [ ] 2.4 Apply SF Pro Rounded 48pt medium weight: `.font(.system(size: 48, weight: .medium, design: .rounded))` — do NOT add `.monospacedDigit()` (UX spec reserves that for feed rows, not entry display; rounded + monospaced may conflict)
-  - [ ] 2.5 Center horizontally, color: `.secondary` when amount == 0, `.primary` when amount > 0
-  - [ ] 2.6 Apply `.minimumScaleFactor(0.7)` for small screens (UX-DR17 preparation)
+- [x] Task 2: Create AmountDisplayView (AC: #2, #3)
+  - [x] 2.1 Create `Views/Entry/AmountDisplayView.swift`
+  - [x] 2.2 Accept `amount: Int64` as parameter (read-only display)
+  - [x] 2.3 Display via `Int64.displayAmount` extension (already exists)
+  - [x] 2.4 Apply SF Pro Rounded 48pt medium weight: `.font(.system(size: 48, weight: .medium, design: .rounded))` — do NOT add `.monospacedDigit()` (UX spec reserves that for feed rows, not entry display; rounded + monospaced may conflict)
+  - [x] 2.5 Center horizontally, color: `.secondary` when amount == 0, `.primary` when amount > 0
+  - [x] 2.6 Apply `.minimumScaleFactor(0.7)` for small screens (UX-DR17 preparation)
 
-- [ ] Task 3: Create NumpadView (AC: #1, #3, #4, #5)
-  - [ ] 3.1 Create `Views/Entry/NumpadView.swift`
-  - [ ] 3.2 Accept action closures: `onDigit: (String) -> Void`, `onDecimal: () -> Void`, `onBackspace: () -> Void`
-  - [ ] 3.3 Build 3x4 grid layout: rows [1,2,3], [4,5,6], [7,8,9], [".",0,backspace]
-  - [ ] 3.4 Use `LazyVGrid` with 3 flexible columns and `Spacing.sm` (8pt) gaps
-  - [ ] 3.5 Each key: `Button` with `.buttonStyle(.glass)` — NOT `.glassEffect()` (Liquid Glass rule)
-  - [ ] 3.6 Key height: wrap NumpadView body in `GeometryReader`, calculate `max(60, (geo.size.height - Spacing.sm * 3) / 4)` — three gaps between four rows; do NOT wrap LazyVGrid directly in GeometryReader (circular layout)
-  - [ ] 3.7 Backspace key: SF Symbol `"delete.backward"`, same styling as digit keys
-  - [ ] 3.8 Decimal key: displays "." — calls `onDecimal` (no-op in ViewModel, grid visual completeness)
+- [x] Task 3: Create NumpadView (AC: #1, #3, #4, #5)
+  - [x] 3.1 Create `Views/Entry/NumpadView.swift`
+  - [x] 3.2 Accept action closures: `onDigit: (String) -> Void`, `onDecimal: () -> Void`, `onBackspace: () -> Void`
+  - [x] 3.3 Build 3x4 grid layout: rows [1,2,3], [4,5,6], [7,8,9], [".",0,backspace]
+  - [x] 3.4 Use `LazyVGrid` with 3 flexible columns and `Spacing.sm` (8pt) gaps
+  - [x] 3.5 Each key: `Button` with `.buttonStyle(.glass)` — NOT `.glassEffect()` (Liquid Glass rule)
+  - [x] 3.6 Key height: wrap NumpadView body in `GeometryReader`, calculate `max(60, (geo.size.height - Spacing.sm * 3) / 4)` — three gaps between four rows; do NOT wrap LazyVGrid directly in GeometryReader (circular layout)
+  - [x] 3.7 Backspace key: SF Symbol `"delete.backward"`, same styling as digit keys
+  - [x] 3.8 Decimal key: displays "." — calls `onDecimal` (no-op in ViewModel, grid visual completeness)
 
-- [ ] Task 4: Wire EntryView composition (AC: #1, #2)
-  - [ ] 4.1 Replace `Color.clear` in `Views/Entry/EntryView.swift`
-  - [ ] 4.2 Add `@State private var viewModel = ExpenseEntryViewModel()`
-  - [ ] 4.3 Compose vertical layout: AmountDisplayView (top) → spacer → NumpadView (bottom)
-  - [ ] 4.4 No NavigationStack (EntryView is a flat screen, no push navigation)
-  - [ ] 4.5 Leave space between AmountDisplay and NumpadView for CategoryPickerView (Story 1.6)
+- [x] Task 4: Wire EntryView composition (AC: #1, #2)
+  - [x] 4.1 Replace `Color.clear` in `Views/Entry/EntryView.swift`
+  - [x] 4.2 Add `@State private var viewModel = ExpenseEntryViewModel()`
+  - [x] 4.3 Compose vertical layout: AmountDisplayView (top) → spacer → NumpadView (bottom)
+  - [x] 4.4 No NavigationStack (EntryView is a flat screen, no push navigation)
+  - [x] 4.5 Leave space between AmountDisplay and NumpadView for CategoryPickerView (Story 1.6)
 
-- [ ] Task 5: Unit tests for ExpenseEntryViewModel (AC: #3, #4, #5)
-  - [ ] 5.1 Create `CashOutTests/ViewModels/ExpenseEntryViewModelTests.swift`
-  - [ ] 5.2 Test: appendDigit "1" then "2" then "5" then "0" → amountInCents == 1250 (displays "$12.50")
-  - [ ] 5.3 Test: deleteLastDigit from 1250 → amountInCents == 125 (displays "$1.25")
-  - [ ] 5.4 Test: deleteLastDigit from 0 → stays 0 (no crash)
-  - [ ] 5.5 Test: appendDigit when amountInCents >= 1_000_000 → no change (cap at 9_999_999 / $99,999.99)
-  - [ ] 5.6 Test: resetAmount → amountInCents == 0
-  - [ ] 5.7 Test: isAmountZero returns true when 0, false when > 0
-  - [ ] 5.8 Test: appendDecimalPoint is no-op (amountInCents unchanged)
+- [x] Task 5: Unit tests for ExpenseEntryViewModel (AC: #3, #4, #5)
+  - [x] 5.1 Create `CashOutTests/ViewModels/ExpenseEntryViewModelTests.swift`
+  - [x] 5.2 Test: appendDigit "1" then "2" then "5" then "0" → amountInCents == 1250 (displays "$12.50")
+  - [x] 5.3 Test: deleteLastDigit from 1250 → amountInCents == 125 (displays "$1.25")
+  - [x] 5.4 Test: deleteLastDigit from 0 → stays 0 (no crash)
+  - [x] 5.5 Test: appendDigit when amountInCents >= 1_000_000 → no change (cap at 9_999_999 / $99,999.99)
+  - [x] 5.6 Test: resetAmount → amountInCents == 0
+  - [x] 5.7 Test: isAmountZero returns true when 0, false when > 0
+  - [x] 5.8 Test: appendDecimalPoint is no-op (amountInCents unchanged)
 
 ## Dev Notes
 
@@ -231,8 +231,28 @@ Recent commits show established patterns:
 
 ### Agent Model Used
 
+Claude Opus 4.6 (1M context)
+
 ### Debug Log References
+
+No debug issues encountered. Build and all 48 tests passed on first run.
 
 ### Completion Notes List
 
+- Task 1: Created `ExpenseEntryViewModel` as `@MainActor @Observable final class` with fixed-point Int64 cents arithmetic. Guard at 1_000_000 prevents overflow past $99,999.99 cap. No SwiftUI import, no Combine, no @Published — pure Observation framework.
+- Task 2: Created `AmountDisplayView` with SF Pro Rounded 48pt medium, `.secondary`/`.primary` color states, `.minimumScaleFactor(0.7)`, and `.lineLimit(1)`. Uses existing `Int64.displayAmount` extension.
+- Task 3: Created `NumpadView` with 3x4 `LazyVGrid`, `.buttonStyle(.glass)` (Liquid Glass), `GeometryReader` as outer container for adaptive key height `max(60, (height - gaps) / 4)`. Private `NumpadKey` enum with `Identifiable` for stable ForEach IDs.
+- Task 4: Wired `EntryView` — replaced `Color.clear` placeholder with `AmountDisplayView` + `Spacer` (reserved for Story 1.6 CategoryPicker) + `NumpadView`. No NavigationStack. `@State` ViewModel.
+- Task 5: 8 unit tests covering digit append, delete, zero-delete safety, cap enforcement, reset, isAmountZero, and decimal no-op. All `@MainActor` per project pattern.
+- All 48 tests pass (8 new + 37 existing unit + 3 UI). Zero regressions.
+- Orchestrator review: 0 CRITICAL findings. Addressed suggestions: extracted named constant `maxBeforeAppend` for cap threshold, added locale intent comment to `Int64+Currency.swift`.
+
 ### File List
+
+- `CashOut/ViewModels/ExpenseEntryViewModel.swift` (new)
+- `CashOut/Views/Entry/AmountDisplayView.swift` (new)
+- `CashOut/Views/Entry/NumpadView.swift` (new)
+- `CashOut/Views/Entry/EntryView.swift` (modified)
+- `CashOut/Utilities/Extensions/Int64+Currency.swift` (modified — added locale intent comment)
+- `CashOutTests/ViewModels/ExpenseEntryViewModelTests.swift` (new)
+- `CashOut.xcodeproj/project.pbxproj` (modified)

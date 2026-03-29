@@ -42,6 +42,10 @@
 		C1D2E3F4A5B6001BC1D2E3F4 /* CategoryRepositoryTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = C1D2E3F4A5B6000BC1D2E3F4 /* CategoryRepositoryTests.swift */; };
 		C1D2E3F4A5B6001CC1D2E3F4 /* ExpenseRepositoryTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = C1D2E3F4A5B6000CC1D2E3F4 /* ExpenseRepositoryTests.swift */; };
 		C1D2E3F4A5B6001DC1D2E3F4 /* Int64CurrencyTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = C1D2E3F4A5B6000DC1D2E3F4 /* Int64CurrencyTests.swift */; };
+		D1E2F3A4B5C60111 /* ExpenseEntryViewModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = D1E2F3A4B5C60101 /* ExpenseEntryViewModel.swift */; };
+		D1E2F3A4B5C60112 /* AmountDisplayView.swift in Sources */ = {isa = PBXBuildFile; fileRef = D1E2F3A4B5C60102 /* AmountDisplayView.swift */; };
+		D1E2F3A4B5C60113 /* NumpadView.swift in Sources */ = {isa = PBXBuildFile; fileRef = D1E2F3A4B5C60103 /* NumpadView.swift */; };
+		D1E2F3A4B5C60114 /* ExpenseEntryViewModelTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = D1E2F3A4B5C60104 /* ExpenseEntryViewModelTests.swift */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXContainerItemProxy section */
@@ -102,6 +106,10 @@
 		C1D2E3F4A5B6000BC1D2E3F4 /* CategoryRepositoryTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CategoryRepositoryTests.swift; sourceTree = "<group>"; };
 		C1D2E3F4A5B6000CC1D2E3F4 /* ExpenseRepositoryTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ExpenseRepositoryTests.swift; sourceTree = "<group>"; };
 		C1D2E3F4A5B6000DC1D2E3F4 /* Int64CurrencyTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Int64CurrencyTests.swift; sourceTree = "<group>"; };
+		D1E2F3A4B5C60101 /* ExpenseEntryViewModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ExpenseEntryViewModel.swift; sourceTree = "<group>"; };
+		D1E2F3A4B5C60102 /* AmountDisplayView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AmountDisplayView.swift; sourceTree = "<group>"; };
+		D1E2F3A4B5C60103 /* NumpadView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = NumpadView.swift; sourceTree = "<group>"; };
+		D1E2F3A4B5C60104 /* ExpenseEntryViewModelTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ExpenseEntryViewModelTests.swift; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXGroup section */
@@ -147,6 +155,7 @@
 			isa = PBXGroup;
 			children = (
 				A1B2C3D4E5F60718A1B2C3D7 /* AuthenticationViewModel.swift */,
+				D1E2F3A4B5C60101 /* ExpenseEntryViewModel.swift */,
 			);
 			path = ViewModels;
 			sourceTree = "<group>";
@@ -172,6 +181,7 @@
 			isa = PBXGroup;
 			children = (
 				A1B2C3D4E5F60718A1B2C3DF /* AuthenticationViewModelTests.swift */,
+				D1E2F3A4B5C60104 /* ExpenseEntryViewModelTests.swift */,
 			);
 			path = ViewModels;
 			sourceTree = "<group>";
@@ -277,7 +287,9 @@
 		B1C2D3E4F5061829B1C2D3E7 /* Entry */ = {
 			isa = PBXGroup;
 			children = (
+				D1E2F3A4B5C60102 /* AmountDisplayView.swift */,
 				B1C2D3E4F5061829B1C2D3E1 /* EntryView.swift */,
+				D1E2F3A4B5C60103 /* NumpadView.swift */,
 			);
 			path = Entry;
 			sourceTree = "<group>";
@@ -438,6 +450,7 @@
 				C1D2E3F4A5B6001BC1D2E3F4 /* CategoryRepositoryTests.swift in Sources */,
 				C1D2E3F4A5B6001CC1D2E3F4 /* ExpenseRepositoryTests.swift in Sources */,
 				C1D2E3F4A5B6001DC1D2E3F4 /* Int64CurrencyTests.swift in Sources */,
+				D1E2F3A4B5C60114 /* ExpenseEntryViewModelTests.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -478,6 +491,9 @@
 				C1D2E3F4A5B60017C1D2E3F4 /* CategoryRepository.swift in Sources */,
 				C1D2E3F4A5B60018C1D2E3F4 /* ExpenseRepositoryProtocol.swift in Sources */,
 				C1D2E3F4A5B60019C1D2E3F4 /* ExpenseRepository.swift in Sources */,
+				D1E2F3A4B5C60111 /* ExpenseEntryViewModel.swift in Sources */,
+				D1E2F3A4B5C60112 /* AmountDisplayView.swift in Sources */,
+				D1E2F3A4B5C60113 /* NumpadView.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
