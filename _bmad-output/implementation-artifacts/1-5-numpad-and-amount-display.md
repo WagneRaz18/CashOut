@@ -12,11 +12,11 @@ So that I can type cash amounts quickly with a calculator-style interface.
 
 1. **Given** the entry screen (Add tab) **When** displayed **Then** NumpadView shows a 3x4 grid of digit keys (1-9, ".", 0, backspace) with `.buttonStyle(.glass)` and 60pt+ key height with 8pt gaps (UX-DR1 — corrected from original `.glassEffect()` wording per architecture Liquid Glass rules)
 
-2. **Given** the entry screen **When** displayed **Then** AmountDisplayView shows "$0.00" in SF Pro Rounded 48pt medium weight, centered horizontally, in `.secondary` color (UX-DR2 — `.monospacedDigit()` is reserved for feed rows per UX spec, not entry display)
+2. **Given** the entry screen **When** displayed **Then** AmountDisplayView shows "฿0.00" in SF Pro Rounded 48pt medium weight, centered horizontally, in `.secondary` color (UX-DR2 — `.monospacedDigit()` is reserved for feed rows per UX spec, not entry display)
 
 3. **Given** a numpad key tap **When** a digit is pressed **Then** the amount display updates immediately in primary color (UX-DR2)
 
-4. **Given** amount entry **When** digits are typed **Then** amounts are stored as Int64 cents (e.g., typing "1250" displays "$12.50")
+4. **Given** amount entry **When** digits are typed **Then** amounts are stored as Int64 satang (e.g., typing "1250" displays "฿12.50")
 
 5. **Given** the backspace key **When** tapped **Then** the last digit is removed from the amount
 
@@ -25,7 +25,7 @@ So that I can type cash amounts quickly with a calculator-style interface.
 - [x] Task 1: Create ExpenseEntryViewModel (AC: #3, #4, #5)
   - [x] 1.1 Create `ViewModels/ExpenseEntryViewModel.swift` — `@MainActor @Observable final class`
   - [x] 1.2 Implement `amountInCents: Int64` property (default 0)
-  - [x] 1.3 Implement `appendDigit(_ digit: String)` — appends digit to raw cents integer; guard `amountInCents < 1_000_000` before append to enforce cap of 9_999_999 ($99,999.99); use `guard let value = Int64(digit) else { return }` (no force-unwrap)
+  - [x] 1.3 Implement `appendDigit(_ digit: String)` — appends digit to raw satang integer; guard `amountInCents < 1_000_000` before append to enforce cap of 9_999_999 (฿99,999.99); use `guard let value = Int64(digit) else { return }` (no force-unwrap)
   - [x] 1.4 Implement `deleteLastDigit()` — removes rightmost digit via integer division by 10
   - [x] 1.5 Implement `appendDecimalPoint()` — no-op (decimal is implicit in fixed-point; included for grid completeness)
   - [x] 1.6 Implement computed `isAmountZero: Bool`
@@ -58,10 +58,10 @@ So that I can type cash amounts quickly with a calculator-style interface.
 
 - [x] Task 5: Unit tests for ExpenseEntryViewModel (AC: #3, #4, #5)
   - [x] 5.1 Create `CashOutTests/ViewModels/ExpenseEntryViewModelTests.swift`
-  - [x] 5.2 Test: appendDigit "1" then "2" then "5" then "0" → amountInCents == 1250 (displays "$12.50")
-  - [x] 5.3 Test: deleteLastDigit from 1250 → amountInCents == 125 (displays "$1.25")
+  - [x] 5.2 Test: appendDigit "1" then "2" then "5" then "0" → amountInCents == 1250 (displays "฿12.50")
+  - [x] 5.3 Test: deleteLastDigit from 1250 → amountInCents == 125 (displays "฿1.25")
   - [x] 5.4 Test: deleteLastDigit from 0 → stays 0 (no crash)
-  - [x] 5.5 Test: appendDigit when amountInCents >= 1_000_000 → no change (cap at 9_999_999 / $99,999.99)
+  - [x] 5.5 Test: appendDigit when amountInCents >= 1_000_000 → no change (cap at 9_999_999 / ฿99,999.99)
   - [x] 5.6 Test: resetAmount → amountInCents == 0
   - [x] 5.7 Test: isAmountZero returns true when 0, false when > 0
   - [x] 5.8 Test: appendDecimalPoint is no-op (amountInCents unchanged)
@@ -70,18 +70,18 @@ So that I can type cash amounts quickly with a calculator-style interface.
 
 ### Amount-as-Cents Architecture
 
-The numpad uses **fixed-point integer arithmetic** — NOT floating-point. The Int64 `amountInCents` represents the full value in cents. Typing digits appends to this integer:
+The numpad uses **fixed-point integer arithmetic** — NOT floating-point. The Int64 `amountInCents` represents the full value in satang. Typing digits appends to this integer:
 
-- Type "1" → `amountInCents = 1` → displays "$0.01"
-- Type "2" → `amountInCents = 12` → displays "$0.12"
-- Type "5" → `amountInCents = 125` → displays "$1.25"
-- Type "0" → `amountInCents = 1250` → displays "$12.50"
+- Type "1" → `amountInCents = 1` → displays "฿0.01"
+- Type "2" → `amountInCents = 12` → displays "฿0.12"
+- Type "5" → `amountInCents = 125` → displays "฿1.25"
+- Type "0" → `amountInCents = 1250` → displays "฿12.50"
 
-The decimal point button is a **visual no-op** — it exists for grid layout completeness and user expectation, but the cents-based model handles decimal positioning implicitly. This matches the architecture mandate: "No floating-point for money."
+The decimal point button is a **visual no-op** — it exists for grid layout completeness and user expectation, but the satang-based model handles decimal positioning implicitly. This matches the architecture mandate: "No floating-point for money."
 
 Digit append: `guard amountInCents < 1_000_000 else { return }` then `guard let value = Int64(digit) else { return }` then `amountInCents = amountInCents * 10 + value`
 Digit delete: `amountInCents = amountInCents / 10`
-Cap: 9_999_999 cents ($99,999.99) — guard checks *before* multiplication to prevent any single digit pushing past the cap
+Cap: 9_999_999 satang (฿99,999.99) — guard checks *before* multiplication to prevent any single digit pushing past the cap
 
 ### Liquid Glass API Rules (Critical)
 
@@ -95,7 +95,7 @@ Cap: 9_999_999 cents ($99,999.99) — guard checks *before* multiplication to pr
 
 | What | File | Usage |
 |------|------|-------|
-| `Int64.displayAmount` | `Utilities/Extensions/Int64+Currency.swift` | Format cents to "$X.XX" — call `amountInCents.displayAmount` |
+| `Int64.displayAmount` | `Utilities/Extensions/Int64+Currency.swift` | Format satang to "฿X.XX" — call `amountInCents.displayAmount` |
 | `Spacing` enum | `Utilities/Constants.swift` | `Spacing.sm` (8pt) for numpad gaps, `Spacing.md` (16pt) for padding |
 | `CategoryColor` | `Utilities/Extensions/Color+CategoryTokens.swift` | Not needed this story — Story 1.6 |
 | `ExpenseRepositoryProtocol` | `Repositories/ExpenseRepositoryProtocol.swift` | Not needed this story — Story 1.6 |
@@ -193,7 +193,7 @@ All new files must be registered in `project.pbxproj`.
 **From Story 1.4 (Design Tokens, Categories, Repository Layer):**
 - Core Data entity creation: use `Entity(context: viewContext)` — never parameterless `Entity()`
 - Color asset lookup: `Color("Sage")` — rawValue must match colorset name exactly (case-sensitive)
-- `Int64.displayAmount` uses Foundation `.formatted(.currency(code: "USD"))` with en_US locale
+- `Int64.displayAmount` uses Foundation `.formatted(.currency(code: "THB"))` with th_TH locale
 - All repository methods are `async throws` with `@MainActor`
 - DI via init parameter: `init(persistence: PersistenceController = .shared)` — no DI container
 - Test infrastructure: `TestPersistenceHelper.makeInMemoryContainer()` available (not needed for this story's pure logic tests)
@@ -239,13 +239,14 @@ No debug issues encountered. Build and all 48 tests passed on first run.
 
 ### Completion Notes List
 
-- Task 1: Created `ExpenseEntryViewModel` as `@MainActor @Observable final class` with fixed-point Int64 cents arithmetic. Guard at 1_000_000 prevents overflow past $99,999.99 cap. No SwiftUI import, no Combine, no @Published — pure Observation framework.
+- Task 1: Created `ExpenseEntryViewModel` as `@MainActor @Observable final class` with fixed-point Int64 satang arithmetic. Guard at 1_000_000 prevents overflow past ฿99,999.99 cap. No SwiftUI import, no Combine, no @Published — pure Observation framework.
 - Task 2: Created `AmountDisplayView` with SF Pro Rounded 48pt medium, `.secondary`/`.primary` color states, `.minimumScaleFactor(0.7)`, and `.lineLimit(1)`. Uses existing `Int64.displayAmount` extension.
 - Task 3: Created `NumpadView` with 3x4 `LazyVGrid`, `.buttonStyle(.glass)` (Liquid Glass), `GeometryReader` as outer container for adaptive key height `max(60, (height - gaps) / 4)`. Private `NumpadKey` enum with `Identifiable` for stable ForEach IDs.
 - Task 4: Wired `EntryView` — replaced `Color.clear` placeholder with `AmountDisplayView` + `Spacer` (reserved for Story 1.6 CategoryPicker) + `NumpadView`. No NavigationStack. `@State` ViewModel.
 - Task 5: 8 unit tests covering digit append, delete, zero-delete safety, cap enforcement, reset, isAmountZero, and decimal no-op. All `@MainActor` per project pattern.
 - All 48 tests pass (8 new + 37 existing unit + 3 UI). Zero regressions.
 - Orchestrator review: 0 CRITICAL findings. Addressed suggestions: extracted named constant `maxBeforeAppend` for cap threshold, added locale intent comment to `Int64+Currency.swift`.
+- Post-commit: Currency switched from USD to THB (Thai Baht). `Int64+Currency.swift` now formats as THB/th_TH locale. Comments and test messages updated to use ฿ and satang terminology.
 
 ### File List
 

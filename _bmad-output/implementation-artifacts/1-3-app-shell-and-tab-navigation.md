@@ -24,7 +24,7 @@ so that I can access expense entry, feed, and insights with a single tap.
 
 7. **Given** the Feed tab with no data **When** displayed **Then** "No entries yet" appears as centered text in .secondaryLabel (UX-DR15)
 
-8. **Given** the Insights tab with no data **When** displayed **Then** "$0.00" headline with empty donut outline and "No entries this period" is shown (UX-DR15)
+8. **Given** the Insights tab with no data **When** displayed **Then** "฿0.00" headline with empty donut outline and "No entries this period" is shown (UX-DR15)
 
 ## Tasks / Subtasks
 
@@ -53,7 +53,7 @@ so that I can access expense entry, feed, and insights with a single tap.
 
 - [x] Task 4: Create InsightsView with empty state (AC: #8)
   - [x] 4.1 Create `Views/Insights/InsightsView.swift`
-  - [x] 4.2 Show empty state: "$0.00" as headline text with `.monospacedDigit()` + `.font(.title)` and "No entries this period" below in `.secondary` color (UX-DR15)
+  - [x] 4.2 Show empty state: "฿0.00" as headline text with `.monospacedDigit()` + `.font(.title)` and "No entries this period" below in `.secondary` color (UX-DR15)
   - [x] 4.3 Do NOT add a NavigationStack inside InsightsView — it's already wrapped by ContentView's Tab
   - [x] 4.4 Add `.navigationTitle("Insights")` on the outermost view body — same pattern as FeedView. Keep at root level for NavigationStack to pick up.
   - [x] 4.5 No ViewModel needed for this placeholder
@@ -70,7 +70,7 @@ so that I can access expense entry, feed, and insights with a single tap.
   - [x] 6.2 All existing tests still pass (no regressions — 17 tests from Stories 1.1 + 1.2)
   - [x] 6.3 App launches in Simulator → shows Sign in with Apple screen → after auth (or with previously cached credentials), shows TabView with Add tab selected
   - [x] 6.4 Tapping Feed tab shows "No entries yet" centered text
-  - [x] 6.5 Tapping Insights tab shows "$0.00" and "No entries this period"
+  - [x] 6.5 Tapping Insights tab shows "฿0.00" and "No entries this period"
   - [x] 6.6 Tapping Add tab shows the EntryView placeholder
   - [x] 6.7 Tab bar is visible at bottom with all 3 icons and labels
   - [x] 6.8 Portrait lock works — rotating the Simulator does not change orientation
@@ -128,7 +128,7 @@ struct ContentView: View {
 ### Empty State UX Requirements
 
 - **Feed empty state**: "No entries yet" — centered, `.secondary` foreground, `.body` font. No illustrations, no CTAs, no "tap + to add" hints. [Source: ux-design-specification.md, UX-DR15]
-- **Insights empty state**: "$0.00" headline + "No entries this period" subtitle. No empty donut outline in this story (deferred to Story 3.2 when Swift Charts are implemented). [Source: ux-design-specification.md, UX-DR15]
+- **Insights empty state**: "฿0.00" headline + "No entries this period" subtitle. No empty donut outline in this story (deferred to Story 3.2 when Swift Charts are implemented). [Source: ux-design-specification.md, UX-DR15]
 - **Entry placeholder**: Minimal — will be fully replaced by numpad in Story 1.5. A simple Text or Color.clear is fine.
 - **No loading states**: Local-first means data is always available instantly. No spinners, no skeletons, no progress indicators anywhere. [Source: ux-design-specification.md, UX-DR14]
 
@@ -268,7 +268,7 @@ Claude Opus 4.6 (1M context)
 - Implemented 3-tab TabView in ContentView using iOS 26 `Tab` struct API with `@State private var selectedTab = 0` defaulting to Add tab
 - Created EntryView as minimal `Color.clear` placeholder (will be replaced by numpad in Story 1.5)
 - Created FeedView with centered "No entries yet" text in `.secondary` style, plus `.navigationTitle("Feed")`
-- Created InsightsView with "$0.00" `.monospacedDigit()` headline and "No entries this period" subtitle, plus `.navigationTitle("Insights")`
+- Created InsightsView with "฿0.00" `.monospacedDigit()` headline and "No entries this period" subtitle, plus `.navigationTitle("Insights")`
 - NavigationStack wraps Feed and Insights tabs individually inside ContentView; Add tab has no NavigationStack
 - `.tabBarMinimizeBehavior(.onScrollDown)` applied on TabView itself
 - Portrait orientation locked via `UISupportedInterfaceOrientations` in Info.plist (portrait only)

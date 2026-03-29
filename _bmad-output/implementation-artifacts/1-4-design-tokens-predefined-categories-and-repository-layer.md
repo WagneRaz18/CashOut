@@ -20,7 +20,7 @@ so that I can quickly categorize my cash expenses using familiar labels and colo
 
 5. **Given** CategoryRepositoryProtocol **When** implemented **Then** it exposes async throws methods: fetchCategories() and saveCategory(_:) using CategoryData DTOs (never NSManagedObject) **And** the implementation receives PersistenceController via init parameter
 
-6. **Given** amount display needs **When** Int64 cents need formatting **Then** Int64.displayAmount extension converts using Foundation.FormatStyle currency (never manual "$" concatenation)
+6. **Given** amount display needs **When** Int64 satang need formatting **Then** Int64.displayAmount extension converts using Foundation.FormatStyle currency (never manual "฿" concatenation)
 
 7. **Given** spacing tokens **When** defined in Constants.swift **Then** they follow 8pt grid: xs(4pt), sm(8pt), md(16pt), lg(24pt), xl(32pt) (UX-DR24)
 
@@ -59,9 +59,9 @@ so that I can quickly categorize my cash expenses using familiar labels and colo
 
 - [x]Task 5: Create Int64 currency extension (AC: #6)
   - [x]5.1 Create `CashOut/Utilities/Extensions/Int64+Currency.swift`
-  - [x]5.2 Add `var displayAmount: String` computed property: `Double(self) / 100.0` formatted with `.currency(code: "USD")`
-  - [x]5.3 NEVER manually concatenate "$" — always use Foundation.FormatStyle
-  - [x]5.4 Use `formatted(.currency(code: "USD"))` on the Double value
+  - [x]5.2 Add `var displayAmount: String` computed property: `Double(self) / 100.0` formatted with `.currency(code: "THB")`
+  - [x]5.3 NEVER manually concatenate "฿" — always use Foundation.FormatStyle
+  - [x]5.4 Use `formatted(.currency(code: "THB"))` on the Double value
 
 - [x]Task 6: Create CategoryData DTO and CategoryRepositoryProtocol (AC: #5, #1)
   - [x]6.1 Create `CashOut/Models/CategoryData.swift` — plain `Sendable` struct: `id: UUID`, `name: String`, `iconName: String`, `colorName: String`, `isDefault: Bool`, `sortOrder: Int16`
@@ -111,7 +111,7 @@ so that I can quickly categorize my cash expenses using familiar labels and colo
   - [x]10.9 Test: `deleteExpense(id:)` removes the expense — subsequent fetch returns empty
   - [x]10.10 Test: `fetchExpenses(for:)` returns only ExpenseData within the DateInterval
   - [x]10.11 Create `CashOutTests/Extensions/Int64CurrencyTests.swift`
-  - [x]10.12 Test: `Int64(1250).displayAmount` contains "12.50" (use contains/locale-safe assertion, or force en_US locale in extension)
+  - [x]10.12 Test: `Int64(1250).displayAmount` contains "12.50" (use contains/locale-safe assertion, or force th_TH locale in extension)
   - [x]10.13 Test: `Int64(0).displayAmount` contains "0.00"
   - [x]10.14 Test: `Int64(99).displayAmount` contains "0.99"
   - [x]10.15 All tests use `@MainActor` on test methods (established pattern from Story 1.2)
@@ -136,7 +136,7 @@ so that I can quickly categorize my cash expenses using familiar labels and colo
 - **PersistenceController is the ONLY singleton**: Repositories are transient — created by ViewModels or callers with default `.shared` parameter. [Source: architecture.md, line 574]
 - **@ObservationIgnored on injected refs**: Any ViewModel using these repositories must mark them `@ObservationIgnored`. Not directly relevant to this story (no ViewModels created), but the protocols must be designed for this pattern. [Source: architecture.md:480-486]
 - **Core Data, NOT SwiftData**: This project uses `NSPersistentCloudKitContainer` with `NSManagedObject` subclasses. Never import SwiftData. [Source: CLAUDE.md, epics.md Additional Requirements]
-- **No floating-point for money**: Amounts are `Int64` cents everywhere in the data layer. Conversion to display string happens only at the View/ViewModel boundary via `Int64.displayAmount`. [Source: architecture.md:418-431]
+- **No floating-point for money**: Amounts are `Int64` satang everywhere in the data layer. Conversion to display string happens only at the View/ViewModel boundary via `Int64.displayAmount`. [Source: architecture.md:418-431]
 - **NSFetchedResultsController NOT in this story**: Basic CRUD is sufficient. FRC integration comes in Story 2.1 for Feed animated updates. [Source: architecture.md:286-292]
 
 ### Existing Code Patterns to Follow

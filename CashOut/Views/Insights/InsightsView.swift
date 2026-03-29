@@ -3,7 +3,7 @@ import SwiftUI
 struct InsightsView: View {
     var body: some View {
         VStack(spacing: 8) {
-            Text("$0.00")
+            Text(Int64(0).displayAmount)
                 .font(.title)
                 .monospacedDigit()
 

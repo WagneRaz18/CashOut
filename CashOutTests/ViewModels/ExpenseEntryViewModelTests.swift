@@ -16,7 +16,7 @@ final class ExpenseEntryViewModelTests: XCTestCase {
 
         XCTAssertEqual(
             viewModel.amountInCents, 1250,
-            "Typing '1250' should produce 1250 cents ($12.50)"
+            "Typing '1250' should produce 1250 cents (฿12.50)"
         )
     }
 
@@ -31,7 +31,7 @@ final class ExpenseEntryViewModelTests: XCTestCase {
 
         XCTAssertEqual(
             viewModel.amountInCents, 125,
-            "Deleting from 1250 should produce 125 cents ($1.25)"
+            "Deleting from 1250 should produce 125 cents (฿1.25)"
         )
     }
 
@@ -58,7 +58,7 @@ final class ExpenseEntryViewModelTests: XCTestCase {
 
         XCTAssertEqual(
             viewModel.amountInCents, 1_000_000,
-            "Should not append when amountInCents >= 1_000_000 (cap at $99,999.99)"
+            "Should not append when amountInCents >= 1_000_000 (cap at ฿99,999.99)"
         )
     }
 

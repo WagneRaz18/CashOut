@@ -15,7 +15,7 @@ final class ExpenseEntryViewModel {
     // MARK: - Actions
 
     // Guard threshold: values below this can safely append one digit
-    // without exceeding the cap of 9_999_999 cents ($99,999.99).
+    // without exceeding the cap of 9_999_999 satang (฿99,999.99).
     private let maxBeforeAppend: Int64 = 1_000_000
 
     func appendDigit(_ digit: String) {

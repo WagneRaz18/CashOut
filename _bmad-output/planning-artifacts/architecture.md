@@ -208,7 +208,7 @@ CashOut/
 | Attribute | Type | Notes |
 |-----------|------|-------|
 | `id` | UUID | Primary identifier, maps to CloudKit `recordName` |
-| `amount` | Int64 | Cents — e.g., $12.50 → 1250. No floating-point issues. |
+| `amount` | Int64 | Satang — e.g., ฿12.50 → 1250. No floating-point issues. |
 | `note` | String? | Optional free-text |
 | `categoryID` | UUID | FK to Category |
 | `createdByUserID` | String | CloudKit `userRecordID.recordName` for partner attribution |
@@ -420,15 +420,15 @@ CashOutUITests/
 ```swift
 extension Int64 {
     var displayAmount: String {
-        let dollars = Double(self) / 100.0
-        return dollars.formatted(.currency(code: "USD"))
+        let baht = Double(self) / 100.0
+        return baht.formatted(.currency(code: "THB"))
     }
 }
 ```
 
-- Amounts stored as Int64 cents everywhere in the data layer
+- Amounts stored as Int64 satang everywhere in the data layer
 - Conversion to display string happens only at the View/ViewModel boundary
-- Use `Foundation.FormatStyle` — never manually concatenate "$" + string
+- Use `Foundation.FormatStyle` — never manually concatenate "฿" + string
 
 **Date Display:**
 
@@ -738,7 +738,7 @@ class FeedViewModel {
 }
 
 // BAD: Ad-hoc amount formatting
-Text("$\(Double(amount) / 100.0)") // NO — use .displayAmount
+Text("฿\(Double(amount) / 100.0)") // NO — use .displayAmount
 
 // BAD: Direct haptic call from View
 Button("Save") {
