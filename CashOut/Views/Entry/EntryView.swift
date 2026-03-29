@@ -26,7 +26,7 @@ struct EntryView: View {
             .padding(.bottom, Spacing.sm)
 
             SaveButtonView(
-                isDisabled: viewModel.isAmountZero || viewModel.isSaving,
+                isDisabled: viewModel.isAmountZero || viewModel.isSaving || viewModel.selectedCategoryID == nil,
                 onSave: {
                     Task {
                         do {

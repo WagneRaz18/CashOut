@@ -14,6 +14,7 @@ struct SaveButtonView: View {
                     .font(.title3)
                     .frame(width: 44, height: 44)
             }
+            .buttonStyle(.plain)
             .foregroundStyle(.secondary)
 
             Button {

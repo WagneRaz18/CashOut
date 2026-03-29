@@ -105,6 +105,7 @@ final class ExpenseEntryViewModel {
     // MARK: - Save Action
 
     func saveExpense() async throws {
+        guard !isSaving else { return }
         isSaving = true
         defer { isSaving = false }
 

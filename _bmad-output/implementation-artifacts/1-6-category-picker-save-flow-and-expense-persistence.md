@@ -1,6 +1,6 @@
 # Story 1.6: Category Picker, Save Flow & Expense Persistence
 
-Status: review
+Status: done
 Readiness: approved (2026-03-29)
 Readiness Report: _bmad-output/planning-artifacts/implementation-readiness-report-2026-03-29-story-1-6.md
 
@@ -391,6 +391,12 @@ Recent commits show established patterns:
 - [Source: CashOut/Models/CategoryData.swift — Category data transfer object]
 - [Source: CashOut/Services/AuthenticationService.swift — AuthenticationServiceProtocol with currentUserID]
 - [Source: CashOutTests/Services/MockAuthenticationService.swift — Existing mock to reuse]
+
+### Review Findings
+
+- [x] [Review][Patch] Save button should disable when no category is selected — `isDisabled` missing `selectedCategoryID == nil` check [EntryView.swift:29] — FIXED
+- [x] [Review][Patch] Note icon button needs explicit `.buttonStyle(.plain)` to prevent unintended iOS 26 glass styling [SaveButtonView.swift:10-16] — FIXED
+- [x] [Review][Patch] `saveExpense()` lacks `guard !isSaving` at entry + test `testDoubleTapGuardPreventsSecondSave` doesn't verify rejection [ExpenseEntryViewModel.swift:107, ExpenseEntryViewModelTests.swift] — FIXED
 
 ## Dev Agent Record
 

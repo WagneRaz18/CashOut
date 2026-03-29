@@ -15,6 +15,7 @@
 - **2026-03-28**: `CheckedContinuation` must never be overwritten — storing a new continuation before the previous is resumed crashes in debug. Guard with `signInContinuation != nil` before starting a new async bridge.
 - **2026-03-29**: Apply `@MainActor` at the XCTestCase class level, not per-method, when testing `@MainActor`-isolated ViewModels — prevents actor-boundary issues in future `setUp()`/`tearDown()` overrides.
 - **2026-03-29**: After `try await repository.save()`, add `guard !Task.isCancelled else { return }` before post-save state mutations (UI reset, UserDefaults write) — the view that spawned the Task may be gone (tab switch/dismiss), making the mutations pointless or dangerously late.
+- **2026-03-29**: Boolean flag guards (`isSaving`) must be checked BEFORE the flag is set: `guard !isSaving else { return }; isSaving = true; defer { isSaving = false }`. Without the upfront guard, a second @MainActor Task can start between suspension points and bypass the flag — `isSaving = true` + `defer` alone is a lifecycle signal, not a concurrency lock.
 
 ## Data Layer
 - All Repository methods must be @MainActor-isolated when using viewContext (main-thread-only context).
@@ -35,6 +36,8 @@
 ## Project Generation
 - xcodegen (project.yml) can fully replace manual Xcode project creation including Core Data + CloudKit setup. Generates valid .xcodeproj with proper build phases for .xcdatamodeld files.
 - .xcdatamodeld is a directory with XML contents that can be created programmatically — no Xcode GUI required.
+
+- **2026-03-29**: Button `isDisabled` must mirror ALL silent-return guards in the ViewModel action — if `saveExpense()` returns silently on `selectedCategoryID == nil` (e.g., categories failed to load), the Save button must include `selectedCategoryID == nil` in its disabled condition. Otherwise the user sees an enabled button that does nothing on tap.
 
 ## State Modeling
 - Use independent data + errorMessage properties, never a combined enum ViewState.

@@ -274,14 +274,10 @@ final class ExpenseEntryViewModelTests: XCTestCase {
         viewModel.selectedCategoryID = UUID()
         viewModel.isSaving = true
 
-        // isSaving is true, so saveExpense sets it true (already true),
-        // but the guard on amountInCents > 0 still passes.
-        // The real double-tap protection is that isSaving is set true
-        // at entry and reset via defer. We verify the flag behavior:
         try await viewModel.saveExpense()
 
-        // After save, isSaving should be false (defer reset)
-        XCTAssertFalse(viewModel.isSaving, "isSaving should reset to false after save completes")
+        XCTAssertTrue(viewModel.isSaving, "isSaving should stay true (guard returned early, not this call's responsibility)")
+        XCTAssertFalse(expenseRepo.saveExpenseCalled, "Should not save when already saving")
     }
 
     // MARK: - Error Handling Tests
