@@ -66,6 +66,20 @@ So that I can type cash amounts quickly with a calculator-style interface.
   - [x] 5.7 Test: isAmountZero returns true when 0, false when > 0
   - [x] 5.8 Test: appendDecimalPoint is no-op (amountInCents unchanged)
 
+### Review Findings
+
+- [ ] [Review][Patch] F1: GeometryReader/LazyVGrid circular layout — interpose VStack between GeometryReader and LazyVGrid to break circular sizing [NumpadView.swift:21] (CRITICAL — ios-swiftui-guardian + blind + architecture-guardian)
+- [ ] [Review][Patch] F2: `displayAmount` uses `Double` — violates "no floating-point for money" rule; switch to `Decimal(self) / 100` [Int64+Currency.swift:7] (CRITICAL — architecture-guardian + edge)
+- [ ] [Review][Patch] F3: Missing cap boundary test — add test for `amountInCents = 999_999` then append to verify max reachable value `9_999_999` [ExpenseEntryViewModelTests.swift] (WARNING — blind + architecture-guardian)
+- [ ] [Review][Patch] F4: `maxBeforeAppend` naming + instance vs static — rename/clarify comment and make `private static let` [ExpenseEntryViewModel.swift:19] (WARNING — blind + edge + auditor + architecture-guardian)
+- [ ] [Review][Patch] F5: `@MainActor` missing at test class level — add class-level annotation to prevent future setUp/tearDown actor-boundary issues [ExpenseEntryViewModelTests.swift:4, Int64CurrencyTests.swift:4] (WARNING — architecture-guardian)
+- [ ] [Review][Patch] F6: NumpadView preview has no height constraint — `GeometryReader` gets 0 height in preview; add `.frame(height: 300)` [NumpadView.swift:84] (WARNING — ios-swiftui-guardian)
+- [x] [Review][Defer] D1: Negative `amountInCents` not guarded [ExpenseEntryViewModel.swift:9] — deferred, no UI path to negative values; validate at persistence boundary in Story 1.6
+- [x] [Review][Defer] D2: `appendDigit` accepts multi-character strings [ExpenseEntryViewModel.swift:22] — deferred, only called from hardcoded NumpadKey; validate at caller boundary if new callers added
+- [x] [Review][Defer] D3: Locale-dependent test assertions fragile for Thai digit rendering [Int64CurrencyTests.swift] — deferred, explicit th_TH locale produces consistent Western Arabic digits; monitor on future OS versions
+- [x] [Review][Defer] D4: Stale UX spec references (.glassEffect, .monospacedDigit, USD) [ux-design-specification.md] — deferred, UX-DR notes captured in story spec; update UX doc separately
+- [x] [Review][Defer] D5: InsightsView calls `.displayAmount` directly in View body [InsightsView.swift:6] — deferred, placeholder view; will be architected with InsightsViewModel
+
 ## Dev Notes
 
 ### Amount-as-Cents Architecture

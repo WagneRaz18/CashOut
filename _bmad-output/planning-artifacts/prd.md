@@ -139,9 +139,9 @@ Privacy is a design decision, not a limitation. CashOut never asks for bank cred
 
 ### Journey 1: The Quick Log (Core Experience — Happy Path)
 
-**Sarah** just paid $12 cash for lunch at the taco truck. She's standing on the sidewalk, phone in hand, about to put it back in her pocket.
+**Sarah** just paid ฿120 cash for lunch at the street food stall. She's standing on the sidewalk, phone in hand, about to put it back in her pocket.
 
-She opens CashOut. The entry screen is right there — no navigation needed. She taps "Food & Drink," types "12," and hits save. Done. She's already walking back to the office. Three seconds, maybe four.
+She opens CashOut. The entry screen is right there — no navigation needed. She taps "Food & Drink," types "120," and hits save. Done. She's already walking back to the office. Three seconds, maybe four.
 
 Twenty minutes later, her partner opens CashOut to log his own parking meter. He sees Sarah's taco lunch in the feed. No surprise, no conversation needed — it's just there. Visible. Accounted for.
 
@@ -149,7 +149,7 @@ Twenty minutes later, her partner opens CashOut to log his own parking meter. He
 
 ### Journey 2: The Fix-Up (Edit/Delete — Error Recovery)
 
-**Mark** just logged $50 for groceries. Except it was $15 — he fat-fingered it. He sees the entry in the feed, taps it, changes the amount to $15, saves. The corrected amount syncs to Sarah's phone immediately.
+**Mark** just logged ฿500 for groceries. Except it was ฿150 — he fat-fingered it. He sees the entry in the feed, taps it, changes the amount to ฿150, saves. The corrected amount syncs to Sarah's phone immediately.
 
 Later, Sarah notices a duplicate entry from yesterday — she accidentally logged the same coffee twice. She taps the entry, deletes it, confirms. Gone from both devices.
 
@@ -157,7 +157,7 @@ Later, Sarah notices a duplicate entry from yesterday — she accidentally logge
 
 ### Journey 3: The "Where Did It Go?" Moment (Insights — The Payoff)
 
-It's a random Wednesday evening. Sarah is curious — it feels like they've been spending a lot of cash lately. She opens CashOut and swipes to the weekly view. The category breakdown shows $85 on Food & Drink, $40 on Entertainment, $25 on Transport. She taps into monthly view — Food & Drink is $340 this month. "Hey, did you know we've spent $340 on food with cash this month?" The conversation that follows is specific, informed, and productive — not the old vague "where did all the money go?"
+It's a random Wednesday evening. Sarah is curious — it feels like they've been spending a lot of cash lately. She opens CashOut and swipes to the weekly view. The category breakdown shows ฿850 on Food & Drink, ฿400 on Entertainment, ฿250 on Transport. She taps into monthly view — Food & Drink is ฿3,400 this month. "Hey, did you know we've spent ฿3,400 on food with cash this month?" The conversation that follows is specific, informed, and productive — not the old vague "where did all the money go?"
 
 **What this reveals:** Switching between daily/weekly/monthly views must be effortless (swipe or tab). Category breakdowns must be scannable at a glance — totals per category, visually clear. The data must tell a story without requiring the user to do math.
 

@@ -31,3 +31,11 @@
 - **F8: `CategoryColor.init?(from:)` / `wrappedColorName` mismatch** — `wrappedColorName` returns `"gray"` when nil, but `CategoryColor` has no `gray` case — returns nil. Pre-existing in CoreDataProperties wrappers.
 - **F9: Hard delete tombstone propagation window** — `ExpenseRepository.swift` uses `context.delete()` (hard delete). Tombstone window expiry can leave orphaned records on offline partner. Acceptable for Epic 1 solo mode.
 - **F10: Entity store routing undefined (W9 re-confirmed)** — No named configurations in `.xcdatamodel`. Deferred to Story 4.1.
+
+## Deferred from: code review of 1-5-numpad-and-amount-display (2026-03-29)
+
+- **D1: Negative `amountInCents` not guarded** — `ExpenseEntryViewModel.swift:9`. `amountInCents` is `var` (required by @Observable). No UI path produces negative values, but `appendDigit` on negative values makes them more negative and `isAmountZero` returns `false`. Validate at persistence boundary in Story 1.6.
+- **D2: `appendDigit` accepts multi-character strings** — `ExpenseEntryViewModel.swift:22`. `Int64("10")` succeeds, appending 10 instead of a single digit. Only called from hardcoded NumpadKey enum; no realistic UI path. Guard at caller boundary if accessibility/paste handling added.
+- **D3: Locale-dependent test assertions fragile for Thai digit rendering** — `Int64CurrencyTests.swift`. Tests use `contains("12.50")` etc. Explicit `th_TH` locale should produce Western Arabic digits consistently, but Thai digit substitution (`๐-๙`) could occur on certain system locale + OS version combinations. Monitor on future OS updates.
+- **D4: Stale UX spec references** — `ux-design-specification.md` still references `.glassEffect()`, `.monospacedDigit()`, and `"$"` USD symbol. Story spec captured corrections via UX-DR1 and UX-DR2 notes. Update UX spec document separately.
+- **D5: InsightsView calls `.displayAmount` directly in View body** — `InsightsView.swift:6`. `Int64(0).displayAmount` in View body bypasses ViewModel boundary. Acceptable for current placeholder; architect properly when InsightsViewModel is built.

@@ -199,13 +199,13 @@ enum CategoryColor: String, CaseIterable {
 ```swift
 extension Int64 {
     var displayAmount: String {
-        let dollars = Double(self) / 100.0
-        return dollars.formatted(.currency(code: "USD"))
+        let baht = Double(self) / 100.0
+        return baht.formatted(.currency(code: "THB"))
     }
 }
 ```
 
-This is the ONLY place where cent-to-dollar conversion happens. Views and ViewModels call `expense.amount.displayAmount` — they never divide by 100 themselves.
+This is the ONLY place where satang-to-baht conversion happens. Views and ViewModels call `expense.amount.displayAmount` — they never divide by 100 themselves.
 
 ### Test Infrastructure — In-Memory Core Data Stack
 
@@ -232,10 +232,10 @@ The repository init takes `PersistenceController` — either make PersistenceCon
 
 ### Currency Test Locale Note
 
-`Int64(1250).displayAmount` uses `formatted(.currency(code: "USD"))` which respects the device locale for number formatting. On non-US locale test machines, the output may differ (e.g., `"US$12.50"` or `"12,50 $US"`). Either:
-- Force locale in the extension: `formatted(.currency(code: "USD").locale(Locale(identifier: "en_US")))`
+`Int64(1250).displayAmount` uses `formatted(.currency(code: "THB"))` which respects the device locale for number formatting. On non-Thai locale test machines, the output may differ. Either:
+- Force locale in the extension: `formatted(.currency(code: "THB").locale(Locale(identifier: "th_TH")))`
 - Or use `contains("12.50")` assertions instead of exact string matching
-- Recommended: hardcode locale in the extension since this is a personal US-only app
+- Recommended: hardcode locale in the extension since this is a personal THB-only app
 
 ### Deferred Work Awareness
 

@@ -10,6 +10,7 @@ CashOut — iOS app for couples to track cash spending. Real-time shared visibil
 - **Local-first**: Persist locally, sync in background, offline-capable
 - **Sign in with Apple**: Authentication for household pairing
 - **No custom backend**: All infrastructure on Apple platform services
+- **Currency: Thai Baht (THB)** — hardcoded to th_TH locale, amounts stored as Int64 satang (1 Baht = 100 satang). Use `Int64.displayAmount` for all formatting — never concatenate "฿" manually.
 
 ---
 

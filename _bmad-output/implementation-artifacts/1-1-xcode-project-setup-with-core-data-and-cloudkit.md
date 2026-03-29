@@ -97,7 +97,7 @@ So that expense entry, sync, and all features work reliably from the start.
 - **PersistenceController is the ONLY singleton** in the entire app. Everything else (repositories, services) is transient, created per-ViewModel with protocol + default parameter DI.
 - **Two-store configuration is mandatory** for shared database support: private scope (owner's data in their private DB) + shared scope (partner's view of the shared zone). Both must have history tracking enabled.
 - **Zone-level sharing** (not record-level). All household records live in one shared CKRecordZone ("HouseholdZone"). One CKShare per custom zone.
-- **Amount as Int64 cents** -- $12.50 is stored as 1250. No floating-point. No Decimal. Int64 everywhere in the data layer.
+- **Amount as Int64 satang** -- ฿12.50 is stored as 1250. No floating-point. No Decimal. Int64 everywhere in the data layer.
 - **Hard deletes on Expense** -- no soft-delete flag. NSPersistentCloudKitContainer handles CloudKit tombstone propagation via NSPersistentHistoryTracking.
 - **All Core Data attributes must be Optional in the model editor** -- NSPersistentCloudKitContainer requires this for CloudKit sync. Non-optional attributes cause silent sync failures. Handle non-optionality in Swift code with computed accessors or guard statements.
 - **UUID attributes: "Uses Scalar Type" must be UNCHECKED** in the Xcode model editor. Checking it produces a type incompatible with CloudKit's record name mapping.
@@ -236,7 +236,7 @@ struct CashOutApp: App {
 | Attribute | Core Data Type | Model Editor | Swift @NSManaged | Notes |
 |-----------|---------------|-------------|-----------------|-------|
 | id | UUID | Optional, "Uses Scalar Type" UNCHECKED | UUID? | Generate in code, not in model |
-| amount | Integer 64 | Optional | Int64 | Cents. $12.50 = 1250. Optional in CD, non-optional via computed accessor |
+| amount | Integer 64 | Optional | Int64 | Satang. ฿12.50 = 1250. Optional in CD, non-optional via computed accessor |
 | note | String | Optional | String? | Free text, nullable |
 | categoryID | UUID | Optional, "Uses Scalar Type" UNCHECKED | UUID? | References Category.id |
 | createdByUserID | String | Optional | String? | CloudKit userRecordID.recordName |

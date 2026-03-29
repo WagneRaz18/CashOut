@@ -29,7 +29,7 @@ final class ExpenseEntryViewModel {
     }
 
     func appendDecimalPoint() {
-        // No-op: decimal is implicit in fixed-point cents model.
+        // No-op: decimal is implicit in fixed-point satang model.
         // Included for numpad grid visual completeness.
     }
 

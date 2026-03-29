@@ -16,7 +16,7 @@ final class ExpenseEntryViewModelTests: XCTestCase {
 
         XCTAssertEqual(
             viewModel.amountInCents, 1250,
-            "Typing '1250' should produce 1250 cents (฿12.50)"
+            "Typing '1250' should produce 1250 satang (฿12.50)"
         )
     }
 
@@ -31,7 +31,7 @@ final class ExpenseEntryViewModelTests: XCTestCase {
 
         XCTAssertEqual(
             viewModel.amountInCents, 125,
-            "Deleting from 1250 should produce 125 cents (฿1.25)"
+            "Deleting from 1250 should produce 125 satang (฿1.25)"
         )
     }
 
