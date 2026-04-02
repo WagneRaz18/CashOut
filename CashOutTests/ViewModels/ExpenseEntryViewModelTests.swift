@@ -287,7 +287,7 @@ final class ExpenseEntryViewModelTests: XCTestCase {
     // MARK: - Error Handling Tests
 
     func testSaveExpenseResetsIsSavingOnThrow() async {
-        let (viewModel, _, _, _, _, _) = makeSUT(expenseRepoShouldThrow: true)
+        let (viewModel, _, _, _, _, hapticService) = makeSUT(expenseRepoShouldThrow: true)
         viewModel.amountInCents = 1000
         viewModel.selectedCategoryID = UUID()
 
@@ -299,6 +299,7 @@ final class ExpenseEntryViewModelTests: XCTestCase {
         }
 
         XCTAssertFalse(viewModel.isSaving, "isSaving must reset to false even when repository throws")
+        XCTAssertNil(hapticService.lastEvent, "Should NOT trigger .saveTap haptic when repository throws")
     }
 
     func testSaveExpenseThrowsWhenNotAuthenticated() async {
@@ -361,6 +362,7 @@ final class ExpenseEntryViewModelTests: XCTestCase {
 
         try await viewModel.saveExpense()
 
+        XCTAssertEqual(hapticService.triggeredEvents.count, 1, "Should trigger exactly one haptic event")
         XCTAssertEqual(hapticService.lastEvent, .saveTap, "Should trigger .saveTap haptic on successful save")
     }
 

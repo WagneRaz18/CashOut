@@ -39,3 +39,20 @@
 - **D3: Locale-dependent test assertions fragile for Thai digit rendering** — `Int64CurrencyTests.swift`. Tests use `contains("12.50")` etc. Explicit `th_TH` locale should produce Western Arabic digits consistently, but Thai digit substitution (`๐-๙`) could occur on certain system locale + OS version combinations. Monitor on future OS updates.
 - **D4: Stale UX spec references** — `ux-design-specification.md` still references `.glassEffect()`, `.monospacedDigit()`, and `"$"` USD symbol. Story spec captured corrections via UX-DR1 and UX-DR2 notes. Update UX spec document separately.
 - **D5: InsightsView calls `.displayAmount` directly in View body** — `InsightsView.swift:6`. `Int64(0).displayAmount` in View body bypasses ViewModel boundary. Acceptable for current placeholder; architect properly when InsightsViewModel is built.
+
+## Deferred from: code review of 1-7-entry-screen-haptics-accessibility-and-dynamic-type (2026-04-02)
+
+- **D1: Category chip double "selected" VoiceOver announcement** — `CategoryPickerView.swift:65-66`. `.accessibilityLabel("Food, selected")` + `.accessibilityAddTraits(.isSelected)` may produce double announcement. Per-spec intentional. Verify on physical device.
+- **D2: AmountDisplayView VoiceOver pronunciation of ฿ symbol** — `AmountDisplayView.swift:13`. `"Amount: \(amount.displayAmount)"` includes ฿ symbol; VoiceOver pronunciation varies by system language. Verify on physical device.
+- **D3: makeSUT 6-tuple positional fragility** — `ExpenseEntryViewModelTests.swift:132`. Pre-existing pattern; adding each new dependency extends the tuple. Consider named struct if 7th dependency added.
+- **D4: HapticService creates new generator per call — no prepare()** — `HapticService.swift:19-23`. Apple recommends reusing generators and calling `prepare()`. Architecture decision per spec; future optimization candidate.
+- **D5: HapticService @MainActor tension with iOS 26 SDK** — `HapticService.swift:15`. Protocol is nonisolated but UIKit generators are @MainActor in iOS 26. Known, documented in learnings. Broader protocol redesign needed.
+- **D6: SaveButton/note button accessibilityHints** — `SaveButtonView.swift:19,30`. No `.accessibilityHint` on either button. Nice-to-have for VoiceOver users.
+
+## Deferred from: code review of 2-1-expense-feed-with-partner-attribution (2026-04-02)
+
+- **W1: `FeedView` does not display `viewModel.errorMessage`** — `FeedView.swift`. ViewModel exposes `errorMessage` set when category fetch fails, but the view never reads or displays it. Needs UX design decision for error states.
+- **W2: `wrappedID` returns `id ?? UUID()` — unstable identity if `id` is nil** — `Expense+CoreDataProperties.swift:19`. Pre-existing (re-confirmed from W1 in Story 1.1). Each access generates a different UUID, breaking ForEach identity.
+- **W3: `ExpenseData`/`CategoryData` lack `Equatable`** — Pre-existing models. Without Equatable, SwiftUI cannot optimize row diffing in List. Consider adding conformance when edit/delete flows are built (Story 2.3+).
+- **W4: Brief "Unknown" category flash on initial load** — `FeedView.swift`, `FeedViewModel.swift`. FRC fires expenses before async category fetch completes, briefly showing "Unknown" for all rows. UX polish candidate.
+- **W5: Tests use `Task.sleep(50ms)` for async synchronization** — `FeedViewModelTests.swift:91`. Fragile on CI. Existing project-wide pattern; consider mock-driven expectation fulfillment if flakiness appears.

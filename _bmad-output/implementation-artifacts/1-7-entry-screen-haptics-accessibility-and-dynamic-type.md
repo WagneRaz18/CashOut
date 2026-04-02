@@ -1,6 +1,6 @@
 # Story 1.7: Entry Screen Haptics, Accessibility & Dynamic Type
 
-Status: review
+Status: done
 Readiness: approved (2026-03-29)
 Readiness Report: _bmad-output/planning-artifacts/implementation-readiness-report-2026-03-29-story-1-7.md
 
@@ -399,6 +399,17 @@ Claude Opus 4.6 (1M context)
 
 ### Change Log
 - 2026-04-02: Implemented haptics, accessibility labels, dynamic type verification, and haptic unit tests (Story 1-7)
+
+### Review Findings
+
+- [x] [Review][Patch] testSaveExpenseTriggersSaveTapHaptic missing event count assertion [ExpenseEntryViewModelTests.swift:337] — fixed
+- [x] [Review][Patch] testSaveExpenseResetsIsSavingOnThrow should assert no .saveTap haptic [ExpenseEntryViewModelTests.swift:289] — fixed
+- [x] [Review][Defer] Category chip double "selected" VoiceOver announcement (trait + label text) — deferred, verify on physical device
+- [x] [Review][Defer] AmountDisplayView VoiceOver pronunciation of ฿ symbol — deferred, needs physical device testing
+- [x] [Review][Defer] makeSUT 6-tuple positional fragility — deferred, pre-existing pattern
+- [x] [Review][Defer] HapticService new generator per call, no prepare() — deferred, architecture decision per spec
+- [x] [Review][Defer] HapticService @MainActor tension with iOS 26 SDK — deferred, known and documented in learnings
+- [x] [Review][Defer] SaveButton/note accessibilityHints — deferred, no AC requires it
 
 ### File List
 - CashOut/Services/HapticService.swift (modified — added Equatable conformance to HapticEvent)

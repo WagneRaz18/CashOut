@@ -1,4 +1,5 @@
 @preconcurrency import CoreData
+import os
 
 enum RepositoryError: Error {
     case missingRequiredField(entity: String, field: String)
@@ -46,7 +47,11 @@ final class ExpenseRepository: ExpenseRepositoryProtocol {
         self.feedFRC = frc
         self.frcDelegate = delegate
 
-        try? frc.performFetch()
+        do {
+            try frc.performFetch()
+        } catch {
+            os_log(.fault, "ExpenseRepository: FRC performFetch failed — %{public}@", error.localizedDescription)
+        }
         handleFRCUpdate()
     }
 

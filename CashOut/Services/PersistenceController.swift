@@ -71,6 +71,7 @@ final class PersistenceController: @unchecked Sendable {
             if let error { fatalError("Store load failed: \(error)") }
         }
 
+        // Required: FRC in ExpenseRepository depends on this for CloudKit partner-change propagation
         container.viewContext.automaticallyMergesChangesFromParent = true
         container.viewContext.mergePolicy = NSMergeByPropertyStoreTrumpMergePolicy
 

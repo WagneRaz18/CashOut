@@ -229,4 +229,38 @@ final class FeedViewModelTests: XCTestCase {
 
         XCTAssertNil(result, "categoryFor should return nil for unknown category ID")
     }
+
+    // MARK: - isCurrentUser with nil currentUserID (Review P3)
+
+    func testIsCurrentUserReturnsTrueWhenCurrentUserIDIsNil() {
+        let (viewModel, _, _, _) = makeSUT(currentUserID: nil)
+        let expense = makeExpense(createdByUserID: "partner-456")
+
+        XCTAssertTrue(
+            viewModel.isCurrentUser(expense),
+            "isCurrentUser should return true when currentUserID is nil (unauthenticated fallback)"
+        )
+    }
+
+    // MARK: - Error Handling Tests (Review P2)
+
+    func testReloadCategoriesSetsErrorMessageOnFailure() {
+        let (viewModel, expenseRepo, categoryRepo, _) = makeSUT()
+        categoryRepo.shouldThrow = true
+        expenseRepo.stubbedExpenses = [makeExpense()]
+
+        viewModel.startObserving()
+
+        let expectation = expectation(description: "Category fetch error handled")
+        Task {
+            try? await Task.sleep(for: .milliseconds(50))
+            expectation.fulfill()
+        }
+        wait(for: [expectation], timeout: 1.0)
+
+        XCTAssertNotNil(
+            viewModel.errorMessage,
+            "errorMessage should be set when categoryRepository.fetchCategories() throws"
+        )
+    }
 }

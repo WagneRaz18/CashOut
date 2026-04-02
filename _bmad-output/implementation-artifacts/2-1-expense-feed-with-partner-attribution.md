@@ -1,6 +1,6 @@
 # Story 2.1: Expense Feed with Partner Attribution
 
-Status: review
+Status: done
 
 ## Story
 
@@ -97,6 +97,17 @@ So that I can review household spending activity at a glance.
   - [x] 7.12 Test: `categoryFor()` returns nil for unknown category ID
   - [x] 7.13 All test classes: `@MainActor` (established pattern)
   - [x] 7.14 Register file in `project.pbxproj`
+
+### Review Findings
+
+- [x] [Review][Patch] `try? frc.performFetch()` silently swallows Core Data errors — add do/catch with os_log [ExpenseRepository.swift:49]
+- [x] [Review][Patch] Missing test: error path for `reloadCategories()` catch block [FeedViewModelTests.swift]
+- [x] [Review][Patch] Missing test: `isCurrentUser` when `authService.currentUserID` is nil [FeedViewModelTests.swift]
+- [x] [Review][Defer] `FeedView` does not display `viewModel.errorMessage` — needs UX design decision — deferred, out of scope
+- [x] [Review][Defer] `wrappedID` returns `id ?? UUID()` creating unstable identity if `id` is nil — deferred, pre-existing
+- [x] [Review][Defer] `ExpenseData`/`CategoryData` lack `Equatable` — SwiftUI can't optimize row diffing — deferred, pre-existing
+- [x] [Review][Defer] Brief "Unknown" category flash on initial load before categories arrive — deferred, UX polish
+- [x] [Review][Defer] Tests use `Task.sleep(50ms)` for async synchronization — fragile on CI — deferred, existing pattern
 
 ## Dev Notes
 
