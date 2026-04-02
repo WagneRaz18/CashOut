@@ -10,6 +10,8 @@ struct AmountDisplayView: View {
             .lineLimit(1)
             .minimumScaleFactor(0.7)
             .frame(maxWidth: .infinity)
+            .accessibilityLabel("Amount: \(amount.displayAmount)")
+            .accessibilityAddTraits(.updatesFrequently)
     }
 }
 

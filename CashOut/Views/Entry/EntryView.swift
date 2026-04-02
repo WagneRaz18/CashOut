@@ -56,3 +56,8 @@ struct EntryView: View {
 #Preview {
     EntryView()
 }
+
+#Preview("Dynamic Type — AX3") {
+    EntryView()
+        .dynamicTypeSize(.accessibility3)
+}

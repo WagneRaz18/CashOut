@@ -32,6 +32,7 @@ struct NumpadView: View {
                                 .frame(height: keyHeight)
                         }
                         .buttonStyle(.glass)
+                        .accessibilityLabel(accessibilityLabel(for: key))
                     }
                 }
             }
@@ -46,12 +47,22 @@ struct NumpadView: View {
         case .digit(let value):
             Text(value)
                 .font(.title)
+                .minimumScaleFactor(0.8)
         case .decimal:
             Text(".")
                 .font(.title)
+                .minimumScaleFactor(0.8)
         case .backspace:
             Image(systemName: "delete.backward")
                 .font(.title2)
+        }
+    }
+
+    private func accessibilityLabel(for key: NumpadKey) -> Text {
+        switch key {
+        case .digit(let value): Text(value)
+        case .decimal: Text("Decimal point")
+        case .backspace: Text("Delete")
         }
     }
 

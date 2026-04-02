@@ -33,6 +33,9 @@
 - App-wide services (PersistenceController) injected at @main App via .environment(\.managedObjectContext). Add EnvironmentKey for PersistenceController itself when repositories need both viewContext and newBackgroundContext().
 - **2026-03-29**: Inject `UserDefaults` via init parameter (`userDefaults: UserDefaults = .standard`) for test isolation ��� tests use `UserDefaults(suiteName:)` with `removePersistentDomain(forName:)` in tearDown to avoid cross-test pollution of MRU/preference state.
 
+## Services
+- **2026-04-02**: `HapticService` uses the standard `UIImpactFeedbackGenerator(style:)` initializer, not the view-associated `(style:view:)` variant (iOS 17+). The service is injected into ViewModels which have no `UIView` reference — acceptable trade-off. View-associated variant only improves Taptic Engine routing on multi-engine devices (iPhone 16+). If a UIView reference becomes available in the future, upgrade then.
+
 ## Project Generation
 - xcodegen (project.yml) can fully replace manual Xcode project creation including Core Data + CloudKit setup. Generates valid .xcodeproj with proper build phases for .xcdatamodeld files.
 - .xcdatamodeld is a directory with XML contents that can be created programmatically — no Xcode GUI required.

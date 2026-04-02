@@ -1,6 +1,6 @@
 # Story 1.7: Entry Screen Haptics, Accessibility & Dynamic Type
 
-Status: ready-for-dev
+Status: review
 Readiness: approved (2026-03-29)
 Readiness Report: _bmad-output/planning-artifacts/implementation-readiness-report-2026-03-29-story-1-7.md
 
@@ -26,71 +26,71 @@ So that the entry experience feels responsive and is usable by everyone.
 
 ## Tasks / Subtasks
 
-- [ ] Task 1: Create HapticService protocol and implementation (AC: #4)
-  - [ ] 1.1 Create `CashOut/Services/HapticService.swift`
-  - [ ] 1.2 Define `HapticEvent` enum with cases: `numpadKey`, `categorySelect`, `saveTap`, `deleteTap` (reserved for Story 2.4 feed row swipe-to-delete — NOT used for numpad backspace), `error` — define ALL cases from architecture even though only 3 are used in this story
-  - [ ] 1.3 Define `HapticServiceProtocol` with single method: `func trigger(_ event: HapticEvent)`
-  - [ ] 1.4 Implement `HapticService` class — NOT `@Observable`, NOT `@MainActor` (UIKit haptic generators are thread-safe)
-  - [ ] 1.5 In `trigger(_:)`: early return if `UIAccessibility.isReduceMotionEnabled` is true
-  - [ ] 1.6 For `.numpadKey` and `.categorySelect`: use `UIImpactFeedbackGenerator(style: .light)` → `.impactOccurred()`
-  - [ ] 1.7 For `.saveTap`: use `UINotificationFeedbackGenerator()` → `.notificationOccurred(.success)`
-  - [ ] 1.8 For `.deleteTap`: use `UINotificationFeedbackGenerator()` → `.notificationOccurred(.success)`
-  - [ ] 1.9 For `.error`: use `UINotificationFeedbackGenerator()` → `.notificationOccurred(.error)`
-  - [ ] 1.10 Import UIKit (not SwiftUI) in the service file — `UIImpactFeedbackGenerator` and `UINotificationFeedbackGenerator` live in UIKit
+- [x] Task 1: Create HapticService protocol and implementation (AC: #4)
+  - [x] 1.1 Create `CashOut/Services/HapticService.swift`
+  - [x] 1.2 Define `HapticEvent` enum with cases: `numpadKey`, `categorySelect`, `saveTap`, `deleteTap` (reserved for Story 2.4 feed row swipe-to-delete — NOT used for numpad backspace), `error` — define ALL cases from architecture even though only 3 are used in this story
+  - [x] 1.3 Define `HapticServiceProtocol` with single method: `func trigger(_ event: HapticEvent)`
+  - [x] 1.4 Implement `HapticService` class — NOT `@Observable`, NOT `@MainActor` (UIKit haptic generators are thread-safe)
+  - [x] 1.5 In `trigger(_:)`: early return if `UIAccessibility.isReduceMotionEnabled` is true
+  - [x] 1.6 For `.numpadKey` and `.categorySelect`: use `UIImpactFeedbackGenerator(style: .light)` → `.impactOccurred()`
+  - [x] 1.7 For `.saveTap`: use `UINotificationFeedbackGenerator()` → `.notificationOccurred(.success)`
+  - [x] 1.8 For `.deleteTap`: use `UINotificationFeedbackGenerator()` → `.notificationOccurred(.success)`
+  - [x] 1.9 For `.error`: use `UINotificationFeedbackGenerator()` → `.notificationOccurred(.error)`
+  - [x] 1.10 Import UIKit (not SwiftUI) in the service file — `UIImpactFeedbackGenerator` and `UINotificationFeedbackGenerator` live in UIKit
 
-- [ ] Task 2: Create MockHapticService for tests (AC: #4)
-  - [ ] 2.1 Create `CashOutTests/Services/MockHapticService.swift`
-  - [ ] 2.2 Implement `MockHapticService: HapticServiceProtocol` with `var triggeredEvents: [HapticEvent] = []`
-  - [ ] 2.3 `trigger(_:)` appends to `triggeredEvents` — no UIKit calls
-  - [ ] 2.4 Add `var lastEvent: HapticEvent? { triggeredEvents.last }` convenience
-  - [ ] 2.5 Add `func reset() { triggeredEvents.removeAll() }` for test teardown
+- [x] Task 2: Create MockHapticService for tests (AC: #4)
+  - [x] 2.1 Create `CashOutTests/Services/MockHapticService.swift`
+  - [x] 2.2 Implement `MockHapticService: HapticServiceProtocol` with `var triggeredEvents: [HapticEvent] = []`
+  - [x] 2.3 `trigger(_:)` appends to `triggeredEvents` — no UIKit calls
+  - [x] 2.4 Add `var lastEvent: HapticEvent? { triggeredEvents.last }` convenience
+  - [x] 2.5 Add `func reset() { triggeredEvents.removeAll() }` for test teardown
 
-- [ ] Task 3: Add HapticService dependency to ExpenseEntryViewModel (AC: #1, #2, #3)
-  - [ ] 3.1 Add `@ObservationIgnored private let hapticService: HapticServiceProtocol` to ExpenseEntryViewModel
-  - [ ] 3.2 Add `hapticService: HapticServiceProtocol = HapticService()` to init — default parameter preserves backward compatibility with existing 59 tests
-  - [ ] 3.3 In `appendDigit(_:)`: call `hapticService.trigger(.numpadKey)` as FIRST line (haptic fires even if guard rejects input)
-  - [ ] 3.4 In `deleteLastDigit()`: call `hapticService.trigger(.numpadKey)` as first line
-  - [ ] 3.5 In `appendDecimalPoint()`: call `hapticService.trigger(.numpadKey)` as first line (decimal is a no-op functionally but the KEY PRESS still gets haptic feedback per UX-DR10 "light impact per numpad key tap")
-  - [ ] 3.6 In `selectCategory(_:)`: call `hapticService.trigger(.categorySelect)` as first line
-  - [ ] 3.7 In `saveExpense()`: call `hapticService.trigger(.saveTap)` AFTER the `guard !Task.isCancelled` check (line 130) but BEFORE `resetAmount()` (line 136). This placement means: repo save succeeded + task not cancelled → fire haptic → then reset state. Do NOT trigger on failed/guarded saves (amount zero, no category, not authenticated, task cancelled)
+- [x] Task 3: Add HapticService dependency to ExpenseEntryViewModel (AC: #1, #2, #3)
+  - [x] 3.1 Add `@ObservationIgnored private let hapticService: HapticServiceProtocol` to ExpenseEntryViewModel
+  - [x] 3.2 Add `hapticService: HapticServiceProtocol = HapticService()` to init — default parameter preserves backward compatibility with existing 59 tests
+  - [x] 3.3 In `appendDigit(_:)`: call `hapticService.trigger(.numpadKey)` as FIRST line (haptic fires even if guard rejects input)
+  - [x] 3.4 In `deleteLastDigit()`: call `hapticService.trigger(.numpadKey)` as first line
+  - [x] 3.5 In `appendDecimalPoint()`: call `hapticService.trigger(.numpadKey)` as first line (decimal is a no-op functionally but the KEY PRESS still gets haptic feedback per UX-DR10 "light impact per numpad key tap")
+  - [x] 3.6 In `selectCategory(_:)`: call `hapticService.trigger(.categorySelect)` as first line
+  - [x] 3.7 In `saveExpense()`: call `hapticService.trigger(.saveTap)` AFTER the `guard !Task.isCancelled` check (line 130) but BEFORE `resetAmount()` (line 136). This placement means: repo save succeeded + task not cancelled → fire haptic → then reset state. Do NOT trigger on failed/guarded saves (amount zero, no category, not authenticated, task cancelled)
 
-- [ ] Task 4: Add accessibility labels to NumpadView (AC: #5)
-  - [ ] 4.1 Digit keys: `.accessibilityLabel(value)` (e.g., "1", "2", ... "9", "0")
-  - [ ] 4.2 Decimal key: `.accessibilityLabel("Decimal point")`
-  - [ ] 4.3 Backspace key: `.accessibilityLabel("Delete")`
-  - [ ] 4.4 Apply labels to the `Button` element AFTER `.buttonStyle(.glass)` — modifier order matters; placing accessibility before button style can cause the style to alter accessibility traits
-  - [ ] 4.5 Create helper: `private func accessibilityLabel(for key: NumpadKey) -> Text` — must explicitly return `Text` type (not `@ViewBuilder` or `some View`) to match `.accessibilityLabel(_: Text)` overload
+- [x] Task 4: Add accessibility labels to NumpadView (AC: #5)
+  - [x] 4.1 Digit keys: `.accessibilityLabel(value)` (e.g., "1", "2", ... "9", "0")
+  - [x] 4.2 Decimal key: `.accessibilityLabel("Decimal point")`
+  - [x] 4.3 Backspace key: `.accessibilityLabel("Delete")`
+  - [x] 4.4 Apply labels to the `Button` element AFTER `.buttonStyle(.glass)` — modifier order matters; placing accessibility before button style can cause the style to alter accessibility traits
+  - [x] 4.5 Create helper: `private func accessibilityLabel(for key: NumpadKey) -> Text` — must explicitly return `Text` type (not `@ViewBuilder` or `some View`) to match `.accessibilityLabel(_: Text)` overload
 
-- [ ] Task 5: Add accessibility to AmountDisplayView (AC: #5)
-  - [ ] 5.1 Add `.accessibilityLabel("Amount: \(amount.displayAmount)")` — uses the THB-formatted string (e.g., "Amount: ฿12.50")
-  - [ ] 5.2 Add `.accessibilityAddTraits(.updatesFrequently)` — amount changes with each keypress
+- [x] Task 5: Add accessibility to AmountDisplayView (AC: #5)
+  - [x] 5.1 Add `.accessibilityLabel("Amount: \(amount.displayAmount)")` — uses the THB-formatted string (e.g., "Amount: ฿12.50")
+  - [x] 5.2 Add `.accessibilityAddTraits(.updatesFrequently)` — amount changes with each keypress
 
-- [ ] Task 6: Add accessibility to CategoryPickerView (AC: #5)
-  - [ ] 6.1 Each chip button: `.accessibilityLabel("\(category.name), \(isSelected ? "selected" : "not selected")")`
-  - [ ] 6.2 Add `.accessibilityAddTraits(isSelected ? [.isSelected] : [])` to each chip button
+- [x] Task 6: Add accessibility to CategoryPickerView (AC: #5)
+  - [x] 6.1 Each chip button: `.accessibilityLabel("\(category.name), \(isSelected ? "selected" : "not selected")")`
+  - [x] 6.2 Add `.accessibilityAddTraits(isSelected ? [.isSelected] : [])` to each chip button
 
-- [ ] Task 7: Add accessibility to SaveButtonView (AC: #5)
-  - [ ] 7.1 Save button: `.accessibilityLabel("Save expense")`
-  - [ ] 7.2 Note button: `.accessibilityLabel("Add note")`
-  - [ ] 7.3 Save button disabled state is automatically conveyed by SwiftUI's `.disabled()` modifier to VoiceOver — no extra work needed
+- [x] Task 7: Add accessibility to SaveButtonView (AC: #5)
+  - [x] 7.1 Save button: `.accessibilityLabel("Save expense")`
+  - [x] 7.2 Note button: `.accessibilityLabel("Add note")`
+  - [x] 7.3 Save button disabled state is automatically conveyed by SwiftUI's `.disabled()` modifier to VoiceOver — no extra work needed
 
-- [ ] Task 8: Verify Dynamic Type support (AC: #6)
-  - [ ] 8.1 NumpadView: Already uses `GeometryReader` for key height scaling — verify `.font(.title)` on digit labels scales with Dynamic Type. If keys truncate at AX sizes, add `.minimumScaleFactor(0.8)` to key labels
-  - [ ] 8.2 AmountDisplayView: Already uses `.font(.system(size: 48, ...))` + `.minimumScaleFactor(0.7)` — fixed-size font does NOT scale with Dynamic Type. This is intentional per UX spec line 928: "Font size stays 48pt. Truncates with `.minimumScaleFactor(0.7)` on SE." No change needed.
-  - [ ] 8.3 CategoryPickerView: Uses `.font(.subheadline)` — this is a SwiftUI text style and scales automatically. Verify no truncation at larger sizes.
-  - [ ] 8.4 SaveButtonView: Uses `.font(.headline)` — scales automatically. Verify.
-  - [ ] 8.5 Add `#Preview` with `.dynamicTypeSize(.accessibility3)` to EntryView for verifying large type rendering
+- [x] Task 8: Verify Dynamic Type support (AC: #6)
+  - [x] 8.1 NumpadView: Already uses `GeometryReader` for key height scaling — verify `.font(.title)` on digit labels scales with Dynamic Type. If keys truncate at AX sizes, add `.minimumScaleFactor(0.8)` to key labels
+  - [x] 8.2 AmountDisplayView: Already uses `.font(.system(size: 48, ...))` + `.minimumScaleFactor(0.7)` — fixed-size font does NOT scale with Dynamic Type. This is intentional per UX spec line 928: "Font size stays 48pt. Truncates with `.minimumScaleFactor(0.7)` on SE." No change needed.
+  - [x] 8.3 CategoryPickerView: Uses `.font(.subheadline)` — this is a SwiftUI text style and scales automatically. Verify no truncation at larger sizes.
+  - [x] 8.4 SaveButtonView: Uses `.font(.headline)` — scales automatically. Verify.
+  - [x] 8.5 Add `#Preview` with `.dynamicTypeSize(.accessibility3)` to EntryView for verifying large type rendering
 
-- [ ] Task 9: Unit tests for haptic integration (AC: #1, #2, #3, #4)
-  - [ ] 9.1 Inject `MockHapticService` into `ExpenseEntryViewModel` in test setup
-  - [ ] 9.2 Test: `appendDigit("5")` triggers exactly one `.numpadKey` event
-  - [ ] 9.3 Test: `deleteLastDigit()` triggers exactly one `.numpadKey` event
-  - [ ] 9.4 Test: `appendDecimalPoint()` triggers exactly one `.numpadKey` event
-  - [ ] 9.5 Test: `selectCategory(id)` triggers exactly one `.categorySelect` event
-  - [ ] 9.6 Test: `saveExpense()` after setting valid amount + category triggers `.saveTap` — requires MockExpenseRepository, MockCategoryRepository, MockAuthenticationService injected alongside MockHapticService
-  - [ ] 9.7 Test: `saveExpense()` with zero amount does NOT trigger `.saveTap` (guard exits before haptic)
-  - [ ] 9.8 Test: `saveExpense()` with nil `selectedCategoryID` does NOT trigger `.saveTap`
-  - [ ] 9.9 Test: `appendDigit` at max overflow still triggers `.numpadKey` haptic (guard rejects value but haptic fires)
+- [x] Task 9: Unit tests for haptic integration (AC: #1, #2, #3, #4)
+  - [x] 9.1 Inject `MockHapticService` into `ExpenseEntryViewModel` in test setup
+  - [x] 9.2 Test: `appendDigit("5")` triggers exactly one `.numpadKey` event
+  - [x] 9.3 Test: `deleteLastDigit()` triggers exactly one `.numpadKey` event
+  - [x] 9.4 Test: `appendDecimalPoint()` triggers exactly one `.numpadKey` event
+  - [x] 9.5 Test: `selectCategory(id)` triggers exactly one `.categorySelect` event
+  - [x] 9.6 Test: `saveExpense()` after setting valid amount + category triggers `.saveTap` — requires MockExpenseRepository, MockCategoryRepository, MockAuthenticationService injected alongside MockHapticService
+  - [x] 9.7 Test: `saveExpense()` with zero amount does NOT trigger `.saveTap` (guard exits before haptic)
+  - [x] 9.8 Test: `saveExpense()` with nil `selectedCategoryID` does NOT trigger `.saveTap`
+  - [x] 9.9 Test: `appendDigit` at max overflow still triggers `.numpadKey` haptic (guard rejects value but haptic fires)
 
 ## Dev Notes
 
@@ -369,9 +369,44 @@ This story's commits should follow: `feat(entry): implement haptics, accessibili
 ## Dev Agent Record
 
 ### Agent Model Used
+Claude Opus 4.6 (1M context)
 
 ### Debug Log References
+- Build warnings: UIFeedbackGenerator initializers are main actor-isolated in iOS 26 SDK — generates warnings but compiles. HapticService is intentionally NOT @MainActor per architecture decision (UIKit feedback generators were historically thread-safe). Future story may need to address this if warnings become errors.
 
 ### Completion Notes List
+- Task 1: HapticService already existed from readiness check commit (d896753). Added `Equatable` conformance to `HapticEvent` for test assertions.
+- Task 2: Created MockHapticService with triggeredEvents array, lastEvent computed property, and reset() method.
+- Task 3: Added hapticService as 5th dependency to ExpenseEntryViewModel. Haptic triggers placed as first line in appendDigit/deleteLastDigit/appendDecimalPoint/selectCategory (fires before guards). Save haptic placed after repo save + Task.isCancelled check, before state cleanup.
+- Task 4: Added accessibility labels to NumpadView buttons AFTER .buttonStyle(.glass). Created `accessibilityLabel(for:) -> Text` helper.
+- Task 5: Added .accessibilityLabel("Amount: \(amount.displayAmount)") and .accessibilityAddTraits(.updatesFrequently) to AmountDisplayView.
+- Task 6: Added .accessibilityLabel with selected/not selected state and .accessibilityAddTraits(.isSelected) to CategoryPickerView chips.
+- Task 7: Added .accessibilityLabel("Save expense") to save button and .accessibilityLabel("Add note") to note button.
+- Task 8: Verified Dynamic Type support. Added .minimumScaleFactor(0.8) to numpad digit/decimal labels for AX size safety. Added #Preview("Dynamic Type — AX3") to EntryView.
+- Task 9: Added 8 haptic tests. Updated makeSUT to return 6-tuple with MockHapticService. Updated all 13 existing makeSUT call sites for the new tuple shape. All 67 tests pass (0 failures).
+
+### Orchestrator Guardian Report (2026-04-02)
+**Guardians run**: ios-swiftui-guardian, architecture-guardian
+**CRITICALs**: None
+**WARNINGs** (non-blocking):
+1. Legacy UIImpactFeedbackGenerator(style:) used — documented trade-off (service layer has no UIView reference). Learning recorded in architecture.md.
+2. UIAccessibility.isReduceMotionEnabled guards haptics — per AC#4 design requirement, not a code issue.
+3. Added `import Foundation` to MockHapticService per consistency recommendation.
+4. @MainActor on HapticServiceProtocol deferred — story spec explicitly says NOT @MainActor. All current callers are @MainActor-isolated in practice.
+**SUGGESTIONs** (noted, not acted on):
+- HapticEvent.error is defined but unused in this story (reserved for future stories)
+- .deleteTap maps to .success notification type — semantics to be revisited in Story 2.4
+
+### Change Log
+- 2026-04-02: Implemented haptics, accessibility labels, dynamic type verification, and haptic unit tests (Story 1-7)
 
 ### File List
+- CashOut/Services/HapticService.swift (modified — added Equatable conformance to HapticEvent)
+- CashOut/ViewModels/ExpenseEntryViewModel.swift (modified — added hapticService dependency and trigger calls)
+- CashOut/Views/Entry/NumpadView.swift (modified — added accessibility labels and minimumScaleFactor)
+- CashOut/Views/Entry/AmountDisplayView.swift (modified — added accessibility label and traits)
+- CashOut/Views/Entry/CategoryPickerView.swift (modified — added accessibility labels and traits)
+- CashOut/Views/Entry/SaveButtonView.swift (modified — added accessibility labels)
+- CashOut/Views/Entry/EntryView.swift (modified — added Dynamic Type AX3 preview)
+- CashOutTests/Services/MockHapticService.swift (new — mock for haptic testing)
+- CashOutTests/ViewModels/ExpenseEntryViewModelTests.swift (modified — added 8 haptic tests, updated makeSUT)

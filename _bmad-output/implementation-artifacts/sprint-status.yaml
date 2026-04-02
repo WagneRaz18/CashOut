@@ -35,7 +35,9 @@
 # - Dev moves story to 'review', then runs code-review (fresh context, different LLM recommended)
 
 generated: 2026-03-27
-last_updated: "2026-03-29"
+last_updated: "2026-04-02"
+# Story 1-7 review 2026-04-02
+# Story 1-7 in-progress 2026-04-02
 # Story 1-7 in-progress 2026-03-29
 # Story 1-7 created 2026-03-29
 # Sprint planning refreshed 2026-03-29
@@ -60,7 +62,7 @@ development_status:
   1-4-design-tokens-predefined-categories-and-repository-layer: done
   1-5-numpad-and-amount-display: done
   1-6-category-picker-save-flow-and-expense-persistence: done
-  1-7-entry-screen-haptics-accessibility-and-dynamic-type: in-progress
+  1-7-entry-screen-haptics-accessibility-and-dynamic-type: review
   epic-1-retrospective: optional
 
   # Epic 2: Expense Feed & Management

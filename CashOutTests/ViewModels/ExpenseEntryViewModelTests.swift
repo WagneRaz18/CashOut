@@ -132,7 +132,8 @@ final class ExpenseEntryViewModelTests: XCTestCase {
         expenseRepo: MockExpenseRepository,
         categoryRepo: MockCategoryRepository,
         authService: MockAuthenticationService,
-        userDefaults: UserDefaults
+        userDefaults: UserDefaults,
+        hapticService: MockHapticService
     ) {
         let expenseRepo = MockExpenseRepository()
         expenseRepo.shouldThrow = expenseRepoShouldThrow
@@ -144,20 +145,23 @@ final class ExpenseEntryViewModelTests: XCTestCase {
         let defaults = UserDefaults(suiteName: Self.testSuiteName)!
         defaults.removePersistentDomain(forName: Self.testSuiteName)
 
+        let hapticService = MockHapticService()
+
         let viewModel = ExpenseEntryViewModel(
             expenseRepository: expenseRepo,
             categoryRepository: categoryRepo,
             authService: authService,
-            userDefaults: defaults
+            userDefaults: defaults,
+            hapticService: hapticService
         )
 
-        return (viewModel, expenseRepo, categoryRepo, authService, defaults)
+        return (viewModel, expenseRepo, categoryRepo, authService, defaults, hapticService)
     }
 
     // MARK: - saveExpense Tests (AC #5, #8)
 
     func testSaveExpenseCallsRepositoryWithCorrectData() async throws {
-        let (viewModel, expenseRepo, _, _, _) = makeSUT()
+        let (viewModel, expenseRepo, _, _, _, _) = makeSUT()
         viewModel.amountInCents = 1250
         viewModel.selectedCategoryID = UUID()
         viewModel.noteText = "Lunch"
@@ -173,7 +177,7 @@ final class ExpenseEntryViewModelTests: XCTestCase {
     }
 
     func testSaveExpenseResetsAmountToZero() async throws {
-        let (viewModel, _, _, _, _) = makeSUT()
+        let (viewModel, _, _, _, _, _) = makeSUT()
         viewModel.amountInCents = 5000
         viewModel.selectedCategoryID = UUID()
 
@@ -183,7 +187,7 @@ final class ExpenseEntryViewModelTests: XCTestCase {
     }
 
     func testSaveExpenseClearsNoteText() async throws {
-        let (viewModel, _, _, _, _) = makeSUT()
+        let (viewModel, _, _, _, _, _) = makeSUT()
         viewModel.amountInCents = 1000
         viewModel.selectedCategoryID = UUID()
         viewModel.noteText = "Test note"
@@ -194,7 +198,7 @@ final class ExpenseEntryViewModelTests: XCTestCase {
     }
 
     func testSaveExpenseDoesNotSaveWhenAmountIsZero() async throws {
-        let (viewModel, expenseRepo, _, _, _) = makeSUT()
+        let (viewModel, expenseRepo, _, _, _, _) = makeSUT()
         viewModel.amountInCents = 0
         viewModel.selectedCategoryID = UUID()
 
@@ -204,7 +208,7 @@ final class ExpenseEntryViewModelTests: XCTestCase {
     }
 
     func testSaveExpenseDoesNotSaveWhenCategoryIsNil() async throws {
-        let (viewModel, expenseRepo, _, _, _) = makeSUT()
+        let (viewModel, expenseRepo, _, _, _, _) = makeSUT()
         viewModel.amountInCents = 1000
         viewModel.selectedCategoryID = nil
 
@@ -216,7 +220,7 @@ final class ExpenseEntryViewModelTests: XCTestCase {
     // MARK: - loadCategories Tests (AC #1, #2)
 
     func testLoadCategoriesPopulatesArray() async {
-        let (viewModel, _, categoryRepo, _, _) = makeSUT()
+        let (viewModel, _, categoryRepo, _, _, _) = makeSUT()
         let testCategories = [
             CategoryData(id: UUID(), name: "Food", iconName: "fork.knife", colorName: "Sage", isDefault: true, sortOrder: 0),
             CategoryData(id: UUID(), name: "Transport", iconName: "car.fill", colorName: "Slate", isDefault: true, sortOrder: 1),
@@ -231,7 +235,7 @@ final class ExpenseEntryViewModelTests: XCTestCase {
 
     func testLoadCategoriesRestoresMRUFromUserDefaults() async {
         let mruID = UUID()
-        let (viewModel, _, categoryRepo, _, defaults) = makeSUT()
+        let (viewModel, _, categoryRepo, _, defaults, _) = makeSUT()
         defaults.set(mruID.uuidString, forKey: "lastUsedCategoryID")
         categoryRepo.categoriesToReturn = [
             CategoryData(id: UUID(), name: "Food", iconName: "fork.knife", colorName: "Sage", isDefault: true, sortOrder: 0),
@@ -245,7 +249,7 @@ final class ExpenseEntryViewModelTests: XCTestCase {
 
     func testSaveExpensePersistsMRUToUserDefaults() async throws {
         let categoryID = UUID()
-        let (viewModel, _, _, _, defaults) = makeSUT()
+        let (viewModel, _, _, _, defaults, _) = makeSUT()
         viewModel.amountInCents = 1000
         viewModel.selectedCategoryID = categoryID
 
@@ -258,7 +262,7 @@ final class ExpenseEntryViewModelTests: XCTestCase {
     // MARK: - selectCategory Tests
 
     func testSelectCategoryUpdatesSelectedID() {
-        let (viewModel, _, _, _, _) = makeSUT()
+        let (viewModel, _, _, _, _, _) = makeSUT()
         let id = UUID()
 
         viewModel.selectCategory(id)
@@ -269,7 +273,7 @@ final class ExpenseEntryViewModelTests: XCTestCase {
     // MARK: - Double-tap Guard Test
 
     func testDoubleTapGuardPreventsSecondSave() async throws {
-        let (viewModel, expenseRepo, _, _, _) = makeSUT()
+        let (viewModel, expenseRepo, _, _, _, _) = makeSUT()
         viewModel.amountInCents = 1000
         viewModel.selectedCategoryID = UUID()
         viewModel.isSaving = true
@@ -283,7 +287,7 @@ final class ExpenseEntryViewModelTests: XCTestCase {
     // MARK: - Error Handling Tests
 
     func testSaveExpenseResetsIsSavingOnThrow() async {
-        let (viewModel, _, _, _, _) = makeSUT(expenseRepoShouldThrow: true)
+        let (viewModel, _, _, _, _, _) = makeSUT(expenseRepoShouldThrow: true)
         viewModel.amountInCents = 1000
         viewModel.selectedCategoryID = UUID()
 
@@ -298,7 +302,7 @@ final class ExpenseEntryViewModelTests: XCTestCase {
     }
 
     func testSaveExpenseThrowsWhenNotAuthenticated() async {
-        let (viewModel, expenseRepo, _, _, _) = makeSUT(currentUserID: nil)
+        let (viewModel, expenseRepo, _, _, _, _) = makeSUT(currentUserID: nil)
         viewModel.amountInCents = 1000
         viewModel.selectedCategoryID = UUID()
 
@@ -310,5 +314,84 @@ final class ExpenseEntryViewModelTests: XCTestCase {
         }
 
         XCTAssertFalse(expenseRepo.saveExpenseCalled, "Should NOT call repository when not authenticated")
+    }
+
+    // MARK: - Haptic Tests (Story 1.7)
+
+    func testAppendDigitTriggersNumpadKeyHaptic() {
+        let (viewModel, _, _, _, _, hapticService) = makeSUT()
+
+        viewModel.appendDigit("5")
+
+        XCTAssertEqual(hapticService.triggeredEvents.count, 1, "Should trigger exactly one haptic event")
+        XCTAssertEqual(hapticService.lastEvent, .numpadKey, "Should trigger .numpadKey haptic")
+    }
+
+    func testDeleteLastDigitTriggersNumpadKeyHaptic() {
+        let (viewModel, _, _, _, _, hapticService) = makeSUT()
+
+        viewModel.deleteLastDigit()
+
+        XCTAssertEqual(hapticService.triggeredEvents.count, 1, "Should trigger exactly one haptic event")
+        XCTAssertEqual(hapticService.lastEvent, .numpadKey, "Should trigger .numpadKey haptic")
+    }
+
+    func testAppendDecimalPointTriggersNumpadKeyHaptic() {
+        let (viewModel, _, _, _, _, hapticService) = makeSUT()
+
+        viewModel.appendDecimalPoint()
+
+        XCTAssertEqual(hapticService.triggeredEvents.count, 1, "Should trigger exactly one haptic event")
+        XCTAssertEqual(hapticService.lastEvent, .numpadKey, "Should trigger .numpadKey haptic")
+    }
+
+    func testSelectCategoryTriggersCategorySelectHaptic() {
+        let (viewModel, _, _, _, _, hapticService) = makeSUT()
+
+        viewModel.selectCategory(UUID())
+
+        XCTAssertEqual(hapticService.triggeredEvents.count, 1, "Should trigger exactly one haptic event")
+        XCTAssertEqual(hapticService.lastEvent, .categorySelect, "Should trigger .categorySelect haptic")
+    }
+
+    func testSaveExpenseTriggersSaveTapHaptic() async throws {
+        let (viewModel, _, _, _, _, hapticService) = makeSUT()
+        viewModel.amountInCents = 1250
+        viewModel.selectedCategoryID = UUID()
+
+        try await viewModel.saveExpense()
+
+        XCTAssertEqual(hapticService.lastEvent, .saveTap, "Should trigger .saveTap haptic on successful save")
+    }
+
+    func testSaveExpenseWithZeroAmountDoesNotTriggerSaveTapHaptic() async throws {
+        let (viewModel, _, _, _, _, hapticService) = makeSUT()
+        viewModel.amountInCents = 0
+        viewModel.selectedCategoryID = UUID()
+
+        try await viewModel.saveExpense()
+
+        XCTAssertNil(hapticService.lastEvent, "Should NOT trigger .saveTap when amount is zero")
+    }
+
+    func testSaveExpenseWithNilCategoryDoesNotTriggerSaveTapHaptic() async throws {
+        let (viewModel, _, _, _, _, hapticService) = makeSUT()
+        viewModel.amountInCents = 1000
+        viewModel.selectedCategoryID = nil
+
+        try await viewModel.saveExpense()
+
+        XCTAssertNil(hapticService.lastEvent, "Should NOT trigger .saveTap when no category selected")
+    }
+
+    func testAppendDigitAtMaxOverflowStillTriggersHaptic() {
+        let (viewModel, _, _, _, _, hapticService) = makeSUT()
+        viewModel.amountInCents = 1_000_000
+
+        viewModel.appendDigit("5")
+
+        XCTAssertEqual(viewModel.amountInCents, 1_000_000, "Amount should not change at cap")
+        XCTAssertEqual(hapticService.triggeredEvents.count, 1, "Should still trigger haptic even when guard rejects input")
+        XCTAssertEqual(hapticService.lastEvent, .numpadKey, "Should trigger .numpadKey haptic")
     }
 }

@@ -1,6 +1,6 @@
 import UIKit
 
-enum HapticEvent {
+enum HapticEvent: Equatable {
     case numpadKey      // UIImpactFeedbackGenerator(.light)
     case categorySelect // UIImpactFeedbackGenerator(.light)
     case saveTap        // UINotificationFeedbackGenerator(.success)

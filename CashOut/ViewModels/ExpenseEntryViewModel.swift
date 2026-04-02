@@ -34,6 +34,9 @@ final class ExpenseEntryViewModel {
     @ObservationIgnored
     private let userDefaults: UserDefaults
 
+    @ObservationIgnored
+    private let hapticService: HapticServiceProtocol
+
     // MARK: - Constants
 
     private static let maxBeforeAppend: Int64 = 1_000_000
@@ -45,27 +48,32 @@ final class ExpenseEntryViewModel {
         expenseRepository: ExpenseRepositoryProtocol = ExpenseRepository(),
         categoryRepository: CategoryRepositoryProtocol = CategoryRepository(),
         authService: AuthenticationServiceProtocol = AuthenticationService(),
-        userDefaults: UserDefaults = .standard
+        userDefaults: UserDefaults = .standard,
+        hapticService: HapticServiceProtocol = HapticService()
     ) {
         self.expenseRepository = expenseRepository
         self.categoryRepository = categoryRepository
         self.authService = authService
         self.userDefaults = userDefaults
+        self.hapticService = hapticService
     }
 
     // MARK: - Numpad Actions
 
     func appendDigit(_ digit: String) {
+        hapticService.trigger(.numpadKey)
         guard amountInCents < Self.maxBeforeAppend else { return }
         guard let value = Int64(digit) else { return }
         amountInCents = amountInCents * 10 + value
     }
 
     func deleteLastDigit() {
+        hapticService.trigger(.numpadKey)
         amountInCents = amountInCents / 10
     }
 
     func appendDecimalPoint() {
+        hapticService.trigger(.numpadKey)
         // No-op: decimal is implicit in fixed-point satang model.
         // Included for numpad grid visual completeness.
     }
@@ -99,6 +107,7 @@ final class ExpenseEntryViewModel {
     }
 
     func selectCategory(_ id: UUID) {
+        hapticService.trigger(.categorySelect)
         selectedCategoryID = id
     }
 
@@ -128,6 +137,8 @@ final class ExpenseEntryViewModel {
 
         try await expenseRepository.saveExpense(expense)
         guard !Task.isCancelled else { return }
+
+        hapticService.trigger(.saveTap)
 
         // Persist MRU
         userDefaults.set(categoryID.uuidString, forKey: Self.mruKey)

@@ -16,6 +16,7 @@ struct SaveButtonView: View {
             }
             .buttonStyle(.plain)
             .foregroundStyle(.secondary)
+            .accessibilityLabel("Add note")
 
             Button {
                 onSave()
@@ -26,6 +27,7 @@ struct SaveButtonView: View {
             }
             .buttonStyle(.glassProminent)
             .disabled(isDisabled)
+            .accessibilityLabel("Save expense")
         }
     }
 }
