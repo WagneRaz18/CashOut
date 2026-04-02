@@ -53,6 +53,10 @@
 		F1A2B3C4D5E60312F1A2B3C4 /* MockExpenseRepository.swift in Sources */ = {isa = PBXBuildFile; fileRef = F1A2B3C4D5E60302F1A2B3C4 /* MockExpenseRepository.swift */; };
 		G1H2I3J4K5L60711G1H2I3J4 /* HapticService.swift in Sources */ = {isa = PBXBuildFile; fileRef = G1H2I3J4K5L60701G1H2I3J4 /* HapticService.swift */; };
 		G1H2I3J4K5L60712G1H2I3J4 /* MockHapticService.swift in Sources */ = {isa = PBXBuildFile; fileRef = G1H2I3J4K5L60702G1H2I3J4 /* MockHapticService.swift */; };
+		H1I2J3K4L5M60811H1I2J3K4 /* Date+Formatting.swift in Sources */ = {isa = PBXBuildFile; fileRef = H1I2J3K4L5M60801H1I2J3K4 /* Date+Formatting.swift */; };
+		H1I2J3K4L5M60812H1I2J3K4 /* FeedViewModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = H1I2J3K4L5M60802H1I2J3K4 /* FeedViewModel.swift */; };
+		H1I2J3K4L5M60813H1I2J3K4 /* FeedRowView.swift in Sources */ = {isa = PBXBuildFile; fileRef = H1I2J3K4L5M60803H1I2J3K4 /* FeedRowView.swift */; };
+		H1I2J3K4L5M60814H1I2J3K4 /* FeedViewModelTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = H1I2J3K4L5M60804H1I2J3K4 /* FeedViewModelTests.swift */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXContainerItemProxy section */
@@ -124,6 +128,10 @@
 		F1A2B3C4D5E60302F1A2B3C4 /* MockExpenseRepository.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MockExpenseRepository.swift; sourceTree = "<group>"; };
 		G1H2I3J4K5L60701G1H2I3J4 /* HapticService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = HapticService.swift; sourceTree = "<group>"; };
 		G1H2I3J4K5L60702G1H2I3J4 /* MockHapticService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MockHapticService.swift; sourceTree = "<group>"; };
+		H1I2J3K4L5M60801H1I2J3K4 /* Date+Formatting.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "Date+Formatting.swift"; sourceTree = "<group>"; };
+		H1I2J3K4L5M60802H1I2J3K4 /* FeedViewModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FeedViewModel.swift; sourceTree = "<group>"; };
+		H1I2J3K4L5M60803H1I2J3K4 /* FeedRowView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FeedRowView.swift; sourceTree = "<group>"; };
+		H1I2J3K4L5M60804H1I2J3K4 /* FeedViewModelTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FeedViewModelTests.swift; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXGroup section */
@@ -171,6 +179,7 @@
 			children = (
 				A1B2C3D4E5F60718A1B2C3D7 /* AuthenticationViewModel.swift */,
 				D1E2F3A4B5C60101 /* ExpenseEntryViewModel.swift */,
+				H1I2J3K4L5M60802H1I2J3K4 /* FeedViewModel.swift */,
 			);
 			path = ViewModels;
 			sourceTree = "<group>";
@@ -198,6 +207,7 @@
 			children = (
 				A1B2C3D4E5F60718A1B2C3DF /* AuthenticationViewModelTests.swift */,
 				D1E2F3A4B5C60104 /* ExpenseEntryViewModelTests.swift */,
+				H1I2J3K4L5M60804H1I2J3K4 /* FeedViewModelTests.swift */,
 			);
 			path = ViewModels;
 			sourceTree = "<group>";
@@ -215,6 +225,7 @@
 			isa = PBXGroup;
 			children = (
 				C1D2E3F4A5B60003C1D2E3F4 /* Color+CategoryTokens.swift */,
+				H1I2J3K4L5M60801H1I2J3K4 /* Date+Formatting.swift */,
 				C1D2E3F4A5B60005C1D2E3F4 /* Int64+Currency.swift */,
 			);
 			path = Extensions;
@@ -318,6 +329,7 @@
 		B1C2D3E4F5061829B1C2D3E8 /* Feed */ = {
 			isa = PBXGroup;
 			children = (
+				H1I2J3K4L5M60803H1I2J3K4 /* FeedRowView.swift */,
 				B1C2D3E4F5061829B1C2D3E3 /* FeedView.swift */,
 			);
 			path = Feed;
@@ -475,6 +487,7 @@
 				F1A2B3C4D5E60311F1A2B3C4 /* MockCategoryRepository.swift in Sources */,
 				F1A2B3C4D5E60312F1A2B3C4 /* MockExpenseRepository.swift in Sources */,
 				G1H2I3J4K5L60712G1H2I3J4 /* MockHapticService.swift in Sources */,
+				H1I2J3K4L5M60814H1I2J3K4 /* FeedViewModelTests.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -522,6 +535,9 @@
 				D1E2F3A4B5C60113 /* NumpadView.swift in Sources */,
 				E1F2A3B4C5D60213E1F2A3B4 /* SaveButtonView.swift in Sources */,
 				G1H2I3J4K5L60711G1H2I3J4 /* HapticService.swift in Sources */,
+				H1I2J3K4L5M60811H1I2J3K4 /* Date+Formatting.swift in Sources */,
+				H1I2J3K4L5M60812H1I2J3K4 /* FeedViewModel.swift in Sources */,
+				H1I2J3K4L5M60813H1I2J3K4 /* FeedRowView.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};

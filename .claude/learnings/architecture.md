@@ -18,6 +18,9 @@
 - **2026-03-29**: Boolean flag guards (`isSaving`) must be checked BEFORE the flag is set: `guard !isSaving else { return }; isSaving = true; defer { isSaving = false }`. Without the upfront guard, a second @MainActor Task can start between suspension points and bypass the flag — `isSaving = true` + `defer` alone is a lifecycle signal, not a concurrency lock.
 
 ## Data Layer
+- **2026-04-02**: `NSFetchedResultsController` must live in the Repository layer, not the ViewModel — FRC converts `NSManagedObject` to DTO structs via callback, preserving MVVM boundaries. Use nested `@MainActor private class FRCDelegate: NSObject` with `[weak self]` closure to avoid retain cycles and satisfy Swift 6 actor isolation.
+- **2026-04-02**: Protocol callback closures that update `@MainActor`-isolated ViewModel state must be typed `@MainActor` on the protocol (e.g., `var onExpensesChanged: (@MainActor ([ExpenseData]) -> Void)?`) — a plain closure type compiles but silently allows cross-actor mutation in Swift 6.
+- **2026-04-02**: Fire-and-forget `Task {}` inside callback-driven methods (e.g., category reload on FRC change) must store the task handle and cancel-before-relaunch — otherwise rapid FRC callbacks cause racing Tasks that mutate state after cancellation. Pattern: `categoryTask?.cancel(); categoryTask = Task { ... guard !Task.isCancelled ... }`.
 - All Repository methods must be @MainActor-isolated when using viewContext (main-thread-only context).
 - For insights aggregation: single NSFetchRequest with date-range predicate + in-memory grouping by categoryID in Swift. No NSExpression aggregate queries.
 - Use versioned .xcdatamodeld with lightweight (inferred) migration as default strategy.

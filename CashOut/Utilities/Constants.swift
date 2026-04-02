@@ -1,4 +1,5 @@
 import Foundation
+import SwiftUI
 
 enum Spacing {
     static let xs: CGFloat = 4
@@ -57,6 +58,29 @@ enum DefaultCategory: CaseIterable {
         case .household: 3
         case .shopping: 4
         case .other: 5
+        }
+    }
+}
+
+// MARK: - Partner Colors (Story 2-1)
+
+enum PartnerColor {
+    /// Current user: cool blue
+    static let currentUser = Color(red: 0x6B / 255.0, green: 0x8A / 255.0, blue: 0xAE / 255.0)
+    /// Current user dark mode
+    static let currentUserDark = Color(red: 0x8A / 255.0, green: 0xA8 / 255.0, blue: 0xC8 / 255.0)
+    /// Partner: warm stone
+    static let partner = Color(red: 0xA8 / 255.0, green: 0x9B / 255.0, blue: 0x8A / 255.0)
+    /// Partner dark mode
+    static let partnerDark = Color(red: 0xC0 / 255.0, green: 0xB0 / 255.0, blue: 0xA0 / 255.0)
+
+    static func color(isCurrentUser: Bool, colorScheme: ColorScheme) -> Color {
+        switch (isCurrentUser, colorScheme) {
+        case (true, .light): currentUser
+        case (true, .dark): currentUserDark
+        case (false, .light): partner
+        case (false, .dark): partnerDark
+        @unknown default: currentUser
         }
     }
 }

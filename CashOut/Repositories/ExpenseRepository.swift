@@ -8,8 +8,76 @@ enum RepositoryError: Error {
 final class ExpenseRepository: ExpenseRepositoryProtocol {
     private let persistence: PersistenceController
 
+    // MARK: - FRC Observation (Story 2-1)
+
+    var onExpensesChanged: (@MainActor ([ExpenseData]) -> Void)?
+    private var feedFRC: NSFetchedResultsController<Expense>?
+    private var frcDelegate: FRCDelegate?
+
     init(persistence: PersistenceController = .shared) {
         self.persistence = persistence
+    }
+
+    func startObservingExpenses() {
+        guard feedFRC == nil else { return }
+
+        assert(
+            persistence.container.viewContext.automaticallyMergesChangesFromParent,
+            "FRC remote-change propagation requires automaticallyMergesChangesFromParent = true"
+        )
+
+        let request: NSFetchRequest<Expense> = Expense.fetchRequest()
+        request.sortDescriptors = [NSSortDescriptor(key: "createdAt", ascending: false)]
+        request.fetchBatchSize = 50
+
+        let frc = NSFetchedResultsController(
+            fetchRequest: request,
+            managedObjectContext: persistence.container.viewContext,
+            sectionNameKeyPath: nil,
+            cacheName: nil
+        )
+
+        let delegate = FRCDelegate()
+        delegate.onChange = { [weak self] in
+            self?.handleFRCUpdate()
+        }
+        frc.delegate = delegate
+
+        self.feedFRC = frc
+        self.frcDelegate = delegate
+
+        try? frc.performFetch()
+        handleFRCUpdate()
+    }
+
+    private func handleFRCUpdate() {
+        guard let objects = feedFRC?.fetchedObjects else { return }
+        let data = objects.compactMap { expense -> ExpenseData? in
+            guard let categoryID = expense.categoryID else { return nil }
+            return ExpenseData(
+                id: expense.wrappedID,
+                amount: expense.amount,
+                note: expense.note,
+                categoryID: categoryID,
+                createdByUserID: expense.wrappedCreatedByUserID,
+                createdAt: expense.wrappedCreatedAt,
+                modifiedAt: expense.wrappedModifiedAt
+            )
+        }
+        onExpensesChanged?(data)
+    }
+
+    // MARK: - FRC Delegate (nested class for NSObject conformance)
+
+    @MainActor
+    private class FRCDelegate: NSObject, @preconcurrency NSFetchedResultsControllerDelegate {
+        var onChange: (@MainActor () -> Void)?
+
+        func controllerDidChangeContent(
+            _ controller: NSFetchedResultsController<any NSFetchRequestResult>
+        ) {
+            onChange?()
+        }
     }
 
     func fetchExpenses(for period: DateInterval) async throws -> [ExpenseData] {

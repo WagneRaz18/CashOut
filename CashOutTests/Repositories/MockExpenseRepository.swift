@@ -16,6 +16,17 @@ final class MockExpenseRepository: ExpenseRepositoryProtocol {
     var fetchExpensesCalled = false
     var deleteExpenseCalled = false
 
+    // MARK: - FRC Observation (Story 2-1)
+
+    var onExpensesChanged: (@MainActor ([ExpenseData]) -> Void)?
+    var stubbedExpenses: [ExpenseData] = []
+    var startObservingCalled = false
+
+    func startObservingExpenses() {
+        startObservingCalled = true
+        onExpensesChanged?(stubbedExpenses)
+    }
+
     // MARK: - Protocol Methods
 
     func fetchExpenses(for period: DateInterval) async throws -> [ExpenseData] {
