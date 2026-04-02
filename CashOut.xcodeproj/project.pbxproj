@@ -51,6 +51,8 @@
 		E1F2A3B4C5D60213E1F2A3B4 /* SaveButtonView.swift in Sources */ = {isa = PBXBuildFile; fileRef = E1F2A3B4C5D60203E1F2A3B4 /* SaveButtonView.swift */; };
 		F1A2B3C4D5E60311F1A2B3C4 /* MockCategoryRepository.swift in Sources */ = {isa = PBXBuildFile; fileRef = F1A2B3C4D5E60301F1A2B3C4 /* MockCategoryRepository.swift */; };
 		F1A2B3C4D5E60312F1A2B3C4 /* MockExpenseRepository.swift in Sources */ = {isa = PBXBuildFile; fileRef = F1A2B3C4D5E60302F1A2B3C4 /* MockExpenseRepository.swift */; };
+		G1H2I3J4K5L60711G1H2I3J4 /* HapticService.swift in Sources */ = {isa = PBXBuildFile; fileRef = G1H2I3J4K5L60701G1H2I3J4 /* HapticService.swift */; };
+		G1H2I3J4K5L60712G1H2I3J4 /* MockHapticService.swift in Sources */ = {isa = PBXBuildFile; fileRef = G1H2I3J4K5L60702G1H2I3J4 /* MockHapticService.swift */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXContainerItemProxy section */
@@ -120,6 +122,8 @@
 		E1F2A3B4C5D60203E1F2A3B4 /* SaveButtonView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SaveButtonView.swift; sourceTree = "<group>"; };
 		F1A2B3C4D5E60301F1A2B3C4 /* MockCategoryRepository.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MockCategoryRepository.swift; sourceTree = "<group>"; };
 		F1A2B3C4D5E60302F1A2B3C4 /* MockExpenseRepository.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MockExpenseRepository.swift; sourceTree = "<group>"; };
+		G1H2I3J4K5L60701G1H2I3J4 /* HapticService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = HapticService.swift; sourceTree = "<group>"; };
+		G1H2I3J4K5L60702G1H2I3J4 /* MockHapticService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MockHapticService.swift; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXGroup section */
@@ -136,6 +140,7 @@
 			isa = PBXGroup;
 			children = (
 				A1B2C3D4E5F60718A1B2C3D5 /* AuthenticationService.swift */,
+				G1H2I3J4K5L60701G1H2I3J4 /* HapticService.swift */,
 				9727F81F696E1B13C570B543 /* PersistenceController.swift */,
 			);
 			path = Services;
@@ -183,6 +188,7 @@
 			children = (
 				A1B2C3D4E5F60718A1B2C3DB /* MockAuthenticationService.swift */,
 				A1B2C3D4E5F60718A1B2C3DD /* AuthenticationServiceTests.swift */,
+				G1H2I3J4K5L60702G1H2I3J4 /* MockHapticService.swift */,
 			);
 			path = Services;
 			sourceTree = "<group>";
@@ -468,6 +474,7 @@
 				D1E2F3A4B5C60114 /* ExpenseEntryViewModelTests.swift in Sources */,
 				F1A2B3C4D5E60311F1A2B3C4 /* MockCategoryRepository.swift in Sources */,
 				F1A2B3C4D5E60312F1A2B3C4 /* MockExpenseRepository.swift in Sources */,
+				G1H2I3J4K5L60712G1H2I3J4 /* MockHapticService.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -514,6 +521,7 @@
 				E1F2A3B4C5D60212E1F2A3B4 /* NoteEntrySheet.swift in Sources */,
 				D1E2F3A4B5C60113 /* NumpadView.swift in Sources */,
 				E1F2A3B4C5D60213E1F2A3B4 /* SaveButtonView.swift in Sources */,
+				G1H2I3J4K5L60711G1H2I3J4 /* HapticService.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
