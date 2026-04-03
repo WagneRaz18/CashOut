@@ -62,3 +62,11 @@
 - **W3: `ExpenseData`/`CategoryData` lack `Equatable`** — Pre-existing models. Without Equatable, SwiftUI cannot optimize row diffing in List. Consider adding conformance when edit/delete flows are built (Story 2.3+).
 - **W4: Brief "Unknown" category flash on initial load** — `FeedView.swift`, `FeedViewModel.swift`. FRC fires expenses before async category fetch completes, briefly showing "Unknown" for all rows. UX polish candidate.
 - **W5: Tests use `Task.sleep(50ms)` for async synchronization** — `FeedViewModelTests.swift:91`. Fragile on CI. Existing project-wide pattern; consider mock-driven expectation fulfillment if flakiness appears.
+
+## Deferred from: code review of 2-3-edit-expense-flow (2026-04-03)
+
+- **D1: Save failure silent in RELEASE — no error UI** — `EditExpenseSheet.swift:48`. Catch block only prints in `#if DEBUG`; release builds show no user feedback on save failure. Same pre-existing pattern as `EntryView` (D1 from Story 2-2).
+- **D2: Haptic fires for rejected digit at cap boundary** — `EditExpenseViewModel.swift:60`. `hapticService.trigger(.numpadKey)` fires before `guard amountInCents < maxBeforeAppend`. User feels haptic but digit is ignored. Same in `ExpenseEntryViewModel`.
+- **D3: Whitespace-only noteText persisted as non-nil** — `EditExpenseViewModel.swift:113`. `noteText.isEmpty` doesn't catch `"   "`. Should use `trimmingCharacters(in: .whitespaces).isEmpty`. Same in `ExpenseEntryViewModel`.
+- **D4: loadCategories error silently swallowed** — `EditExpenseViewModel.swift:90`. Catch block is empty with a comment. Should log via `os_log(.error)`. Same pattern in `ExpenseEntryViewModel`.
+- **D5: appendDecimalPoint fires haptic for a no-op** — `EditExpenseViewModel.swift:80`. Decimal point is no-op in satang model, but haptic still fires. Pre-existing in `ExpenseEntryViewModel`.

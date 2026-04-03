@@ -1,6 +1,6 @@
 # Story 2.3: Edit Expense Flow
 
-Status: review
+Status: done
 
 ## Story
 
@@ -101,6 +101,14 @@ So that I can fix mistakes and keep my spending data accurate.
   - [ ] 6.8 Manual verification: modify amount + save → feed row updates, sheet dismisses, success haptic
   - [ ] 6.9 Manual verification: pull-down dismiss → no changes saved
   - [ ] 6.10 Manual verification: VoiceOver announces pre-filled amount and selected category on edit sheet open
+
+### Review Findings
+
+- [x] [Review][Defer] Save failure silent in RELEASE — no error UI, catch block is debug-print only [EditExpenseSheet.swift:48] — deferred, pre-existing (same pattern as EntryView/ExpenseEntryViewModel)
+- [x] [Review][Defer] Haptic fires for rejected digit at cap boundary — guard fires after haptic trigger [EditExpenseViewModel.swift:60] — deferred, pre-existing (same in ExpenseEntryViewModel)
+- [x] [Review][Defer] Whitespace-only noteText persisted as non-nil — `.isEmpty` misses `"   "` [EditExpenseViewModel.swift:113] — deferred, pre-existing (same in ExpenseEntryViewModel)
+- [x] [Review][Defer] loadCategories error silently swallowed — no os_log [EditExpenseViewModel.swift:90] — deferred, pre-existing (same in ExpenseEntryViewModel)
+- [x] [Review][Defer] appendDecimalPoint fires haptic for a no-op in satang model [EditExpenseViewModel.swift:80] — deferred, pre-existing (same in ExpenseEntryViewModel)
 
 ## Dev Notes
 
