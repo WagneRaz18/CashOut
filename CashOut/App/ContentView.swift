@@ -22,11 +22,12 @@ struct ContentView: View {
         }
         .tabBarMinimizeBehavior(.onScrollDown)
         .tabViewBottomAccessory {
-            if selectedTab != 0 {
-                FloatingAddButton {
-                    showingAddExpenseSheet = true
-                }
+            FloatingAddButton {
+                showingAddExpenseSheet = true
             }
+            .opacity(selectedTab != 0 ? 1 : 0)
+            .allowsHitTesting(selectedTab != 0)
+            .accessibilityHidden(selectedTab == 0)
         }
         .sheet(isPresented: $showingAddExpenseSheet) {
             EntryView(onSaveComplete: {

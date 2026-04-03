@@ -1,6 +1,6 @@
 # Story 2.2: Floating Add Button
 
-Status: review
+Status: done
 
 ## Story
 
@@ -368,6 +368,19 @@ Claude Opus 4.6 (1M context)
 7. Theoretical drag-to-dismiss race with onSaveComplete — low severity, harmless
 
 **SUGGESTIONs:** Preview background for glass validation; save error UI deferred; `.accessibilityHidden` if opacity fallback used.
+
+### Review Findings (2026-04-03)
+
+**Reviewers:** Blind Hunter, Edge Case Hunter, Acceptance Auditor, iOS/SwiftUI Guardian, Architecture Guardian, CloudKit Sync Guardian
+
+- [x] [Review][Patch] Missing `Task.isCancelled` guard before `onSaveComplete?()` [EntryView.swift:36] — FIXED
+- [x] [Review][Patch] `onSaveComplete` closure should be `@MainActor @Sendable` [EntryView.swift:4] — FIXED
+- [x] [Review][Patch] `.tabViewBottomAccessory` conditional should use opacity/hitTesting pattern [ContentView.swift:24-31] — FIXED (also added `.accessibilityHidden`)
+- [x] [Review][Defer] Silent save error in non-DEBUG builds [EntryView.swift:38-41] — deferred, pre-existing from Story 1-6
+- [x] [Review][Defer] Tab 0 EntryView not wrapped in NavigationStack [ContentView.swift:9-11] — deferred, pre-existing since Story 1-5
+- [x] [Review][Defer] `.buttonBorderShape(.circle)` may be no-op with `.glassProminent` [FloatingAddButton.swift:15] — deferred, needs on-device verification
+
+**Dismissed (9):** sheet dismissal race (harmless), tab index magic number (style), `.glassProminent` availability (iOS 26+), double-tap onSaveComplete (button disabled during save), no FAB haptic (not in AC), FRC propagation timing (imperceptible), two ExpenseRepository instances (safe w/ singleton), sheet dismiss responsibility split (acceptable), "plus" icon accent color (`.glassProminent` renders accent by default).
 
 ### Change Log
 

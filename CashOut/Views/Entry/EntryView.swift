@@ -1,7 +1,7 @@
 import SwiftUI
 
 struct EntryView: View {
-    var onSaveComplete: (() -> Void)? = nil
+    var onSaveComplete: (@MainActor @Sendable () -> Void)? = nil
 
     @State private var viewModel = ExpenseEntryViewModel()
     @State private var showingNoteSheet = false
@@ -33,6 +33,7 @@ struct EntryView: View {
                     Task {
                         do {
                             try await viewModel.saveExpense()
+                            guard !Task.isCancelled else { return }
                             onSaveComplete?()
                         } catch {
                             #if DEBUG

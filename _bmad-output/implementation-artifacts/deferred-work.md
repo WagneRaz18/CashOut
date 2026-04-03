@@ -49,6 +49,12 @@
 - **D5: HapticService @MainActor tension with iOS 26 SDK** — `HapticService.swift:15`. Protocol is nonisolated but UIKit generators are @MainActor in iOS 26. Known, documented in learnings. Broader protocol redesign needed.
 - **D6: SaveButton/note button accessibilityHints** — `SaveButtonView.swift:19,30`. No `.accessibilityHint` on either button. Nice-to-have for VoiceOver users.
 
+## Deferred from: code review of 2-2-floating-add-button (2026-04-03)
+
+- **D1: Silent save error in non-DEBUG builds** — `EntryView.swift:38-41`. `catch` block only prints in `#if DEBUG`; release builds show no user feedback on save failure. Pre-existing from Story 1-6. Needs UX design for error surface.
+- **D2: Tab 0 EntryView not wrapped in NavigationStack** — `ContentView.swift:9-11`. Feed and Insights tabs each wrap in NavigationStack, but Add tab does not. Pre-existing since Story 1-5; intentional leaf screen. Revisit if EntryView needs navigation destinations.
+- **D3: `.buttonBorderShape(.circle)` may be no-op with `.glassProminent`** — `FloatingAddButton.swift:15`. Learnings record that `.buttonBorderShape` only takes effect with `.bordered`/`.borderedProminent`. May be a no-op with glass styles. Needs on-device verification; `.clipShape(.circle)` is the documented fallback if needed.
+
 ## Deferred from: code review of 2-1-expense-feed-with-partner-attribution (2026-04-02)
 
 - **W1: `FeedView` does not display `viewModel.errorMessage`** — `FeedView.swift`. ViewModel exposes `errorMessage` set when category fetch fails, but the view never reads or displays it. Needs UX design decision for error states.
