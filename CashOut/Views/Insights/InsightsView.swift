@@ -15,6 +15,15 @@ struct InsightsView: View {
             .padding(.vertical, Spacing.sm)
 
             ScrollView {
+                if let error = viewModel.errorMessage {
+                    Text(error)
+                        .font(.caption)
+                        .foregroundStyle(.red)
+                        .frame(maxWidth: .infinity, alignment: .center)
+                        .padding(.horizontal, Spacing.md)
+                        .padding(.top, Spacing.sm)
+                }
+
                 if viewModel.isEmpty {
                     VStack(spacing: Spacing.sm) {
                         Text(viewModel.headlineText)

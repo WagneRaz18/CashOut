@@ -1,6 +1,6 @@
 # Story 3.1: Insights Screen with Time Period Switching
 
-Status: review
+Status: done
 
 ## Story
 
@@ -98,6 +98,15 @@ So that I can analyze my cash spending patterns at different time scales.
   - [ ] 7.4 Manual verification: segmented control switches between Day/Week/Month instantly
   - [ ] 7.5 Manual verification: headline metric updates when expenses exist for the selected period
   - [ ] 7.6 Manual verification: comparison text appears when previous period has data
+
+### Review Findings
+
+- [x] [Review][Decision] Error state semantics — Resolved: clear on error. `performLoad()` catch block now resets `totalAmount`, `categoryTotals`, `previousPeriodTotal` before setting `errorMessage`. [InsightsViewModel.swift:155-161]
+- [x] [Review][Patch] InsightsView now displays errorMessage — Added error text (`.caption`, `.red`) at top of ScrollView content. [InsightsView.swift:18-25]
+- [x] [Review][Patch] `repository` changed to `let` — Removed `@ObservationIgnored`, now `private let repository`. [InsightsViewModel.swift:85]
+- [x] [Review][Patch] `Date()` captured once in `performLoad()` — Single `let now = Date()` passed to both `dateInterval` and `previousDateInterval`. [InsightsViewModel.swift:130-132]
+- [x] [Review][Patch] Force unwraps on Calendar methods justified — Added inline safety comments. [InsightsViewModel.swift:166,171]
+- [x] [Review][Patch] Previous period date interval now tested — Added assertions on `fetchPeriods[1]` in `testLoadDataCallsFetchExpensesWithCorrectDateIntervals`. [InsightsViewModelTests.swift:79-91]
 
 ## Dev Notes
 

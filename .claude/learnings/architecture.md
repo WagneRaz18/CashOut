@@ -52,7 +52,8 @@
 
 ## State Modeling
 - Use independent data + errorMessage properties, never a combined enum ViewState.
-- On error, preserve stale data and set errorMessage — view shows both simultaneously.
+- On error, preserve stale data and set errorMessage — view shows both simultaneously. **Exception**: aggregation screens (Insights) should clear state on error — stale totals from a different time period are misleading. Clear `totalAmount`, `categoryTotals`, `previousPeriodTotal` before setting `errorMessage`.
+- **2026-04-03**: When a method computes multiple related date intervals (current + previous period), capture `Date()` once and pass to all helpers — two independent `Date()` calls can straddle midnight, producing inconsistent intervals (e.g., both pointing to the same month).
 - **2026-03-29**: Fixed-point satang cap: `guard amountInCents < 1_000_000` before `amount * 10 + digit` enforces a ceiling of 9_999_999 (฿99,999.99) — the guard fires before multiply, so max(999_999) * 10 + 9 = 9_999_999. Extract guard threshold as a named constant (`maxBeforeAppend`) to make the math self-documenting.
 - **2026-03-29**: Currency display formatting must use `Decimal(self) / 100` not `Double(self) / 100.0` — enforces "no floating-point for money" even in display-only contexts. `Decimal.FormatStyle.Currency` works identically to `FloatingPointFormatStyle.Currency`.
 - **2026-03-29**: In `@Observable` classes, declare constants as `private static let` not `private let` — instance `let` occupies heap per instance unnecessarily. Access via `Self.constant`.

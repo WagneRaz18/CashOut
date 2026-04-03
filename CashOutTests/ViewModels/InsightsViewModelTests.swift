@@ -76,6 +76,18 @@ final class InsightsViewModelTests: XCTestCase {
             expenseRepo.fetchPeriods[0].end, thisWeek.end,
             "First fetch should be for current week end"
         )
+
+        // Verify previous period is last week
+        let lastWeekDate = Calendar.current.date(byAdding: .weekOfYear, value: -1, to: Date())!
+        let lastWeek = Calendar.current.dateInterval(of: .weekOfYear, for: lastWeekDate)!
+        XCTAssertEqual(
+            expenseRepo.fetchPeriods[1].start, lastWeek.start,
+            "Second fetch should be for previous week start"
+        )
+        XCTAssertEqual(
+            expenseRepo.fetchPeriods[1].end, lastWeek.end,
+            "Second fetch should be for previous week end"
+        )
     }
 
     func testLoadDataComputesTotalAmountAsSumOfExpenses() async {

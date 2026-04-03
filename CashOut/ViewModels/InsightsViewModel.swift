@@ -82,8 +82,7 @@ final class InsightsViewModel {
 
     // MARK: - Dependencies
 
-    @ObservationIgnored
-    private var repository: ExpenseRepositoryProtocol
+    private let repository: ExpenseRepositoryProtocol
 
     private let categoryRepository: CategoryRepositoryProtocol
 
@@ -128,8 +127,9 @@ final class InsightsViewModel {
 
     private func performLoad() async {
         let period = selectedPeriod
-        let currentInterval = dateInterval(for: period)
-        let previousInterval = previousDateInterval(for: period)
+        let now = Date()
+        let currentInterval = dateInterval(for: period, referenceDate: now)
+        let previousInterval = previousDateInterval(for: period, referenceDate: now)
 
         do {
             let currentExpenses = try await repository.fetchExpenses(for: currentInterval)
@@ -154,18 +154,23 @@ final class InsightsViewModel {
             loadedPeriod = period
         } catch {
             guard !Task.isCancelled else { return }
+            totalAmount = 0
+            categoryTotals = []
+            previousPeriodTotal = nil
             errorMessage = error.localizedDescription
         }
     }
 
     // MARK: - Date Interval Helpers
 
-    private func dateInterval(for period: TimePeriod, referenceDate: Date = Date()) -> DateInterval {
+    // Safe: .day/.weekOfYear/.month always produce a valid interval for any Date
+    private func dateInterval(for period: TimePeriod, referenceDate: Date) -> DateInterval {
         Calendar.current.dateInterval(of: period.calendarComponent, for: referenceDate)!
     }
 
-    private func previousDateInterval(for period: TimePeriod) -> DateInterval {
-        let previousDate = Calendar.current.date(byAdding: period.calendarComponent, value: -1, to: Date())!
+    // Safe: calendar arithmetic on .day/.weekOfYear/.month never returns nil
+    private func previousDateInterval(for period: TimePeriod, referenceDate: Date) -> DateInterval {
+        let previousDate = Calendar.current.date(byAdding: period.calendarComponent, value: -1, to: referenceDate)!
         return dateInterval(for: period, referenceDate: previousDate)
     }
 }
