@@ -1,6 +1,6 @@
 import Foundation
 
-struct ExpenseData: Sendable {
+struct ExpenseData: Sendable, Identifiable {
     let id: UUID
     let amount: Int64
     let note: String?

@@ -6,6 +6,7 @@
 - ALL injected service and repository references in @Observable ViewModels must be @ObservationIgnored — not just repositories, also HapticService, AuthenticationService, etc.
 - ViewModels must never import SwiftUI — they live in the ViewModel layer with no UI dependency.
 - Repository protocols must return plain structs (DTOs like ExpenseData), never NSManagedObject — they are not Sendable and leak Core Data types across boundaries.
+- **2026-04-03**: `@ObservationIgnored` is only for `var` stored properties — `let` constants are never tracked by `@Observable`, so annotating them is redundant and semantically misleading. Only annotate `var` dependencies.
 
 ## Async & Task Lifecycle
 - Long-running async ViewModel methods must check Task.checkCancellation() at natural boundaries.
