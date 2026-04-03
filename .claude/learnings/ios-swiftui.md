@@ -11,6 +11,7 @@
 - Subscribe to NotificationCenter via async sequence in .task {} — auto-cancels on view disappear. Never use addObserver in ViewModels.
 
 ## SwiftUI Performance
+- **2026-04-03**: Empty state in a ScrollView-hosted tab must stay inside the ScrollView (not replace it) — removing ScrollView from the hierarchy breaks `.tabBarMinimizeBehavior(.onScrollDown)`. Use `.containerRelativeFrame(.vertical) { height, _ in height }` on the empty-state container to center it vertically within the scroll area.
 - Use List (not ScrollView+VStack) for Feed — provides swipe actions and built-in row recycling. Switch to LazyVStack only if custom row layouts require leaving List.
 - **2026-04-03**: Inside `List`, use `Button` + `.buttonStyle(.plain)` for tappable rows with `.swipeActions` — `.contentShape(Rectangle()).onTapGesture` conflicts with swipe gesture recognition (tap intercepts swipe initiation). `Button` integrates cleanly with List's gesture system.
 - **2026-04-03**: `.sheet(item:)` must be placed on the outer container (`Group`), not on `List` — when an empty-state branch replaces the List, the sheet modifier disappears from the view hierarchy and can never trigger.

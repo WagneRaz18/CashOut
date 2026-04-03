@@ -61,6 +61,8 @@
 		J1K2L3M4N5O60A11 /* EditExpenseViewModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = J1K2L3M4N5O60A01 /* EditExpenseViewModel.swift */; };
 		J1K2L3M4N5O60A12 /* EditExpenseSheet.swift in Sources */ = {isa = PBXBuildFile; fileRef = J1K2L3M4N5O60A02 /* EditExpenseSheet.swift */; };
 		J1K2L3M4N5O60A13 /* EditExpenseViewModelTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = J1K2L3M4N5O60A03 /* EditExpenseViewModelTests.swift */; };
+		K1L2M3N4O5P60B11 /* InsightsViewModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = K1L2M3N4O5P60B01 /* InsightsViewModel.swift */; };
+		K1L2M3N4O5P60B12 /* InsightsViewModelTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = K1L2M3N4O5P60B02 /* InsightsViewModelTests.swift */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXContainerItemProxy section */
@@ -140,6 +142,8 @@
 		J1K2L3M4N5O60A01 /* EditExpenseViewModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = EditExpenseViewModel.swift; sourceTree = "<group>"; };
 		J1K2L3M4N5O60A02 /* EditExpenseSheet.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = EditExpenseSheet.swift; sourceTree = "<group>"; };
 		J1K2L3M4N5O60A03 /* EditExpenseViewModelTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = EditExpenseViewModelTests.swift; sourceTree = "<group>"; };
+		K1L2M3N4O5P60B01 /* InsightsViewModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = InsightsViewModel.swift; sourceTree = "<group>"; };
+		K1L2M3N4O5P60B02 /* InsightsViewModelTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = InsightsViewModelTests.swift; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXGroup section */
@@ -189,6 +193,7 @@
 				J1K2L3M4N5O60A01 /* EditExpenseViewModel.swift */,
 				D1E2F3A4B5C60101 /* ExpenseEntryViewModel.swift */,
 				H1I2J3K4L5M60802H1I2J3K4 /* FeedViewModel.swift */,
+				K1L2M3N4O5P60B01 /* InsightsViewModel.swift */,
 			);
 			path = ViewModels;
 			sourceTree = "<group>";
@@ -218,6 +223,7 @@
 				J1K2L3M4N5O60A03 /* EditExpenseViewModelTests.swift */,
 				D1E2F3A4B5C60104 /* ExpenseEntryViewModelTests.swift */,
 				H1I2J3K4L5M60804H1I2J3K4 /* FeedViewModelTests.swift */,
+				K1L2M3N4O5P60B02 /* InsightsViewModelTests.swift */,
 			);
 			path = ViewModels;
 			sourceTree = "<group>";
@@ -501,6 +507,7 @@
 				G1H2I3J4K5L60712G1H2I3J4 /* MockHapticService.swift in Sources */,
 				H1I2J3K4L5M60814H1I2J3K4 /* FeedViewModelTests.swift in Sources */,
 				J1K2L3M4N5O60A13 /* EditExpenseViewModelTests.swift in Sources */,
+				K1L2M3N4O5P60B12 /* InsightsViewModelTests.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -554,6 +561,7 @@
 				I1J2K3L4M5N60911I1J2K3L4 /* FloatingAddButton.swift in Sources */,
 				J1K2L3M4N5O60A11 /* EditExpenseViewModel.swift in Sources */,
 				J1K2L3M4N5O60A12 /* EditExpenseSheet.swift in Sources */,
+				K1L2M3N4O5P60B11 /* InsightsViewModel.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};

@@ -9,6 +9,11 @@ final class MockExpenseRepository: ExpenseRepositoryProtocol {
     var shouldThrow: Bool = false
     var throwError: Error = NSError(domain: "MockExpenseRepository", code: -1)
 
+    // MARK: - Fetch Stubbing
+
+    var stubbedFetchResult: [ExpenseData] = []
+    var fetchPeriods: [DateInterval] = []
+
     // MARK: - Call Tracking
 
     var saveExpenseCalled = false
@@ -32,8 +37,9 @@ final class MockExpenseRepository: ExpenseRepositoryProtocol {
 
     func fetchExpenses(for period: DateInterval) async throws -> [ExpenseData] {
         fetchExpensesCalled = true
+        fetchPeriods.append(period)
         if shouldThrow { throw throwError }
-        return []
+        return stubbedFetchResult
     }
 
     func saveExpense(_ data: ExpenseData) async throws {

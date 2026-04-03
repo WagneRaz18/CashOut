@@ -36,6 +36,10 @@
 
 generated: 2026-03-27
 last_updated: "2026-04-03"
+# Story 3-1 review 2026-04-03
+# Story 3-1 in-progress 2026-04-03
+# Story 3-1 created 2026-04-03
+# Sprint planning refreshed — Epic 2 complete, next: Epic 3 2026-04-03
 # Story 2-4 done (code review passed) 2026-04-03
 # Story 2-4 review 2026-04-03
 # Story 2-4 in-progress 2026-04-03
@@ -87,7 +91,7 @@ development_status:
   epic-1-retrospective: optional
 
   # Epic 2: Expense Feed & Management
-  epic-2: in-progress
+  epic-2: done
   2-1-expense-feed-with-partner-attribution: done
   2-2-floating-add-button: done
   2-3-edit-expense-flow: done
@@ -95,8 +99,8 @@ development_status:
   epic-2-retrospective: optional
 
   # Epic 3: Spending Insights
-  epic-3: backlog
-  3-1-insights-screen-with-time-period-switching: backlog
+  epic-3: in-progress
+  3-1-insights-screen-with-time-period-switching: review
   3-2-category-donut-chart: backlog
   3-3-daily-bar-chart-and-category-breakdown-list: backlog
   epic-3-retrospective: optional
