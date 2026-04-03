@@ -2,6 +2,7 @@ import SwiftUI
 
 struct ContentView: View {
     @State private var selectedTab = 0
+    @State private var showingAddExpenseSheet = false
 
     var body: some View {
         TabView(selection: $selectedTab) {
@@ -20,6 +21,19 @@ struct ContentView: View {
             }
         }
         .tabBarMinimizeBehavior(.onScrollDown)
+        .tabViewBottomAccessory {
+            if selectedTab != 0 {
+                FloatingAddButton {
+                    showingAddExpenseSheet = true
+                }
+            }
+        }
+        .sheet(isPresented: $showingAddExpenseSheet) {
+            EntryView(onSaveComplete: {
+                showingAddExpenseSheet = false
+            })
+            .presentationDetents([.large])
+        }
     }
 }
 

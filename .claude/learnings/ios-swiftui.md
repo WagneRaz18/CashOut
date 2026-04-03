@@ -13,6 +13,7 @@
 ## SwiftUI Performance
 - Use List (not ScrollView+VStack) for Feed — provides swipe actions and built-in row recycling. Switch to LazyVStack only if custom row layouts require leaving List.
 - .tabBarMinimizeBehavior(.onScrollDown) must be applied on TabView itself, not on tab content. Only triggers on tabs with scrollable content.
+- **2026-04-03**: `.tabViewBottomAccessory` with conditional content (`if condition { View }`) may leave empty accessory space when the condition is false — iOS may still reserve height for the slot. If visible dead space appears, use `.opacity(0)` + `.allowsHitTesting(false)` instead of conditional removal to guarantee zero visual footprint.
 - **2026-03-29**: Never have `LazyVGrid` as the direct child of `GeometryReader` — causes circular layout negotiation. Interpose `VStack(spacing: 0) { LazyVGrid(...) }` inside the GeometryReader closure to break the cycle. Also add `.frame(height:)` in `#Preview` for GeometryReader-based views so previews reflect realistic layout.
 
 ## Sign in with Apple
