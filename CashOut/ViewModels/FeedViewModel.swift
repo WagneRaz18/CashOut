@@ -24,6 +24,9 @@ final class FeedViewModel {
     private let authService: AuthenticationServiceProtocol
 
     @ObservationIgnored
+    private let hapticService: HapticServiceProtocol
+
+    @ObservationIgnored
     private var isObserving = false
 
     @ObservationIgnored
@@ -34,11 +37,13 @@ final class FeedViewModel {
     init(
         repository: ExpenseRepositoryProtocol = ExpenseRepository(),
         categoryRepository: CategoryRepositoryProtocol = CategoryRepository(),
-        authService: AuthenticationServiceProtocol = AuthenticationService()
+        authService: AuthenticationServiceProtocol = AuthenticationService(),
+        hapticService: HapticServiceProtocol = HapticService()
     ) {
         self.repository = repository
         self.categoryRepository = categoryRepository
         self.authService = authService
+        self.hapticService = hapticService
     }
 
     // MARK: - Observation
@@ -71,6 +76,20 @@ final class FeedViewModel {
 
     func partnerInitials(for expense: ExpenseData) -> String {
         isCurrentUser(expense) ? "Me" : "P"
+    }
+
+    // MARK: - Delete
+
+    func deleteExpense(_ expense: ExpenseData) async {
+        do {
+            try await repository.deleteExpense(id: expense.id)
+            guard !Task.isCancelled else { return }
+            hapticService.trigger(.deleteTap)
+        } catch {
+            #if DEBUG
+            print("Delete failed: \(error)")
+            #endif
+        }
     }
 
     // MARK: - Private

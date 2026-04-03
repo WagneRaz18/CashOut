@@ -25,6 +25,15 @@ struct FeedView: View {
                             )
                         }
                         .buttonStyle(.plain)
+                        .swipeActions(edge: .leading, allowsFullSwipe: false) {
+                            Button(role: .destructive) {
+                                Task {
+                                    await viewModel.deleteExpense(expense)
+                                }
+                            } label: {
+                                Label("Delete", systemImage: "trash")
+                            }
+                        }
                         .swipeActions(edge: .trailing, allowsFullSwipe: false) {
                             Button {
                                 expenseToEdit = expense

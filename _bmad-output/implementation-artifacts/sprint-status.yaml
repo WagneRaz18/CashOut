@@ -36,6 +36,10 @@
 
 generated: 2026-03-27
 last_updated: "2026-04-03"
+# Story 2-4 review 2026-04-03
+# Story 2-4 in-progress 2026-04-03
+# Story 2-4 created 2026-04-03
+# Sprint planning refreshed — Epic 2 stories 2-1..2-3 done, next: 2-4 2026-04-03
 # Story 2-3 done (code review passed) 2026-04-03
 # Story 2-3 review 2026-04-03
 # Story 2-3 in-progress 2026-04-03
@@ -86,7 +90,7 @@ development_status:
   2-1-expense-feed-with-partner-attribution: done
   2-2-floating-add-button: done
   2-3-edit-expense-flow: done
-  2-4-delete-expense-flow: backlog
+  2-4-delete-expense-flow: review
   epic-2-retrospective: optional
 
   # Epic 3: Spending Insights

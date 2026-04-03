@@ -15,6 +15,7 @@ final class MockExpenseRepository: ExpenseRepositoryProtocol {
     var lastSavedExpense: ExpenseData?
     var fetchExpensesCalled = false
     var deleteExpenseCalled = false
+    var lastDeletedExpenseID: UUID?
 
     // MARK: - FRC Observation (Story 2-1)
 
@@ -43,6 +44,7 @@ final class MockExpenseRepository: ExpenseRepositoryProtocol {
 
     func deleteExpense(id: UUID) async throws {
         deleteExpenseCalled = true
+        lastDeletedExpenseID = id
         if shouldThrow { throw throwError }
     }
 }
