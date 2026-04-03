@@ -36,6 +36,7 @@
 
 generated: 2026-03-27
 last_updated: "2026-04-03"
+# Story 2-4 done (code review passed) 2026-04-03
 # Story 2-4 review 2026-04-03
 # Story 2-4 in-progress 2026-04-03
 # Story 2-4 created 2026-04-03
@@ -90,7 +91,7 @@ development_status:
   2-1-expense-feed-with-partner-attribution: done
   2-2-floating-add-button: done
   2-3-edit-expense-flow: done
-  2-4-delete-expense-flow: review
+  2-4-delete-expense-flow: done
   epic-2-retrospective: optional
 
   # Epic 3: Spending Insights

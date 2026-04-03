@@ -70,3 +70,9 @@
 - **D3: Whitespace-only noteText persisted as non-nil** — `EditExpenseViewModel.swift:113`. `noteText.isEmpty` doesn't catch `"   "`. Should use `trimmingCharacters(in: .whitespaces).isEmpty`. Same in `ExpenseEntryViewModel`.
 - **D4: loadCategories error silently swallowed** — `EditExpenseViewModel.swift:90`. Catch block is empty with a comment. Should log via `os_log(.error)`. Same pattern in `ExpenseEntryViewModel`.
 - **D5: appendDecimalPoint fires haptic for a no-op** — `EditExpenseViewModel.swift:80`. Decimal point is no-op in satang model, but haptic still fires. Pre-existing in `ExpenseEntryViewModel`.
+
+## Deferred from: code review of 2-4-delete-expense-flow (2026-04-03)
+
+- **F2: Race condition — edit sheet open while expense deleted re-creates expense on save** — `FeedView.swift` + `EditExpenseViewModel.swift`. If edit sheet is open and the expense is deleted (by partner sync or swipe), `saveExpense()` calls `ExpenseRepository.saveExpense()` which re-creates the managed object if not found. Pre-existing from Story 2-3.
+- **F3: `context.save()` failure after `context.delete()` leaves dirty Core Data context** — `ExpenseRepository.swift:142-144`. No `context.rollback()` on save failure. Pending deletion commits on next successful save from any operation. Pre-existing.
+- **F4: `.onAppear` instead of `.task` for FeedView lifecycle** — `FeedView.swift:56-58`. `.task {}` is preferred for async lifecycle work and auto-cancels on disappear. `isObserving` guard prevents double-invocation, so current code is safe. Pre-existing from Story 2-1.

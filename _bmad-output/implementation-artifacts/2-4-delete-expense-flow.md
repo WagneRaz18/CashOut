@@ -1,6 +1,6 @@
 # Story 2.4: Delete Expense Flow
 
-Status: review
+Status: done
 
 ## Story
 
@@ -323,3 +323,10 @@ Claude Opus 4.6 (1M context)
 - 3 acknowledged trade-offs (fire-and-forget Task, VoiceOver label context, mock ID tracking order)
 
 All WARNINGs reviewed and documented — no blockers for code review.
+
+### Review Findings
+
+- [x] [Review][Patch] F1: Delete failure now sets `errorMessage` for consistency with architecture error pattern — `errorMessage = "Could not delete expense. Please try again."` + `guard !Task.isCancelled` in catch block. Test updated to assert `errorMessage` is set on failure. [FeedViewModel.swift:89-92]
+- [x] [Review][Defer] F2: Race condition — edit sheet open while expense deleted re-creates expense on save [FeedView.swift + EditExpenseViewModel.swift] — deferred, pre-existing from Story 2-3
+- [x] [Review][Defer] F3: `context.save()` failure after `context.delete()` leaves dirty Core Data context with no rollback [ExpenseRepository.swift:142-144] — deferred, pre-existing
+- [x] [Review][Defer] F4: `.onAppear` instead of `.task` in FeedView lifecycle [FeedView.swift:56-58] — deferred, pre-existing from Story 2-1

@@ -310,17 +310,20 @@ final class FeedViewModelTests: XCTestCase {
         )
     }
 
-    func testDeleteExpenseSwallowsErrorSilently() async {
+    func testDeleteExpenseSetsErrorMessageOnFailure() async {
         let (viewModel, expenseRepo, _, _, _) = makeSUT()
         expenseRepo.shouldThrow = true
         let expense = makeExpense()
 
         await viewModel.deleteExpense(expense)
 
-        // Test passes if no crash — error is swallowed silently
         XCTAssertTrue(
             expenseRepo.deleteExpenseCalled,
             "deleteExpense should attempt deletion even when it will fail"
+        )
+        XCTAssertNotNil(
+            viewModel.errorMessage,
+            "deleteExpense should set errorMessage when repository throws"
         )
     }
 }

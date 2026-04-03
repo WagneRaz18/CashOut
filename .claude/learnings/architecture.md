@@ -16,6 +16,7 @@
 - **2026-03-28**: `CheckedContinuation` must never be overwritten — storing a new continuation before the previous is resumed crashes in debug. Guard with `signInContinuation != nil` before starting a new async bridge.
 - **2026-03-29**: Apply `@MainActor` at the XCTestCase class level, not per-method, when testing `@MainActor`-isolated ViewModels — prevents actor-boundary issues in future `setUp()`/`tearDown()` overrides.
 - **2026-03-29**: After `try await repository.save()`, add `guard !Task.isCancelled else { return }` before post-save state mutations (UI reset, UserDefaults write) — the view that spawned the Task may be gone (tab switch/dismiss), making the mutations pointless or dangerously late.
+- **2026-04-03**: `guard !Task.isCancelled` must also appear in `catch` blocks of async ViewModel methods before setting `errorMessage` — the catch fires after an awaited call fails, and the view may be gone by then. Symmetric with the success-path guard.
 - **2026-03-29**: Boolean flag guards (`isSaving`) must be checked BEFORE the flag is set: `guard !isSaving else { return }; isSaving = true; defer { isSaving = false }`. Without the upfront guard, a second @MainActor Task can start between suspension points and bypass the flag — `isSaving = true` + `defer` alone is a lifecycle signal, not a concurrency lock.
 
 ## Data Layer

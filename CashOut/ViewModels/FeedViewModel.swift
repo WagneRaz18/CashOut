@@ -86,6 +86,8 @@ final class FeedViewModel {
             guard !Task.isCancelled else { return }
             hapticService.trigger(.deleteTap)
         } catch {
+            guard !Task.isCancelled else { return }
+            errorMessage = "Could not delete expense. Please try again."
             #if DEBUG
             print("Delete failed: \(error)")
             #endif
