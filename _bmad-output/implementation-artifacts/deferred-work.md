@@ -85,6 +85,15 @@
 
 ## Deferred from: code review of 3-2-category-donut-chart (2026-04-04)
 
+## Deferred from: code review of 4-1-cloudkit-shared-zone-and-partner-invitation (2026-04-04)
+
+- **W1: AppDelegate:34 uses `print()` for share acceptance error** — `AppDelegate.swift:34`. Pre-existing logging inconsistency. Should use `os_log(.error)` for production trace.
+- **W2: PersistenceController uses `fatalError` on store load failure** — `PersistenceController.swift:77`. No graceful degradation if shared store fails to load. Replace with error propagation or fallback to solo mode for shared store.
+- **W3: `sharedPersistentStore` nil when iCloud unavailable — silent share rejection** — `AppDelegate.swift:28`. When iCloud is unavailable at launch, shared store is never created. Partner acceptance silently fails until app restart. Needs `handleAccountChange()` implementation.
+- **W4: Multiple SettingsView instances from tab navigation — no shared state** — `FeedView.swift:58`, `InsightsView.swift:81`. Each tab creates independent SettingsView/SettingsViewModel/CloudSharingService. State not shared across navigations. Consider singleton CloudSharingService or environment injection.
+
+## Deferred from: code review of 3-2-category-donut-chart (2026-04-04)
+
 - **D1: Default `AuthenticationService()` in ViewModel init** — All ViewModels (FeedViewModel, ExpenseEntryViewModel, InsightsViewModel) use `authService: AuthenticationServiceProtocol = AuthenticationService()` as default parameter. The learnings entry warns against creating instances in Views; the ViewModel default parameter is the established DI convention. If the shared instance pattern changes, all ViewModels need updating.
 - **D2: Duplicate `categoryName` values break `chartForegroundStyleScale` domain** — `InsightsSummaryView.swift:51-53`. If two categories share the same `name` (possible with custom categories in Epic 5), chart colors may map incorrectly and slices could visually merge. Enforce unique names at category creation time (Story 5-2).
 - **D3: "This day total:" awkward VoiceOver phrasing** — `InsightsViewModel.chartAccessibilityLabel` uses `selectedPeriod.emptyStateLabel` which returns "day" for `.daily`. "Today's total:" would be more natural. Pre-existing label from Story 3-1.

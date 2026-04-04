@@ -34,10 +34,23 @@ final class CloudSharingService: CloudSharingServiceProtocol {
             )
         }
 
+        guard FileManager.default.ubiquityIdentityToken != nil else {
+            throw NSError(
+                domain: "CloudSharingService",
+                code: 2,
+                userInfo: [NSLocalizedDescriptionKey: "Sign in to iCloud in Settings to invite a partner."]
+            )
+        }
+
+        // Reuse existing share if one was already created (e.g., user dismissed without sending)
+        if let existingShare = currentShare {
+            return (existingShare, CKContainer(identifier: "iCloud.com.wagneraz.CashOut"))
+        }
+
         let (_, share, _) = try await persistenceController.container.share(objects, to: nil)
         currentShare = share
         share[CKShare.SystemFieldKey.title] = "CashOut Household"
-        return (share, CKContainer.default())
+        return (share, CKContainer(identifier: "iCloud.com.wagneraz.CashOut"))
     }
 
     func checkSharingStatus() async {
@@ -80,7 +93,7 @@ final class CloudSharingService: CloudSharingServiceProtocol {
     // MARK: - Private
 
     private func extractPartnerInfo(from share: CKShare) {
-        let nonOwnerParticipants = share.participants.filter { $0.role != .owner }
+        let nonOwnerParticipants = share.participants.filter { $0.role != .owner && $0.acceptanceStatus == .accepted }
         guard let partner = nonOwnerParticipants.first else {
             partnerName = nil
             return

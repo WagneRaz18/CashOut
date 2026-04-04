@@ -1,5 +1,6 @@
 import SwiftUI
 import CloudKit
+import os
 
 struct CloudSharingSheet: UIViewControllerRepresentable {
     let share: CKShare
@@ -26,7 +27,7 @@ struct CloudSharingSheet: UIViewControllerRepresentable {
             _ csc: UICloudSharingController,
             failedToSaveShareWithError error: Error
         ) {
-            print("Share save failed: \(error)")
+            os_log(.error, "Share save failed: %{public}@", error.localizedDescription)
             onDismiss(nil)
         }
 

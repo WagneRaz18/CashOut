@@ -8,6 +8,9 @@
 - **2026-04-04**: Store classification in `loadPersistentStores` should use URL matching, not `databaseScope` — when iCloud is unavailable, `cloudKitContainerOptions` is nil and databaseScope check fails.
 - ViewModels must never import SwiftUI — they live in the ViewModel layer with no UI dependency.
 - Repository protocols must return plain structs (DTOs like ExpenseData), never NSManagedObject — they are not Sendable and leak Core Data types across boundaries.
+- **Exception:** `SettingsViewModel` accesses `viewContext` directly for `container.share(objects, to:)` which requires `[NSManagedObject]`. Accepted MVVM exception for CloudKit sharing (Story 4-1 decision D2, 2026-04-04).
+- **2026-04-04**: Boolean flag guards (`isInviting`, `isSaving`) must use `defer` for reset: `guard !isInviting else { return }; isInviting = true; defer { isInviting = false }`. Manual resets on each path are fragile.
+- **2026-04-04**: `.sheet(isPresented:onDismiss:)` — always provide `onDismiss` when bridging UIKit controllers. UIKit delegate methods may not fire on interactive dismiss (swipe-down), leaving stale state.
 - **2026-04-03**: `@ObservationIgnored` is only for `var` stored properties — `let` constants are never tracked by `@Observable`, so annotating them is redundant and semantically misleading. Only annotate `var` dependencies.
 
 ## Async & Task Lifecycle

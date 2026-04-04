@@ -28,6 +28,7 @@ final class SettingsViewModel {
     func invitePartner() async {
         guard !isInviting else { return }
         isInviting = true
+        defer { isInviting = false }
         errorMessage = nil
 
         do {
@@ -39,7 +40,6 @@ final class SettingsViewModel {
 
             guard !categories.isEmpty else {
                 errorMessage = "No categories found. Please restart the app."
-                isInviting = false
                 return
             }
 
@@ -48,12 +48,11 @@ final class SettingsViewModel {
             activeContainer = container
             isShowingShareSheet = true
         } catch {
-            guard !Task.isCancelled else { isInviting = false; return }
+            guard !Task.isCancelled else { return }
             errorMessage = error.localizedDescription
             activeShare = nil
             activeContainer = nil
         }
-        isInviting = false
     }
 
     func refreshSharingStatus() async {
@@ -63,8 +62,8 @@ final class SettingsViewModel {
     func handleShareDismiss(_ share: CKShare?) {
         if let share {
             cloudSharingService.persistUpdatedShare(share)
-            Task { await refreshSharingStatus() }
         }
         isShowingShareSheet = false
+        Task { await refreshSharingStatus() }
     }
 }

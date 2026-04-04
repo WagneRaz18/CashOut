@@ -16,7 +16,11 @@
 ## CKShare & Participant Management
 - Use zone-level sharing (CKShare per zone), not hierarchical record sharing — simpler for 2-user household.
 - UICloudSharingController is UIKit — needs UIViewControllerRepresentable wrapper for SwiftUI.
-- **CAUTION:** `container.share()` deadlocks on iOS 17+ unless called from `CKShareTransferRepresentation.prepareShare`. Prefer `ShareLink` + `CKShareTransferRepresentation` over `UICloudSharingController` for new SwiftUI code.
+- **CAUTION (iOS 17 only):** `container.share()` was reported to deadlock on iOS 17 unless called from `CKShareTransferRepresentation.prepareShare`. Tested and working on iOS 26+ with `UICloudSharingController(share:container:)` pattern. Risk accepted for iOS 26+ minimum target (Story 4-1 decision D1, 2026-04-04).
+- Always use `CKContainer(identifier: "iCloud.com.wagneraz.CashOut")` — never `CKContainer.default()` — to ensure container matches `PersistenceController` config.
+- Before calling `container.share()`, check `FileManager.default.ubiquityIdentityToken != nil` — if iCloud is signed out, throw a user-friendly error instead of letting `CKError.notAuthenticated` propagate.
+- Reuse existing `CKShare` when re-presenting share sheet — calling `container.share(objects, to: nil)` multiple times creates duplicate CKShares in separate zones.
+- Filter `CKShare.participants` for `.accepted` acceptance status when displaying partner info — pending/removed participants should not show as connected.
 - App must implement `userDidAcceptCloudKitShareWith` and call `container.acceptShareInvitations(from:into:)` for partner join flow. There is NO `container.accept(metadata)` convenience method on NSPersistentCloudKitContainer.
 - `.onCKShareAccepted` is NOT a real SwiftUI scene modifier — use `UIApplicationDelegate.userDidAcceptCloudKitShareWith` for share acceptance.
 

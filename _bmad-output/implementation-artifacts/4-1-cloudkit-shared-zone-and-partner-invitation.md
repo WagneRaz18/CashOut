@@ -1,6 +1,6 @@
 # Story 4.1: CloudKit Shared Zone & Partner Invitation
 
-Status: review
+Status: done
 
 ## Story
 
@@ -482,6 +482,24 @@ Claude Opus 4.6 (1M context)
 - CashOut/Views/Insights/InsightsView.swift — added gear icon toolbar item
 - CashOut.xcodeproj/project.pbxproj — added new files and Settings group
 
+### Review Findings
+
+- [x] [Review][Decision] D1: `container.share()` deadlock risk on iOS 17+ — ACCEPTED: iOS 26+ minimum target; spec validated this approach. Learnings updated to clarify iOS 17 caveat does not apply. [CloudSharingService.swift:37]
+- [x] [Review][Decision] D2: SettingsViewModel bypasses CategoryRepositoryProtocol — ACCEPTED: spec-designed tech debt. `createShare(for:)` requires [NSManagedObject]; direct viewContext access is the pragmatic choice. [SettingsViewModel.swift:34-39]
+- [x] [Review][Patch] P1: `print()` → `os_log(.error)` in CloudSharingSheet error handler — FIXED [CloudSharingSheet.swift:29]
+- [x] [Review][Patch] P2: Re-inviting reuses existing CKShare instead of creating duplicate — FIXED [CloudSharingService.swift:37]
+- [x] [Review][Patch] P3: `handleShareDismiss` now always refreshes sharing status (nil and non-nil paths) — FIXED [SettingsViewModel.swift:63]
+- [x] [Review][Patch] P4: `isInviting` reset uses `defer` pattern — FIXED [SettingsViewModel.swift:28-56]
+- [x] [Review][Patch] P5+P7: Sheet `.onDismiss` catches interactive dismiss; refreshes state on all dismiss paths — FIXED [SettingsView.swift:27]
+- [x] [Review][Patch] P6: `extractPartnerInfo` filters for `.accepted` acceptance status only — FIXED [CloudSharingService.swift:83]
+- [x] [Review][Patch] P8: `CKContainer(identifier:)` explicit match instead of `.default()` — FIXED [CloudSharingService.swift:40]
+- [x] [Review][Patch] P9: iCloud signed-out pre-check with user-friendly error message — FIXED [CloudSharingService.swift:28]
+- [x] [Review][Defer] W1: AppDelegate:34 uses `print()` for share acceptance error [AppDelegate.swift:34] — deferred, pre-existing
+- [x] [Review][Defer] W2: PersistenceController uses `fatalError` on store load failure [PersistenceController.swift:77] — deferred, pre-existing
+- [x] [Review][Defer] W3: `sharedPersistentStore` nil when iCloud unavailable — silent share rejection [AppDelegate.swift:28] — deferred, pre-existing architecture
+- [x] [Review][Defer] W4: Multiple SettingsView instances from tab navigation — no shared state [FeedView.swift:58, InsightsView.swift:81] — deferred, architectural optimization
+
 ## Change Log
 - 2026-04-04: Initial implementation of all 8 tasks — CloudSharingService, CloudSharingSheet, SettingsViewModel, SettingsView + HouseholdSectionView, Bundle+Version extension, gear icon toolbar on Feed/Insights, MockCloudSharingService + 11 unit tests
 - 2026-04-04: Addressed orchestrator guardian findings (8 items) — removed redundant @ObservationIgnored on let constants, fixed optional-nil init pattern, replaced force unwrap with guard let, added Task.isCancelled guard, added isInviting double-tap guard, fixed store classification when iCloud unavailable (URL matching vs databaseScope), pinned category fetch to private store, restricted share permissions to readWrite only
+- 2026-04-04: Code review (4-layer adversarial) — 2 decisions accepted, 9 patches applied, 4 deferred, 13 dismissed. Key fixes: duplicate CKShare prevention, iCloud signed-out guard, explicit CKContainer identifier, os_log for share errors, defer pattern for isInviting, interactive dismiss tracking, accepted-only participant filter, always-refresh on dismiss

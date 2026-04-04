@@ -24,7 +24,12 @@ struct SettingsView: View {
         }
         .navigationTitle("Settings")
         .task { await viewModel.refreshSharingStatus() }
-        .sheet(isPresented: Bindable(viewModel).isShowingShareSheet) {
+        .sheet(isPresented: Bindable(viewModel).isShowingShareSheet, onDismiss: {
+            // Catches interactive dismiss (swipe-down) when no delegate method fires
+            if viewModel.isShowingShareSheet {
+                viewModel.handleShareDismiss(nil)
+            }
+        }) {
             if let share = viewModel.activeShare,
                let container = viewModel.activeContainer {
                 CloudSharingSheet(share: share, container: container) { updatedShare in
