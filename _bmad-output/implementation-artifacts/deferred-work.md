@@ -79,6 +79,12 @@
 
 ## Deferred from: code review of 3-2-category-donut-chart (2026-04-04)
 
+## Deferred from: code review of 3-3-daily-bar-chart-and-category-breakdown-list (2026-04-04)
+
+- **D1: `DateInterval()` fallback passes Jan 1 2001 to FilteredFeedView** — `InsightsView.swift:73`. `viewModel.currentPeriodInterval ?? DateInterval()` falls back to a zero-duration interval at Jan 1, 2001. Navigation can't trigger before loadData in practice (selectedCategoryID starts nil), but a guard disabling navigation when interval is nil would be cleaner. Pre-existing from story 3-2.
+
+## Deferred from: code review of 3-2-category-donut-chart (2026-04-04)
+
 - **D1: Default `AuthenticationService()` in ViewModel init** — All ViewModels (FeedViewModel, ExpenseEntryViewModel, InsightsViewModel) use `authService: AuthenticationServiceProtocol = AuthenticationService()` as default parameter. The learnings entry warns against creating instances in Views; the ViewModel default parameter is the established DI convention. If the shared instance pattern changes, all ViewModels need updating.
 - **D2: Duplicate `categoryName` values break `chartForegroundStyleScale` domain** — `InsightsSummaryView.swift:51-53`. If two categories share the same `name` (possible with custom categories in Epic 5), chart colors may map incorrectly and slices could visually merge. Enforce unique names at category creation time (Story 5-2).
 - **D3: "This day total:" awkward VoiceOver phrasing** — `InsightsViewModel.chartAccessibilityLabel` uses `selectedPeriod.emptyStateLabel` which returns "day" for `.daily`. "Today's total:" would be more natural. Pre-existing label from Story 3-1.

@@ -1,6 +1,6 @@
 # Story 3.3: Daily Bar Chart & Category Breakdown List
 
-Status: review
+Status: done
 
 ## Story
 
@@ -129,6 +129,12 @@ So that I can identify spending trends and see per-category totals.
   - [ ] 8.5 Manual verification: tapping a breakdown row navigates to filtered feed
   - [ ] 8.6 Manual verification: scrolling down minimizes the tab bar
   - [ ] 8.7 Manual verification: VoiceOver announces bar chart totals and breakdown row details
+
+### Review Findings
+
+- [x] [Review][Patch] Proportion bar `Color(colorName)` missing fallback — badge uses `CategoryColor(from:)?.color ?? .gray` but proportion bar uses raw `Color(slice.colorName)` without fallback; renders invisible if color not in asset catalog [CategoryBreakdownView.swift:35] — **fixed**
+- [x] [Review][Patch] No test for weekly bar entry label order — learnings note BarMark alphabetical sorting risk; test `barEntries.map(\.label)` order to catch regressions if `computeBarEntries` is refactored [InsightsViewModelTests.swift] — **fixed**
+- [x] [Review][Defer] `DateInterval()` fallback passes Jan 1 2001 to FilteredFeedView [InsightsView.swift:73] — deferred, pre-existing from story 3-2
 
 ## Dev Notes
 

@@ -592,6 +592,31 @@ final class InsightsViewModelTests: XCTestCase {
         )
     }
 
+    func testBarEntriesForWeeklyPeriodAreInChronologicalOrder() async {
+        let (viewModel, expenseRepo, _) = makeSUT()
+        expenseRepo.stubbedFetchResult = [makeExpense(amount: 500)]
+
+        await viewModel.loadData()
+
+        let labels = viewModel.barEntries.map(\.label)
+        let calendar = Calendar.current
+        let weekInterval = calendar.dateInterval(of: .weekOfYear, for: Date())!
+        var expectedLabels: [String] = []
+        let formatter = DateFormatter()
+        formatter.dateFormat = "EEE"
+        formatter.locale = Locale(identifier: "en_US_POSIX")
+        var date = weekInterval.start
+        while date < weekInterval.end {
+            expectedLabels.append(formatter.string(from: date))
+            date = calendar.date(byAdding: .day, value: 1, to: date) ?? weekInterval.end
+        }
+
+        XCTAssertEqual(
+            labels, expectedLabels,
+            "Weekly bar entries should be in chronological order (first weekday to last)"
+        )
+    }
+
     func testBarEntriesClearedOnError() async {
         let (viewModel, expenseRepo, categoryRepo) = makeSUT()
         let catID = UUID()

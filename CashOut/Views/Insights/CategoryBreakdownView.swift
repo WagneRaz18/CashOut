@@ -32,7 +32,7 @@ struct CategoryBreakdownView: View {
 
                             GeometryReader { geometry in
                                 RoundedRectangle(cornerRadius: 2)
-                                    .fill(Color(slice.colorName))
+                                    .fill(CategoryColor(from: slice.colorName)?.color ?? .gray)
                                     .frame(width: max(geometry.size.width * proportion, 2))
                             }
                             .frame(height: 4)

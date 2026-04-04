@@ -44,6 +44,7 @@
 ## Core Data Testing
 - **2026-03-28**: `PersistenceController(inMemory: true)` already disables CloudKit (sets `cloudKitContainerOptions = nil` and URL to `/dev/null`) — no need for a separate plain `NSPersistentContainer` test helper. Reuse the existing controller.
 - **2026-03-28**: Asset catalog colorset group folders (e.g., `CategoryColors/`) are NOT part of the `Color(_ name:)` lookup — Xcode resolves by colorset name only. `Color("Sage")` works regardless of folder nesting depth.
+- **2026-04-04**: `Color("name")` silently renders as clear/invisible when the name doesn't match an asset catalog entry — no crash, no warning. Always use the `CategoryColor(from:)?.color ?? .gray` enum-based lookup with an explicit fallback instead of raw `Color(colorName)` for data-driven color names.
 
 ## iOS Platform Patterns
 - For Liquid Glass buttons: use .buttonStyle(.glass) or .buttonStyle(.glassProminent) — never combine with .glassEffect() modifier on the same element.
