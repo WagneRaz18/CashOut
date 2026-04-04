@@ -58,6 +58,9 @@
 - **2026-03-29**: Currency display formatting must use `Decimal(self) / 100` not `Double(self) / 100.0` — enforces "no floating-point for money" even in display-only contexts. `Decimal.FormatStyle.Currency` works identically to `FloatingPointFormatStyle.Currency`.
 - **2026-03-29**: In `@Observable` classes, declare constants as `private static let` not `private let` — instance `let` occupies heap per instance unnecessarily. Access via `Self.constant`.
 
+## Authentication & DI
+- **2026-04-04**: Never create a new `AuthenticationService()` instance in a View — it will be disconnected from the app's shared instance and `currentUserID` will always be `nil`. Always inject `AuthenticationServiceProtocol` through the ViewModel init, matching the pattern used by `FeedViewModel` and `ExpenseEntryViewModel`.
+
 ## Navigation Coordination
 - For simple apps (3 tabs + sheets): TabView selection is @State in ContentView, sheet presentation is @State on presenting View. Full Coordinator pattern is unnecessary.
 - Each tab owns its own NavigationStack. Never wrap TabView inside NavigationStack.

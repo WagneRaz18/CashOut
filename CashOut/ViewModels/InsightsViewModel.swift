@@ -50,12 +50,24 @@ final class InsightsViewModel {
         var id: UUID { categoryID }
     }
 
+    struct ChartSlice: Identifiable, Sendable {
+        let categoryID: UUID
+        let categoryName: String
+        let colorName: String
+        let total: Int64
+        var id: UUID { categoryID }
+    }
+
     // MARK: - Observable Properties
 
     var selectedPeriod: TimePeriod = .weekly
     var totalAmount: Int64 = 0
     var previousPeriodTotal: Int64?
     var categoryTotals: [CategoryTotal] = []
+    var chartSlices: [ChartSlice] = []
+    var selectedCategoryID: UUID?
+    private(set) var currentPeriodInterval: DateInterval?
+    private(set) var fetchedCategories: [CategoryData] = []
     var errorMessage: String?
 
     // MARK: - Computed Properties
@@ -78,13 +90,24 @@ final class InsightsViewModel {
         }
     }
 
+    var currentUserID: String? { authService.currentUserID }
+
     var emptyStateText: String { "No entries this \(selectedPeriod.emptyStateLabel)" }
+
+    var chartAccessibilityLabel: String {
+        guard let largest = chartSlices.first else {
+            return "No entries this \(selectedPeriod.emptyStateLabel)"
+        }
+        return "This \(selectedPeriod.emptyStateLabel) total: \(totalAmount.displayAmount). Largest category: \(largest.categoryName) at \(largest.total.displayAmount)."
+    }
 
     // MARK: - Dependencies
 
     private let repository: ExpenseRepositoryProtocol
 
     private let categoryRepository: CategoryRepositoryProtocol
+
+    private let authService: AuthenticationServiceProtocol
 
     // MARK: - Guard State
 
@@ -95,10 +118,12 @@ final class InsightsViewModel {
 
     init(
         repository: ExpenseRepositoryProtocol = ExpenseRepository(),
-        categoryRepository: CategoryRepositoryProtocol = CategoryRepository()
+        categoryRepository: CategoryRepositoryProtocol = CategoryRepository(),
+        authService: AuthenticationServiceProtocol = AuthenticationService()
     ) {
         self.repository = repository
         self.categoryRepository = categoryRepository
+        self.authService = authService
     }
 
     // MARK: - Data Loading
@@ -111,6 +136,10 @@ final class InsightsViewModel {
     func invalidateAndReload() async {
         loadedPeriod = nil
         await performLoad()
+    }
+
+    func selectCategory(_ categoryID: UUID?) {
+        selectedCategoryID = categoryID
     }
 
     func subscribeToRemoteChanges() async {
@@ -138,6 +167,9 @@ final class InsightsViewModel {
             let previousExpenses = try await repository.fetchExpenses(for: previousInterval)
             guard !Task.isCancelled else { return }
 
+            let categories = try await categoryRepository.fetchCategories()
+            guard !Task.isCancelled else { return }
+
             totalAmount = currentExpenses.reduce(Int64(0)) { $0 + $1.amount }
 
             var grouped: [UUID: Int64] = [:]
@@ -148,15 +180,34 @@ final class InsightsViewModel {
                 .map { CategoryTotal(categoryID: $0.key, total: $0.value) }
                 .sorted { $0.total > $1.total }
 
+            fetchedCategories = categories
+
+            let categoryMap: [UUID: CategoryData] = Dictionary(
+                uniqueKeysWithValues: categories.map { ($0.id, $0) }
+            )
+            chartSlices = categoryTotals.map { ct in
+                let category = categoryMap[ct.categoryID]
+                return ChartSlice(
+                    categoryID: ct.categoryID,
+                    categoryName: category?.name ?? "Unknown",
+                    colorName: category?.colorName ?? "CoolGray",
+                    total: ct.total
+                )
+            }
+
             previousPeriodTotal = previousExpenses.isEmpty ? nil : previousExpenses.reduce(Int64(0)) { $0 + $1.amount }
 
+            currentPeriodInterval = currentInterval
             errorMessage = nil
             loadedPeriod = period
         } catch {
             guard !Task.isCancelled else { return }
             totalAmount = 0
             categoryTotals = []
+            chartSlices = []
+            fetchedCategories = []
             previousPeriodTotal = nil
+            currentPeriodInterval = nil
             errorMessage = error.localizedDescription
         }
     }

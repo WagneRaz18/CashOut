@@ -7,6 +7,7 @@
 - NavigationPath must be @State on the tab root view, never on a ViewModel.
 
 ## SwiftUI State & Observation
+- **2026-04-04**: `@State` on an `@Observable` class does NOT expose `$viewModel` for property bindings. Use `Bindable(viewModel).property` inline or declare `@Bindable private var viewModel` to get `Binding<T>` for modifiers like `.navigationDestination(item:)`.
 - .task re-fires on every tab appear in TabView — guard with loaded-state check (e.g., `guard items.isEmpty else { return }`).
 - Subscribe to NotificationCenter via async sequence in .task {} — auto-cancels on view disappear. Never use addObserver in ViewModels.
 
@@ -24,6 +25,10 @@
 - Store userIdentifier in Keychain with kSecAttrAccessibleAfterFirstUnlockThisDeviceOnly.
 - Register for ASAuthorizationAppleIDProvider.credentialRevokedNotification for mid-session revocation detection.
 - Handle .revoked (clear Keychain + cleanup) separately from .notFound (just show sign-in, no cleanup).
+
+## Swift Charts
+- **2026-04-04**: `chartAngleSelection(value:)` binding type must exactly match the `PlottableValue` type passed to `SectorMark(angle: .value(..., value))`. If `value` is `Int64`, the binding must be `Binding<Int64?>`. Type mismatch silently prevents selection from firing.
+- **2026-04-04**: `.chartAngleSelection` alone uses hold-not-tap gesture (Apple bug). Must pair with `.chartGesture { chart in SpatialTapGesture().onEnded { ... chart.selectAngleValue(at: angle) } }` to enable single-tap selection on donut/pie charts.
 
 ## SwiftData Migrations
 - N/A — CashOut uses Core Data, not SwiftData (shared CloudKit database not supported in SwiftData).

@@ -6,17 +6,22 @@ final class InsightsViewModelTests: XCTestCase {
 
     // MARK: - Test Helpers
 
-    private func makeSUT() -> (
+    private func makeSUT(
+        currentUserID: String? = "test-user"
+    ) -> (
         viewModel: InsightsViewModel,
         expenseRepo: MockExpenseRepository,
         categoryRepo: MockCategoryRepository
     ) {
         let expenseRepo = MockExpenseRepository()
         let categoryRepo = MockCategoryRepository()
+        let authService = MockAuthenticationService()
+        authService.currentUserID = currentUserID
 
         let viewModel = InsightsViewModel(
             repository: expenseRepo,
-            categoryRepository: categoryRepo
+            categoryRepository: categoryRepo,
+            authService: authService
         )
 
         return (viewModel, expenseRepo, categoryRepo)
@@ -66,8 +71,11 @@ final class InsightsViewModelTests: XCTestCase {
             "loadData should fetch current period + previous period"
         )
 
+        // Capture now once to avoid midnight-straddling race
+        let now = Date()
+
         // Verify current period is this week
-        let thisWeek = Calendar.current.dateInterval(of: .weekOfYear, for: Date())!
+        let thisWeek = Calendar.current.dateInterval(of: .weekOfYear, for: now)!
         XCTAssertEqual(
             expenseRepo.fetchPeriods[0].start, thisWeek.start,
             "First fetch should be for current week start"
@@ -78,7 +86,7 @@ final class InsightsViewModelTests: XCTestCase {
         )
 
         // Verify previous period is last week
-        let lastWeekDate = Calendar.current.date(byAdding: .weekOfYear, value: -1, to: Date())!
+        let lastWeekDate = Calendar.current.date(byAdding: .weekOfYear, value: -1, to: now)!
         let lastWeek = Calendar.current.dateInterval(of: .weekOfYear, for: lastWeekDate)!
         XCTAssertEqual(
             expenseRepo.fetchPeriods[1].start, lastWeek.start,
@@ -333,6 +341,142 @@ final class InsightsViewModelTests: XCTestCase {
 
         viewModel.selectedPeriod = .monthly
         XCTAssertEqual(viewModel.emptyStateText, "No entries this month")
+    }
+
+    // MARK: - ChartSlice Tests (Story 3-2, AC #1)
+
+    func testChartSlicesPopulatedWithCorrectCategoryNamesColorsAndTotals() async {
+        let (viewModel, expenseRepo, categoryRepo) = makeSUT()
+        let foodID = UUID()
+        let transportID = UUID()
+        expenseRepo.stubbedFetchResult = [
+            makeExpense(amount: 2000, categoryID: foodID),
+            makeExpense(amount: 3000, categoryID: transportID)
+        ]
+        categoryRepo.categoriesToReturn = [
+            CategoryData(id: foodID, name: "Food & Drink", iconName: "fork.knife", colorName: "Sage", isDefault: true, sortOrder: 0),
+            CategoryData(id: transportID, name: "Transport", iconName: "car.fill", colorName: "Slate", isDefault: true, sortOrder: 1)
+        ]
+
+        await viewModel.loadData()
+
+        XCTAssertEqual(viewModel.chartSlices.count, 2, "Should have 2 chart slices")
+        XCTAssertEqual(viewModel.chartSlices[0].categoryName, "Transport", "First slice should be Transport (highest total)")
+        XCTAssertEqual(viewModel.chartSlices[0].colorName, "Slate")
+        XCTAssertEqual(viewModel.chartSlices[0].total, 3000)
+        XCTAssertEqual(viewModel.chartSlices[1].categoryName, "Food & Drink", "Second slice should be Food & Drink")
+        XCTAssertEqual(viewModel.chartSlices[1].colorName, "Sage")
+        XCTAssertEqual(viewModel.chartSlices[1].total, 2000)
+    }
+
+    func testChartSlicesSortedDescendingByTotal() async {
+        let (viewModel, expenseRepo, categoryRepo) = makeSUT()
+        let smallID = UUID()
+        let largeID = UUID()
+        let medID = UUID()
+        expenseRepo.stubbedFetchResult = [
+            makeExpense(amount: 100, categoryID: smallID),
+            makeExpense(amount: 5000, categoryID: largeID),
+            makeExpense(amount: 1000, categoryID: medID)
+        ]
+        categoryRepo.categoriesToReturn = [
+            CategoryData(id: smallID, name: "Small", iconName: "circle", colorName: "CoolGray", isDefault: true, sortOrder: 0),
+            CategoryData(id: largeID, name: "Large", iconName: "circle", colorName: "Sage", isDefault: true, sortOrder: 1),
+            CategoryData(id: medID, name: "Medium", iconName: "circle", colorName: "Slate", isDefault: true, sortOrder: 2)
+        ]
+
+        await viewModel.loadData()
+
+        XCTAssertEqual(viewModel.chartSlices.map(\.total), [5000, 1000, 100], "Slices should be sorted descending by total")
+    }
+
+    func testChartSlicesEmptyWhenNoExpenses() async {
+        let (viewModel, expenseRepo, _) = makeSUT()
+        expenseRepo.stubbedFetchResult = []
+
+        await viewModel.loadData()
+
+        XCTAssertTrue(viewModel.chartSlices.isEmpty, "chartSlices should be empty when no expenses")
+    }
+
+    func testChartSlicesClearedOnError() async {
+        let (viewModel, expenseRepo, categoryRepo) = makeSUT()
+        let catID = UUID()
+        expenseRepo.stubbedFetchResult = [makeExpense(amount: 1000, categoryID: catID)]
+        categoryRepo.categoriesToReturn = [
+            CategoryData(id: catID, name: "Food", iconName: "fork.knife", colorName: "Sage", isDefault: true, sortOrder: 0)
+        ]
+        await viewModel.loadData()
+        XCTAssertFalse(viewModel.chartSlices.isEmpty, "Precondition: slices should be populated")
+
+        // Force reload with error
+        expenseRepo.shouldThrow = true
+        await viewModel.invalidateAndReload()
+
+        XCTAssertTrue(viewModel.chartSlices.isEmpty, "chartSlices should be cleared on error")
+    }
+
+    // MARK: - Chart Accessibility Label Tests (Story 3-2, AC #5)
+
+    func testChartAccessibilityLabelContainsTotalAndLargestCategory() async {
+        let (viewModel, expenseRepo, categoryRepo) = makeSUT()
+        let foodID = UUID()
+        let transportID = UUID()
+        expenseRepo.stubbedFetchResult = [
+            makeExpense(amount: 12000, categoryID: foodID),
+            makeExpense(amount: 3000, categoryID: transportID)
+        ]
+        categoryRepo.categoriesToReturn = [
+            CategoryData(id: foodID, name: "Food & Drink", iconName: "fork.knife", colorName: "Sage", isDefault: true, sortOrder: 0),
+            CategoryData(id: transportID, name: "Transport", iconName: "car.fill", colorName: "Slate", isDefault: true, sortOrder: 1)
+        ]
+
+        await viewModel.loadData()
+
+        let label = viewModel.chartAccessibilityLabel
+        XCTAssertTrue(label.contains("Food & Drink"), "Accessibility label should name the largest category")
+        XCTAssertTrue(label.contains("total:"), "Accessibility label should contain total")
+    }
+
+    func testChartAccessibilityLabelReturnsEmptyStateTextWhenNoData() {
+        let (viewModel, _, _) = makeSUT()
+
+        XCTAssertEqual(
+            viewModel.chartAccessibilityLabel,
+            "No entries this week",
+            "Should return empty state text when no chart slices"
+        )
+    }
+
+    // MARK: - selectCategory Tests (Story 3-2, AC #2)
+
+    func testSelectCategorySetsSelectedCategoryID() {
+        let (viewModel, _, _) = makeSUT()
+        let id = UUID()
+
+        viewModel.selectCategory(id)
+
+        XCTAssertEqual(viewModel.selectedCategoryID, id, "selectCategory should set selectedCategoryID")
+    }
+
+    func testSelectCategoryNilClearsSelection() {
+        let (viewModel, _, _) = makeSUT()
+        viewModel.selectCategory(UUID())
+        viewModel.selectCategory(nil)
+
+        XCTAssertNil(viewModel.selectedCategoryID, "selectCategory(nil) should clear selectedCategoryID")
+    }
+
+    // MARK: - currentPeriodInterval Tests (Story 3-2, AC #2)
+
+    func testCurrentPeriodIntervalSetAfterSuccessfulLoad() async {
+        let (viewModel, _, _) = makeSUT()
+
+        await viewModel.loadData()
+
+        XCTAssertNotNil(viewModel.currentPeriodInterval, "currentPeriodInterval should be set after loadData")
+        let thisWeek = Calendar.current.dateInterval(of: .weekOfYear, for: Date())!
+        XCTAssertEqual(viewModel.currentPeriodInterval?.start, thisWeek.start, "Should match current week start")
     }
 
     // MARK: - Date Interval Tests (AC #3)

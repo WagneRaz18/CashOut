@@ -25,45 +25,44 @@ struct InsightsView: View {
                 }
 
                 if viewModel.isEmpty {
-                    VStack(spacing: Spacing.sm) {
-                        Text(viewModel.headlineText)
-                            .font(.title3)
-                            .monospacedDigit()
-
-                        Text(viewModel.emptyStateText)
-                            .font(.body)
-                            .foregroundStyle(.secondary)
-                    }
-                    .accessibilityElement(children: .combine)
-                    .frame(maxWidth: .infinity)
+                    InsightsSummaryView(
+                        slices: [],
+                        headlineText: viewModel.headlineText,
+                        periodLabel: viewModel.periodLabel,
+                        comparisonText: nil,
+                        emptyStateText: viewModel.emptyStateText,
+                        accessibilityLabel: viewModel.chartAccessibilityLabel,
+                        onSliceTapped: { _ in }
+                    )
                     .containerRelativeFrame(.vertical) { height, _ in
                         height
                     }
                 } else {
                     VStack(spacing: Spacing.md) {
-                        VStack(spacing: Spacing.xs) {
-                            Text(viewModel.headlineText)
-                                .font(.title3)
-                                .monospacedDigit()
-
-                            Text(viewModel.periodLabel)
-                                .font(.subheadline)
-                                .foregroundStyle(.secondary)
-
-                            if let comparison = viewModel.comparisonText {
-                                Text(comparison)
-                                    .font(.caption)
-                                    .foregroundStyle(.secondary)
+                        InsightsSummaryView(
+                            slices: viewModel.chartSlices,
+                            headlineText: viewModel.headlineText,
+                            periodLabel: viewModel.periodLabel,
+                            comparisonText: viewModel.comparisonText,
+                            emptyStateText: viewModel.emptyStateText,
+                            accessibilityLabel: viewModel.chartAccessibilityLabel,
+                            onSliceTapped: { categoryID in
+                                viewModel.selectCategory(categoryID)
                             }
-                        }
-                        .accessibilityElement(children: .combine)
-                        .frame(maxWidth: .infinity)
-                        .padding(.top, Spacing.md)
+                        )
 
-                        // Placeholder for donut chart (Story 3-2)
                         // Placeholder for bar chart and category breakdown (Story 3-3)
                     }
                 }
+            }
+            .navigationDestination(item: Bindable(viewModel).selectedCategoryID) { categoryID in
+                FilteredFeedView(
+                    categoryID: categoryID,
+                    categoryName: viewModel.chartSlices.first { $0.categoryID == categoryID }?.categoryName ?? "Category",
+                    period: viewModel.currentPeriodInterval ?? DateInterval(),
+                    categories: viewModel.fetchedCategories,
+                    currentUserID: viewModel.currentUserID
+                )
             }
         }
         .navigationTitle("Insights")

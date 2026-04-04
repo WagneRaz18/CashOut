@@ -35,7 +35,11 @@
 # - Dev moves story to 'review', then runs code-review (fresh context, different LLM recommended)
 
 generated: 2026-03-27
-last_updated: "2026-04-03"
+last_updated: "2026-04-04"
+# Story 3-2 review 2026-04-04
+# Story 3-2 in-progress 2026-04-04
+# Story 3-2 created 2026-04-04
+# Sprint planning refreshed — Epic 3 in-progress, next story: 3-2 2026-04-04
 # Story 3-1 done (code review passed) 2026-04-03
 # Story 3-1 review 2026-04-03
 # Story 3-1 in-progress 2026-04-03
@@ -102,7 +106,7 @@ development_status:
   # Epic 3: Spending Insights
   epic-3: in-progress
   3-1-insights-screen-with-time-period-switching: done
-  3-2-category-donut-chart: backlog
+  3-2-category-donut-chart: review
   3-3-daily-bar-chart-and-category-breakdown-list: backlog
   epic-3-retrospective: optional
 

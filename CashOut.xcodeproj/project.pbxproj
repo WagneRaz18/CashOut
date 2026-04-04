@@ -63,6 +63,8 @@
 		J1K2L3M4N5O60A13 /* EditExpenseViewModelTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = J1K2L3M4N5O60A03 /* EditExpenseViewModelTests.swift */; };
 		K1L2M3N4O5P60B11 /* InsightsViewModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = K1L2M3N4O5P60B01 /* InsightsViewModel.swift */; };
 		K1L2M3N4O5P60B12 /* InsightsViewModelTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = K1L2M3N4O5P60B02 /* InsightsViewModelTests.swift */; };
+		L1M2N3O4P5Q60C11 /* InsightsSummaryView.swift in Sources */ = {isa = PBXBuildFile; fileRef = L1M2N3O4P5Q60C01 /* InsightsSummaryView.swift */; };
+		L1M2N3O4P5Q60C12 /* FilteredFeedView.swift in Sources */ = {isa = PBXBuildFile; fileRef = L1M2N3O4P5Q60C02 /* FilteredFeedView.swift */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXContainerItemProxy section */
@@ -144,6 +146,8 @@
 		J1K2L3M4N5O60A03 /* EditExpenseViewModelTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = EditExpenseViewModelTests.swift; sourceTree = "<group>"; };
 		K1L2M3N4O5P60B01 /* InsightsViewModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = InsightsViewModel.swift; sourceTree = "<group>"; };
 		K1L2M3N4O5P60B02 /* InsightsViewModelTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = InsightsViewModelTests.swift; sourceTree = "<group>"; };
+		L1M2N3O4P5Q60C01 /* InsightsSummaryView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = InsightsSummaryView.swift; sourceTree = "<group>"; };
+		L1M2N3O4P5Q60C02 /* FilteredFeedView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FilteredFeedView.swift; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXGroup section */
@@ -356,7 +360,9 @@
 		B1C2D3E4F5061829B1C2D3E9 /* Insights */ = {
 			isa = PBXGroup;
 			children = (
+				L1M2N3O4P5Q60C02 /* FilteredFeedView.swift */,
 				B1C2D3E4F5061829B1C2D3E5 /* InsightsView.swift */,
+				L1M2N3O4P5Q60C01 /* InsightsSummaryView.swift */,
 			);
 			path = Insights;
 			sourceTree = "<group>";
@@ -562,6 +568,8 @@
 				J1K2L3M4N5O60A11 /* EditExpenseViewModel.swift in Sources */,
 				J1K2L3M4N5O60A12 /* EditExpenseSheet.swift in Sources */,
 				K1L2M3N4O5P60B11 /* InsightsViewModel.swift in Sources */,
+				L1M2N3O4P5Q60C11 /* InsightsSummaryView.swift in Sources */,
+				L1M2N3O4P5Q60C12 /* FilteredFeedView.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
