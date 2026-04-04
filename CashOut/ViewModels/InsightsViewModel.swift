@@ -183,7 +183,8 @@ final class InsightsViewModel {
             fetchedCategories = categories
 
             let categoryMap: [UUID: CategoryData] = Dictionary(
-                uniqueKeysWithValues: categories.map { ($0.id, $0) }
+                categories.map { ($0.id, $0) },
+                uniquingKeysWith: { _, last in last }
             )
             chartSlices = categoryTotals.map { ct in
                 let category = categoryMap[ct.categoryID]

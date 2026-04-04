@@ -128,6 +128,6 @@ struct InsightsSummaryView: View {
                 return slice.categoryID
             }
         }
-        return nil
+        return slices.last?.categoryID
     }
 }

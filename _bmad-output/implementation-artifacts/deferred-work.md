@@ -76,3 +76,9 @@
 - **F2: Race condition — edit sheet open while expense deleted re-creates expense on save** — `FeedView.swift` + `EditExpenseViewModel.swift`. If edit sheet is open and the expense is deleted (by partner sync or swipe), `saveExpense()` calls `ExpenseRepository.saveExpense()` which re-creates the managed object if not found. Pre-existing from Story 2-3.
 - **F3: `context.save()` failure after `context.delete()` leaves dirty Core Data context** — `ExpenseRepository.swift:142-144`. No `context.rollback()` on save failure. Pending deletion commits on next successful save from any operation. Pre-existing.
 - **F4: `.onAppear` instead of `.task` for FeedView lifecycle** — `FeedView.swift:56-58`. `.task {}` is preferred for async lifecycle work and auto-cancels on disappear. `isObserving` guard prevents double-invocation, so current code is safe. Pre-existing from Story 2-1.
+
+## Deferred from: code review of 3-2-category-donut-chart (2026-04-04)
+
+- **D1: Default `AuthenticationService()` in ViewModel init** — All ViewModels (FeedViewModel, ExpenseEntryViewModel, InsightsViewModel) use `authService: AuthenticationServiceProtocol = AuthenticationService()` as default parameter. The learnings entry warns against creating instances in Views; the ViewModel default parameter is the established DI convention. If the shared instance pattern changes, all ViewModels need updating.
+- **D2: Duplicate `categoryName` values break `chartForegroundStyleScale` domain** — `InsightsSummaryView.swift:51-53`. If two categories share the same `name` (possible with custom categories in Epic 5), chart colors may map incorrectly and slices could visually merge. Enforce unique names at category creation time (Story 5-2).
+- **D3: "This day total:" awkward VoiceOver phrasing** — `InsightsViewModel.chartAccessibilityLabel` uses `selectedPeriod.emptyStateLabel` which returns "day" for `.daily`. "Today's total:" would be more natural. Pre-existing label from Story 3-1.

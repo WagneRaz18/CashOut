@@ -72,7 +72,6 @@ struct FilteredFeedView: View {
     }
 
     private func partnerInitials(for expense: ExpenseData) -> String {
-        let id = expense.createdByUserID
-        return isCurrentUser(expense) ? "Me" : String(id.prefix(2)).uppercased()
+        isCurrentUser(expense) ? "Me" : "P"
     }
 }

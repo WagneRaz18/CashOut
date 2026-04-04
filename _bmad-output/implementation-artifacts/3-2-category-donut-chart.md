@@ -1,6 +1,6 @@
 # Story 3.2: Category Donut Chart
 
-Status: review
+Status: done
 
 ## Story
 
@@ -99,6 +99,16 @@ So that I can instantly see where most of my cash is going.
   - [x] 9.4 Manual verification: tapping a donut slice navigates to filtered feed
   - [x] 9.5 Manual verification: empty donut outline shows when no data
   - [x] 9.6 Manual verification: dark mode category colors render correctly
+
+### Review Findings
+
+- [x] [Review][Patch] P1: `Dictionary(uniqueKeysWithValues:)` crashes on duplicate category IDs — use `uniquingKeysWith:` [`InsightsViewModel.swift:182`] ✓ fixed
+- [x] [Review][Patch] P2: `resolveCategory` returns nil when rawValue exceeds accumulated total due to chart rounding — fall back to last slice [`InsightsSummaryView.swift:123-132`] ✓ fixed
+- [x] [Review][Patch] P3: Missing test assertions for `currentPeriodInterval` and `fetchedCategories` cleared on error path [`InsightsViewModelTests.swift`] ✓ fixed
+- [x] [Review][Patch] P4: `FilteredFeedView.partnerInitials` uses `String(id.prefix(2))` — inconsistent with FeedViewModel which returns `"P"` [`FilteredFeedView.swift:74-76`] ✓ fixed
+- [x] [Review][Defer] D1: Default `AuthenticationService()` in ViewModel init — established pattern across all ViewModels — deferred, pre-existing
+- [x] [Review][Defer] D2: Duplicate `categoryName` values break `chartForegroundStyleScale` domain — requires unique name enforcement at category creation (Epic 5) — deferred, pre-existing
+- [x] [Review][Defer] D3: "This day total:" awkward VoiceOver phrasing for daily period — pre-existing `emptyStateLabel` from Story 3-1 — deferred, pre-existing
 
 ## Dev Notes
 

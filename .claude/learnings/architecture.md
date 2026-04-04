@@ -57,6 +57,7 @@
 - **2026-03-29**: Fixed-point satang cap: `guard amountInCents < 1_000_000` before `amount * 10 + digit` enforces a ceiling of 9_999_999 (฿99,999.99) — the guard fires before multiply, so max(999_999) * 10 + 9 = 9_999_999. Extract guard threshold as a named constant (`maxBeforeAppend`) to make the math self-documenting.
 - **2026-03-29**: Currency display formatting must use `Decimal(self) / 100` not `Double(self) / 100.0` — enforces "no floating-point for money" even in display-only contexts. `Decimal.FormatStyle.Currency` works identically to `FloatingPointFormatStyle.Currency`.
 - **2026-03-29**: In `@Observable` classes, declare constants as `private static let` not `private let` — instance `let` occupies heap per instance unnecessarily. Access via `Self.constant`.
+- **2026-04-04**: Never use `Dictionary(uniqueKeysWithValues:)` on data from external sources (Core Data, CloudKit) — it calls `fatalError` on duplicate keys. Use `Dictionary(..., uniquingKeysWith: { _, last in last })` instead. Data corruption or sync conflicts can produce duplicates.
 
 ## Authentication & DI
 - **2026-04-04**: Never create a new `AuthenticationService()` instance in a View — it will be disconnected from the app's shared instance and `currentUserID` will always be `nil`. Always inject `AuthenticationServiceProtocol` through the ViewModel init, matching the pattern used by `FeedViewModel` and `ExpenseEntryViewModel`.

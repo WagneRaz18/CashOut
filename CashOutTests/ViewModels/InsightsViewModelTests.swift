@@ -414,6 +414,8 @@ final class InsightsViewModelTests: XCTestCase {
         await viewModel.invalidateAndReload()
 
         XCTAssertTrue(viewModel.chartSlices.isEmpty, "chartSlices should be cleared on error")
+        XCTAssertNil(viewModel.currentPeriodInterval, "currentPeriodInterval should be nil on error")
+        XCTAssertTrue(viewModel.fetchedCategories.isEmpty, "fetchedCategories should be cleared on error")
     }
 
     // MARK: - Chart Accessibility Label Tests (Story 3-2, AC #5)
