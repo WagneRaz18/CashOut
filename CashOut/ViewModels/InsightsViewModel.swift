@@ -144,7 +144,7 @@ final class InsightsViewModel {
         self.authService = authService
         self.syncMonitorService = syncMonitorService
 
-        self.syncMonitorService.onSyncStatusChanged = { [weak self] newStatus in
+        self.syncMonitorService.onSyncStatusChanged.append { [weak self] newStatus in
             self?.syncStatus = newStatus
         }
         self.syncStatus = syncMonitorService.syncStatus

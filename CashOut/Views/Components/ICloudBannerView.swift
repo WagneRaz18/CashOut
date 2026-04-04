@@ -15,6 +15,6 @@ struct ICloudBannerView: View {
         .frame(maxWidth: .infinity)
         .background(.ultraThinMaterial)
         .accessibilityElement(children: .combine)
-        .accessibilityLabel("Sign in to iCloud to sync")
+        .accessibilityLabel("Sign in to iCloud to sync — sync is unavailable")
     }
 }

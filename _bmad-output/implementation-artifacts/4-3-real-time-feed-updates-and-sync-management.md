@@ -1,6 +1,6 @@
 # Story 4.3: Real-Time Feed Updates & Sync Management
 
-Status: review
+Status: done
 
 ## Story
 
@@ -556,3 +556,19 @@ None — clean implementation, no debugging needed.
 - CashOut.xcodeproj/project.pbxproj
 - CashOutTests/ViewModels/FeedViewModelTests.swift
 - CashOutTests/ViewModels/InsightsViewModelTests.swift
+
+### Review Findings
+
+- [x] [Review][Patch] **F1: Single `onSyncStatusChanged` callback slot — last ViewModel wins** — FIXED: changed to array of callbacks — `SyncMonitorService` exposes a single `onSyncStatusChanged` closure. Both `FeedViewModel` and `InsightsViewModel` overwrite it in `init`. Whichever initializes last wins; the other permanently misses status updates. Needs architectural decision: multi-subscriber callbacks, dictionary keyed by token, or `AsyncStream`. [SyncMonitorService.swift:36, FeedViewModel.swift:58, InsightsViewModel.swift:147]
+- [x] [Review][Patch] **F2: `lastSuccessDate` initialized to `Date()` delays `.syncFailure` detection** — FIXED — Should be `.distantPast` so the 5-minute failure window triggers immediately on cold launch after an outage. [SyncMonitorService.swift:72]
+- [x] [Review][Patch] **F3: Failures during `.noICloudAccount` can clobber to `.syncFailure`** — FIXED — Event loop does not guard against promoting `.syncFailure` while `syncStatus == .noICloudAccount`, hiding the root cause (no account) with a less informative status. [SyncMonitorService.swift:80-88]
+- [x] [Review][Patch] **F4: AC #9 accessibility label missing suffix** — FIXED — Spec requires `.accessibilityLabel("Sign in to iCloud to sync — sync is unavailable")` but implementation omits "— sync is unavailable". [ICloudBannerView.swift:18]
+- [x] [Review][Patch] **F5: `import os` unused** — FIXED — Stale import with no Logger or os_log calls in the file. [SyncMonitorService.swift:3]
+- [x] [Review][Patch] **F6: Failure-threshold unit tests not implemented** — FIXED: added 4 threshold tests — Spec Task 9.1 requires tests for: consecutive failures below threshold stay healthy, at/above threshold → `.syncFailure`, success resets. None were implemented. Core AC #7/#8 logic is untested. [SyncMonitorServiceTests.swift]
+- [x] [Review][Patch] **F7: No test for ViewModel receiving non-healthy initial status** — FIXED: added 2 snapshot tests — Both ViewModel test suites only verify `.healthy` default. No test pre-configures `MockSyncMonitorService` to `.noICloudAccount` and asserts the snapshot is copied at init. [FeedViewModelTests.swift, InsightsViewModelTests.swift]
+- [x] [Review][Patch] **F8: SyncMonitorService tasks outlive unit tests** — FIXED: removed startMonitoring from idempotent test (no live tasks spawned) — `testStartMonitoringIsIdempotent` spawns live notification Tasks with no teardown cancellation. Tasks may observe notifications from other tests. [SyncMonitorServiceTests.swift:20-30]
+- [x] [Review][Defer] **D1: InsightsView dual `.task` race on startup** [InsightsView.swift:96-101] — deferred, pre-existing from story 3-1
+- [x] [Review][Defer] **D2: `@ObservationIgnored` on `let` constants in FeedViewModel** [FeedViewModel.swift:21-25, 32-33] — deferred, pre-existing
+- [x] [Review][Defer] **D3: Buddhist calendar force-unwrap crash in InsightsViewModel** [InsightsViewModel.swift:294, 299-300] — deferred, pre-existing from story 3-1
+- [x] [Review][Defer] **D4: ContentView remote-change guard misses share-revoked** [ContentView.swift:45] — deferred, pre-existing from story 4-2
+- [x] [Review][Defer] **D5: Test sleep-polling pattern fragile** [FeedViewModelTests.swift:99-104] — deferred, pre-existing

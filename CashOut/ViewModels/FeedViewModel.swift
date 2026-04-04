@@ -55,7 +55,7 @@ final class FeedViewModel {
         self.syncMonitorService = syncMonitorService
         self.hapticService = hapticService
 
-        self.syncMonitorService.onSyncStatusChanged = { [weak self] newStatus in
+        self.syncMonitorService.onSyncStatusChanged.append { [weak self] newStatus in
             self?.syncStatus = newStatus
         }
         self.syncStatus = syncMonitorService.syncStatus

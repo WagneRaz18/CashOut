@@ -349,7 +349,7 @@ final class FeedViewModelTests: XCTestCase {
         let (viewModel, _, _, _, _, syncMonitor) = makeSUT()
 
         syncMonitor.syncStatus = .syncFailure
-        syncMonitor.onSyncStatusChanged?(.syncFailure)
+        for handler in syncMonitor.onSyncStatusChanged { handler(.syncFailure) }
 
         XCTAssertEqual(
             viewModel.syncStatus, .syncFailure,
@@ -361,7 +361,7 @@ final class FeedViewModelTests: XCTestCase {
         let (viewModel, _, _, _, _, syncMonitor) = makeSUT()
 
         syncMonitor.syncStatus = .noICloudAccount
-        syncMonitor.onSyncStatusChanged?(.noICloudAccount)
+        for handler in syncMonitor.onSyncStatusChanged { handler(.noICloudAccount) }
 
         XCTAssertEqual(
             viewModel.syncStatus, .noICloudAccount,
@@ -373,15 +373,29 @@ final class FeedViewModelTests: XCTestCase {
         let (viewModel, _, _, _, _, syncMonitor) = makeSUT()
 
         syncMonitor.syncStatus = .syncFailure
-        syncMonitor.onSyncStatusChanged?(.syncFailure)
+        for handler in syncMonitor.onSyncStatusChanged { handler(.syncFailure) }
         XCTAssertEqual(viewModel.syncStatus, .syncFailure)
 
         syncMonitor.syncStatus = .healthy
-        syncMonitor.onSyncStatusChanged?(.healthy)
+        for handler in syncMonitor.onSyncStatusChanged { handler(.healthy) }
 
         XCTAssertEqual(
             viewModel.syncStatus, .healthy,
             "syncStatus should reset to .healthy when callback fires after failure"
+        )
+    }
+
+    // MARK: - Initial Non-Healthy Status Snapshot (F7)
+
+    func testSyncStatusSnapshotsNonHealthyInitialStatus() {
+        let syncMonitor = MockSyncMonitorService()
+        syncMonitor.syncStatus = .noICloudAccount
+
+        let (viewModel, _, _, _, _, _) = makeSUT(syncMonitorService: syncMonitor)
+
+        XCTAssertEqual(
+            viewModel.syncStatus, .noICloudAccount,
+            "syncStatus should snapshot non-healthy initial status from service"
         )
     }
 }

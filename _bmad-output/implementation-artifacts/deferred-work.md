@@ -101,6 +101,14 @@
 - **D5: `invitePartner` race with async category seeding** — `SettingsViewModel.swift:35`. Share created from categories; if seeding hasn't completed on new install, invite fails with "No categories found". Pre-existing from story 4-1.
 - **D6: Cold-launch share acceptance timing** — `AppDelegate.swift:29` / `ContentView.swift:40`. When app launches via share URL, `checkSharingStatus()` may fire before `acceptShareInvitations` completes. Notification listener will catch the store change eventually.
 
+## Deferred from: code review of 4-3-real-time-feed-updates-and-sync-management (2026-04-04)
+
+- **D1: InsightsView dual `.task` race on startup** — `InsightsView.swift:96-101`. Two `.task` modifiers run concurrently: `.task(id:)` calls `loadData()` while `.task` calls `subscribeToRemoteChanges()` which immediately fires `invalidateAndReload()`. Both can pass the `loadedPeriod` guard simultaneously on first tab open. Pre-existing from story 3-1.
+- **D2: `@ObservationIgnored` on `let` constants in FeedViewModel** — `FeedViewModel.swift:21-25, 32-33`. Three `let` properties (`categoryRepository`, `authService`, `hapticService`) carry redundant `@ObservationIgnored`. `let` constants are never tracked by `@Observable`. Pre-existing.
+- **D3: Buddhist calendar force-unwrap crash in InsightsViewModel** — `InsightsViewModel.swift:294, 299-300`. `Calendar.current.dateInterval(of:for:)!` and `Calendar.current.date(byAdding:)!` can return nil on Buddhist calendar (default on Thai devices). Pin to `Calendar(identifier: .gregorian)`. Pre-existing from story 3-1.
+- **D4: ContentView remote-change guard misses share-revoked** — `ContentView.swift:45`. `guard !CloudSharingService.shared.isShared` skips all `checkSharingStatus()` refreshes once shared. If partner revokes share, `isShared` remains stale. Pre-existing from story 4-2.
+- **D5: Test sleep-polling pattern fragile** — `FeedViewModelTests.swift:99-104`. Uses `Task.sleep(50ms)` + `XCTestExpectation` for async synchronization. Fragile on slow CI. Pre-existing from story 2-1.
+
 ## Deferred from: code review of 3-2-category-donut-chart (2026-04-04)
 
 - **D1: Default `AuthenticationService()` in ViewModel init** — All ViewModels (FeedViewModel, ExpenseEntryViewModel, InsightsViewModel) use `authService: AuthenticationServiceProtocol = AuthenticationService()` as default parameter. The learnings entry warns against creating instances in Views; the ViewModel default parameter is the established DI convention. If the shared instance pattern changes, all ViewModels need updating.

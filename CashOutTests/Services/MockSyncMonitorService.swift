@@ -3,7 +3,7 @@
 @MainActor
 final class MockSyncMonitorService: SyncMonitorServiceProtocol {
     var syncStatus: SyncStatus = .healthy
-    var onSyncStatusChanged: (@MainActor (SyncStatus) -> Void)?
+    var onSyncStatusChanged: [(@MainActor (SyncStatus) -> Void)] = []
     var startMonitoringCalled = false
 
     func startMonitoring() {

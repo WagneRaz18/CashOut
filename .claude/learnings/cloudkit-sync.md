@@ -43,6 +43,7 @@
 - Use `.NSPersistentStoreRemoteChange` notification to detect partner changes, not manual CKFetchDatabaseChangesOperation.
 - Must enable Background Modes → Remote Notifications capability for silent push.
 - **2026-04-04**: `NSPersistentCloudKitContainer.eventChangedNotification` (sync lifecycle: success/failure tracking) is distinct from `.NSPersistentStoreRemoteChange` (data arrival). Use `eventChangedNotification` for sync health monitoring, `.NSPersistentStoreRemoteChange` for triggering data refreshes. They coexist safely — different notification names, different purposes. `eventChangedNotification` is the ONLY official API for monitoring sync health (iOS 14+).
+- **2026-04-04**: Sync failure detection windows (`lastSuccessDate` + threshold) must initialize to `.distantPast`, not `Date()` — `Date()` creates a hidden 5-minute grace period on cold launch where failures won't trigger `.syncFailure` even if the device was offline for hours. Guard failure-counting against `.noICloudAccount` state — CloudKit event failures should not overwrite the root cause (no account) with a less informative `.syncFailure`.
 
 ## Security & Zone Permissions
 - Observe CKAccountChanged notification to detect iCloud account change — flush cached tokens and reconcile local state.

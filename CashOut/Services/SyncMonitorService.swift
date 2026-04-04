@@ -1,6 +1,5 @@
 @preconcurrency import CoreData
 import CloudKit
-import os
 
 // MARK: - SyncStatus
 
@@ -15,7 +14,7 @@ enum SyncStatus: Equatable {
 @MainActor
 protocol SyncMonitorServiceProtocol: AnyObject {
     var syncStatus: SyncStatus { get }
-    var onSyncStatusChanged: (@MainActor (SyncStatus) -> Void)? { get set }
+    var onSyncStatusChanged: [(@MainActor (SyncStatus) -> Void)] { get set }
     func startMonitoring()
 }
 
@@ -29,14 +28,14 @@ final class SyncMonitorService: SyncMonitorServiceProtocol {
     var syncStatus: SyncStatus = .healthy {
         didSet {
             if oldValue != syncStatus {
-                onSyncStatusChanged?(syncStatus)
+                for handler in onSyncStatusChanged { handler(syncStatus) }
             }
         }
     }
-    var onSyncStatusChanged: (@MainActor (SyncStatus) -> Void)?
+    var onSyncStatusChanged: [(@MainActor (SyncStatus) -> Void)] = []
 
     @ObservationIgnored private var consecutiveFailures: Int = 0
-    @ObservationIgnored private var lastSuccessDate: Date = Date()
+    @ObservationIgnored private var lastSuccessDate: Date = .distantPast
     @ObservationIgnored private var isMonitoring = false
     @ObservationIgnored private var initialCheckTask: Task<Void, Never>?
     @ObservationIgnored private var eventTask: Task<Void, Never>?
@@ -78,6 +77,9 @@ final class SyncMonitorService: SyncMonitorServiceProtocol {
                         syncStatus = .healthy
                     }
                 } else {
+                    // Don't promote to .syncFailure while in .noICloudAccount — the root
+                    // cause is no account, not sync failure
+                    guard syncStatus != .noICloudAccount else { continue }
                     consecutiveFailures += 1
                     let timeSinceSuccess = Date().timeIntervalSince(lastSuccessDate)
                     if consecutiveFailures >= Self.failureThreshold
