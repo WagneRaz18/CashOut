@@ -77,6 +77,13 @@ struct InsightsView: View {
             }
         }
         .navigationTitle("Insights")
+        .toolbar {
+            ToolbarItem(placement: .topBarTrailing) {
+                NavigationLink(destination: SettingsView()) {
+                    Image(systemName: "gearshape")
+                }
+            }
+        }
         .task(id: viewModel.selectedPeriod) {
             await viewModel.loadData()
         }

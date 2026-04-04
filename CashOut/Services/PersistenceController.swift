@@ -7,6 +7,8 @@ final class PersistenceController: @unchecked Sendable {
     static let preview = PersistenceController(inMemory: true)
 
     let container: NSPersistentCloudKitContainer
+    private(set) var privatePersistentStore: NSPersistentStore?
+    private(set) var sharedPersistentStore: NSPersistentStore?
 
     init(inMemory: Bool = false) {
         container = NSPersistentCloudKitContainer(name: "CashOut")
@@ -67,8 +69,19 @@ final class PersistenceController: @unchecked Sendable {
             container.persistentStoreDescriptions = [privateDesc, sharedDesc]
         }
 
-        container.loadPersistentStores { _, error in
+        let sharedStoreURLForMatching = inMemory ? nil : privateDesc.url!
+            .deletingLastPathComponent()
+            .appendingPathComponent("CashOut-shared.sqlite")
+
+        container.loadPersistentStores { [weak self] desc, error in
             if let error { fatalError("Store load failed: \(error)") }
+            guard !inMemory, let self, let storeURL = desc.url else { return }
+            let store = self.container.persistentStoreCoordinator.persistentStore(for: storeURL)
+            if storeURL == sharedStoreURLForMatching {
+                self.sharedPersistentStore = store
+            } else {
+                self.privatePersistentStore = store
+            }
         }
 
         // Required: FRC in ExpenseRepository depends on this for CloudKit partner-change propagation

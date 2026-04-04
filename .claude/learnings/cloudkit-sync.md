@@ -5,7 +5,7 @@
 ## Shared Database Setup
 - SwiftData does NOT support CloudKit shared databases (confirmed through iOS 26). Must use Core Data + NSPersistentCloudKitContainer.
 - NSPersistentCloudKitContainer requires two NSPersistentStoreDescription configs: private scope + shared scope.
-- All synced records must target a custom CKRecordZone ("HouseholdZone"), never the default zone — CKShare requires a custom zone.
+- The shared zone is framework-managed via `NSPersistentCloudKitContainer.share(_:to: nil)` — do NOT create a raw `CKRecordZone("HouseholdZone")`. The framework names the zone internally.
 - Info.plist must contain `CKSharingSupported = true` or partner join callbacks silently fail.
 - Zone existence must be re-verified on every fresh launch — users can delete zones via iOS Settings → iCloud.
 

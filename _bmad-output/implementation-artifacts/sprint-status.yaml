@@ -36,6 +36,10 @@
 
 generated: 2026-03-27
 last_updated: "2026-04-04"
+# Story 4-1 review 2026-04-04
+# Story 4-1 in-progress 2026-04-04
+# Story 4-1 created 2026-04-04
+# Sprint planning refreshed — Epics 1-3 done, next: Epic 4 2026-04-04
 # Story 3-3 done (code review passed) 2026-04-04
 # Story 3-3 review 2026-04-04
 # Story 3-3 in-progress 2026-04-04
@@ -110,15 +114,15 @@ development_status:
   epic-2-retrospective: optional
 
   # Epic 3: Spending Insights
-  epic-3: in-progress
+  epic-3: done
   3-1-insights-screen-with-time-period-switching: done
   3-2-category-donut-chart: done
   3-3-daily-bar-chart-and-category-breakdown-list: done
   epic-3-retrospective: optional
 
   # Epic 4: Household Sharing & Real-Time Sync
-  epic-4: backlog
-  4-1-cloudkit-shared-zone-and-partner-invitation: backlog
+  epic-4: in-progress
+  4-1-cloudkit-shared-zone-and-partner-invitation: review
   4-2-partner-share-acceptance-and-data-sync: backlog
   4-3-real-time-feed-updates-and-sync-management: backlog
   epic-4-retrospective: optional

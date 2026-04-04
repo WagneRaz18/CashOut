@@ -25,10 +25,7 @@ class AppDelegate: NSObject, UIApplicationDelegate {
         userDidAcceptCloudKitShareWith cloudKitShareMetadata: CKShare.Metadata
     ) {
         let container = PersistenceController.shared.container
-        let stores = container.persistentStoreCoordinator.persistentStores
-        guard let sharedStore = stores.first(where: {
-            $0.url?.lastPathComponent.contains("shared") ?? false
-        }) else { return }
+        guard let sharedStore = PersistenceController.shared.sharedPersistentStore else { return }
         container.acceptShareInvitations(
             from: [cloudKitShareMetadata],
             into: sharedStore

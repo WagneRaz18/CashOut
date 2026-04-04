@@ -53,6 +53,13 @@ struct FeedView: View {
             .presentationDetents([.large])
         }
         .navigationTitle("Feed")
+        .toolbar {
+            ToolbarItem(placement: .topBarTrailing) {
+                NavigationLink(destination: SettingsView()) {
+                    Image(systemName: "gearshape")
+                }
+            }
+        }
         .onAppear {
             viewModel.startObserving()
         }

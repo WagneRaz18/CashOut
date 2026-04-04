@@ -3,7 +3,9 @@
 <!-- One line per learning, brief and actionable -->
 
 ## MVVM with @Observable
-- ALL injected service and repository references in @Observable ViewModels must be @ObservationIgnored — not just repositories, also HapticService, AuthenticationService, etc.
+- Injected `var` service/repository references in @Observable ViewModels must be `@ObservationIgnored`. `let` constants do NOT need it — they are never tracked by `@Observable`.
+- **2026-04-04**: `fetchShares(in:)` returns `[CKShare]` (array), not a dictionary. Use `if let share = shares.first` not `.values.first!`.
+- **2026-04-04**: Store classification in `loadPersistentStores` should use URL matching, not `databaseScope` — when iCloud is unavailable, `cloudKitContainerOptions` is nil and databaseScope check fails.
 - ViewModels must never import SwiftUI — they live in the ViewModel layer with no UI dependency.
 - Repository protocols must return plain structs (DTOs like ExpenseData), never NSManagedObject — they are not Sendable and leak Core Data types across boundaries.
 - **2026-04-03**: `@ObservationIgnored` is only for `var` stored properties — `let` constants are never tracked by `@Observable`, so annotating them is redundant and semantically misleading. Only annotate `var` dependencies.
