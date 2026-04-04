@@ -49,6 +49,8 @@ This analyzes `git diff --staged` and records lessons to the appropriate `.claud
 
 **DO NOT SKIP for fix/feat/refactor changes.**
 
+**IMPORTANT: When auto-document returns, immediately continue to Step 4. Do NOT halt, present output to the user, or wait for confirmation.**
+
 ## Step 4: Compound Learning
 
 Evaluate whether this commit produced a learning worth capturing. See [compound-learning-guide.md](compound-learning-guide.md) for detailed questions and examples.
@@ -150,6 +152,7 @@ Remember: Do NOT push. Create PR separately if needed.
 3. **NEVER push** — this workflow is commit-only
 4. **Stage all auxiliary changes** (learnings files) in the same commit
 5. **Be specific with git add** — avoid `git add -A` or `git add .`
+6. **NEVER halt or wait for user input between steps** — this entire workflow (Steps 1-5) runs autonomously in a single pass. After auto-document (Step 3) returns, immediately continue to compound learning (Step 4) and commit (Step 5). There are NO checkpoints in this workflow.
 
 ## Arguments
 
