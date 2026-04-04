@@ -41,7 +41,8 @@
 
 ## Dependency Injection
 - **2026-04-04**: `CloudSharingService.shared` is the second accepted singleton (after `PersistenceController.shared`) — sharing state (`isShared`, `partnerName`, `currentShare`) must be consistent across all consumers (`SettingsViewModel`, `ExpenseRepository`, `FeedViewModel`). Init remains internal for test injection.
-- Repositories should be transient instances (not singletons) — only PersistenceController and CloudSharingService are singletons.
+- **2026-04-04**: `SyncMonitorService.shared` is the third accepted singleton — sync status must be consistent across Feed and Insights screens. Same pattern: `static let shared`, internal init for test injection, `@MainActor @Observable`.
+- Repositories should be transient instances (not singletons) — only PersistenceController, CloudSharingService, and SyncMonitorService are singletons.
 - Use init(repository: Protocol = ConcreteType()) — transient, not .shared.
 - Every service consumed by ViewModels must have a protocol (including HapticServiceProtocol) with a Mock in test targets.
 - App-wide services (PersistenceController) injected at @main App via .environment(\.managedObjectContext). Add EnvironmentKey for PersistenceController itself when repositories need both viewContext and newBackgroundContext().

@@ -77,6 +77,7 @@ final class InsightsViewModel {
     private(set) var currentPeriodInterval: DateInterval?
     private(set) var fetchedCategories: [CategoryData] = []
     var errorMessage: String?
+    var syncStatus: SyncStatus = .healthy
 
     // MARK: - Computed Properties
 
@@ -122,6 +123,9 @@ final class InsightsViewModel {
 
     private let authService: AuthenticationServiceProtocol
 
+    @ObservationIgnored
+    private var syncMonitorService: SyncMonitorServiceProtocol
+
     // MARK: - Guard State
 
     @ObservationIgnored
@@ -132,11 +136,18 @@ final class InsightsViewModel {
     init(
         repository: ExpenseRepositoryProtocol = ExpenseRepository(),
         categoryRepository: CategoryRepositoryProtocol = CategoryRepository(),
-        authService: AuthenticationServiceProtocol = AuthenticationService()
+        authService: AuthenticationServiceProtocol = AuthenticationService(),
+        syncMonitorService: SyncMonitorServiceProtocol = SyncMonitorService.shared
     ) {
         self.repository = repository
         self.categoryRepository = categoryRepository
         self.authService = authService
+        self.syncMonitorService = syncMonitorService
+
+        self.syncMonitorService.onSyncStatusChanged = { [weak self] newStatus in
+            self?.syncStatus = newStatus
+        }
+        self.syncStatus = syncMonitorService.syncStatus
     }
 
     // MARK: - Data Loading

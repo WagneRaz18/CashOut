@@ -14,6 +14,10 @@ struct InsightsView: View {
             .padding(.horizontal, Spacing.md)
             .padding(.vertical, Spacing.sm)
 
+            if viewModel.syncStatus == .noICloudAccount {
+                ICloudBannerView()
+            }
+
             ScrollView {
                 if let error = viewModel.errorMessage {
                     Text(error)
@@ -78,6 +82,11 @@ struct InsightsView: View {
         }
         .navigationTitle("Insights")
         .toolbar {
+            if viewModel.syncStatus == .syncFailure {
+                ToolbarItem(placement: .topBarLeading) {
+                    SyncStatusIndicator(syncStatus: viewModel.syncStatus)
+                }
+            }
             ToolbarItem(placement: .topBarTrailing) {
                 NavigationLink(destination: SettingsView()) {
                     Image(systemName: "gearshape")

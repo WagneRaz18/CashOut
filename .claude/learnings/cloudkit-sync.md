@@ -42,6 +42,7 @@
 - Creating a separate subscription causes double-processing, token conflicts, and missed updates.
 - Use `.NSPersistentStoreRemoteChange` notification to detect partner changes, not manual CKFetchDatabaseChangesOperation.
 - Must enable Background Modes → Remote Notifications capability for silent push.
+- **2026-04-04**: `NSPersistentCloudKitContainer.eventChangedNotification` (sync lifecycle: success/failure tracking) is distinct from `.NSPersistentStoreRemoteChange` (data arrival). Use `eventChangedNotification` for sync health monitoring, `.NSPersistentStoreRemoteChange` for triggering data refreshes. They coexist safely — different notification names, different purposes. `eventChangedNotification` is the ONLY official API for monitoring sync health (iOS 14+).
 
 ## Security & Zone Permissions
 - Observe CKAccountChanged notification to detect iCloud account change — flush cached tokens and reconcile local state.

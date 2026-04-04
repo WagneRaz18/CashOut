@@ -78,6 +78,11 @@
 		L1M2N3O4P5Q60C12 /* FilteredFeedView.swift in Sources */ = {isa = PBXBuildFile; fileRef = L1M2N3O4P5Q60C02 /* FilteredFeedView.swift */; };
 		L1M2N3O4P5Q60C13 /* DailyBarChartView.swift in Sources */ = {isa = PBXBuildFile; fileRef = L1M2N3O4P5Q60C03 /* DailyBarChartView.swift */; };
 		L1M2N3O4P5Q60C14 /* CategoryBreakdownView.swift in Sources */ = {isa = PBXBuildFile; fileRef = L1M2N3O4P5Q60C04 /* CategoryBreakdownView.swift */; };
+		M1N2O3P4Q5R60D11M1N2O3P4 /* SyncMonitorService.swift in Sources */ = {isa = PBXBuildFile; fileRef = M1N2O3P4Q5R60D01M1N2O3P4 /* SyncMonitorService.swift */; };
+		M1N2O3P4Q5R60D12M1N2O3P4 /* MockSyncMonitorService.swift in Sources */ = {isa = PBXBuildFile; fileRef = M1N2O3P4Q5R60D02M1N2O3P4 /* MockSyncMonitorService.swift */; };
+		P1Q2R3S4T5U60G11P1Q2R3S4 /* SyncMonitorServiceTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = P1Q2R3S4T5U60G01P1Q2R3S4 /* SyncMonitorServiceTests.swift */; };
+		N1O2P3Q4R5S60E11N1O2P3Q4 /* SyncStatusIndicator.swift in Sources */ = {isa = PBXBuildFile; fileRef = N1O2P3Q4R5S60E01N1O2P3Q4 /* SyncStatusIndicator.swift */; };
+		O1P2Q3R4S5T60F11O1P2Q3R4 /* ICloudBannerView.swift in Sources */ = {isa = PBXBuildFile; fileRef = O1P2Q3R4S5T60F01O1P2Q3R4 /* ICloudBannerView.swift */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXContainerItemProxy section */
@@ -170,6 +175,11 @@
 		L1M2N3O4P5Q60C02 /* FilteredFeedView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FilteredFeedView.swift; sourceTree = "<group>"; };
 		L1M2N3O4P5Q60C03 /* DailyBarChartView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DailyBarChartView.swift; sourceTree = "<group>"; };
 		L1M2N3O4P5Q60C04 /* CategoryBreakdownView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CategoryBreakdownView.swift; sourceTree = "<group>"; };
+		M1N2O3P4Q5R60D01M1N2O3P4 /* SyncMonitorService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SyncMonitorService.swift; sourceTree = "<group>"; };
+		M1N2O3P4Q5R60D02M1N2O3P4 /* MockSyncMonitorService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MockSyncMonitorService.swift; sourceTree = "<group>"; };
+		N1O2P3Q4R5S60E01N1O2P3Q4 /* SyncStatusIndicator.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SyncStatusIndicator.swift; sourceTree = "<group>"; };
+		O1P2Q3R4S5T60F01O1P2Q3R4 /* ICloudBannerView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ICloudBannerView.swift; sourceTree = "<group>"; };
+		P1Q2R3S4T5U60G01P1Q2R3S4 /* SyncMonitorServiceTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SyncMonitorServiceTests.swift; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXGroup section */
@@ -196,9 +206,10 @@
 			isa = PBXGroup;
 			children = (
 				A1B2C3D4E5F60718A1B2C3D5 /* AuthenticationService.swift */,
+				B93CA7B942BC85758641FA13 /* CloudSharingService.swift */,
 				G1H2I3J4K5L60701G1H2I3J4 /* HapticService.swift */,
 				9727F81F696E1B13C570B543 /* PersistenceController.swift */,
-				B93CA7B942BC85758641FA13 /* CloudSharingService.swift */,
+				M1N2O3P4Q5R60D01M1N2O3P4 /* SyncMonitorService.swift */,
 			);
 			path = Services;
 			sourceTree = "<group>";
@@ -269,10 +280,12 @@
 		A1B2C3D4E5F60718A1B2C3E2 /* Services */ = {
 			isa = PBXGroup;
 			children = (
-				A1B2C3D4E5F60718A1B2C3DB /* MockAuthenticationService.swift */,
 				A1B2C3D4E5F60718A1B2C3DD /* AuthenticationServiceTests.swift */,
-				G1H2I3J4K5L60702G1H2I3J4 /* MockHapticService.swift */,
+				A1B2C3D4E5F60718A1B2C3DB /* MockAuthenticationService.swift */,
 				4DB2A11678CBB0A4FE4F186F /* MockCloudSharingService.swift */,
+				G1H2I3J4K5L60702G1H2I3J4 /* MockHapticService.swift */,
+				M1N2O3P4Q5R60D02M1N2O3P4 /* MockSyncMonitorService.swift */,
+				P1Q2R3S4T5U60G01P1Q2R3S4 /* SyncMonitorServiceTests.swift */,
 			);
 			path = Services;
 			sourceTree = "<group>";
@@ -408,10 +421,20 @@
 			path = CashOut;
 			sourceTree = "<group>";
 		};
+		N1O2P3Q4R5S60E21N1O2P3Q4 /* Components */ = {
+			isa = PBXGroup;
+			children = (
+				O1P2Q3R4S5T60F01O1P2Q3R4 /* ICloudBannerView.swift */,
+				N1O2P3Q4R5S60E01N1O2P3Q4 /* SyncStatusIndicator.swift */,
+			);
+			path = Components;
+			sourceTree = "<group>";
+		};
 		E2D8EE5F7A8B4BF6B1ADCC68 /* Views */ = {
 			isa = PBXGroup;
 			children = (
 				A1B2C3D4E5F60718A1B2C3E1 /* Auth */,
+				N1O2P3Q4R5S60E21N1O2P3Q4 /* Components */,
 				B1C2D3E4F5061829B1C2D3E7 /* Entry */,
 				B1C2D3E4F5061829B1C2D3E8 /* Feed */,
 				B1C2D3E4F5061829B1C2D3E9 /* Insights */,
@@ -555,6 +578,8 @@
 				K1L2M3N4O5P60B12 /* InsightsViewModelTests.swift in Sources */,
 				C323186B69203CC8485DB559 /* MockCloudSharingService.swift in Sources */,
 				2750E955A1E2731C4B5E8321 /* SettingsViewModelTests.swift in Sources */,
+				M1N2O3P4Q5R60D12M1N2O3P4 /* MockSyncMonitorService.swift in Sources */,
+				P1Q2R3S4T5U60G11P1Q2R3S4 /* SyncMonitorServiceTests.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -618,6 +643,9 @@
 				C8E0A2FDAAB606456BD2E594 /* SettingsView.swift in Sources */,
 				F57145CC7AF2B512474D364D /* SettingsViewModel.swift in Sources */,
 				B483D9DD79CB54CBA920091B /* Bundle+Version.swift in Sources */,
+				M1N2O3P4Q5R60D11M1N2O3P4 /* SyncMonitorService.swift in Sources */,
+				N1O2P3Q4R5S60E11N1O2P3Q4 /* SyncStatusIndicator.swift in Sources */,
+				O1P2Q3R4S5T60F11O1P2Q3R4 /* ICloudBannerView.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};

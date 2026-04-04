@@ -37,6 +37,7 @@ struct ContentView: View {
             .presentationDetents([.large])
         }
         .task {
+            SyncMonitorService.shared.startMonitoring()
             await CloudSharingService.shared.checkSharingStatus()
         }
         .task {

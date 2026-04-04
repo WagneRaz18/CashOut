@@ -22,6 +22,10 @@ final class PersistenceController: @unchecked Sendable {
             privateDesc.cloudKitContainerOptions = nil
         }
 
+        // Known v1 limitation: .changeTokenExpired triggers full re-import but cannot
+        // reconcile records deleted past the CloudKit tombstone window (~30 days).
+        // Orphaned local records may persist. Acceptable at 2-user scale.
+
         // History tracking + remote change notifications on private store
         privateDesc.setOption(true as NSNumber, forKey: NSPersistentHistoryTrackingKey)
         privateDesc.setOption(

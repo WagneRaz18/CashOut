@@ -7,24 +7,28 @@ final class InsightsViewModelTests: XCTestCase {
     // MARK: - Test Helpers
 
     private func makeSUT(
-        currentUserID: String? = "test-user"
+        currentUserID: String? = "test-user",
+        syncMonitorService: MockSyncMonitorService? = nil
     ) -> (
         viewModel: InsightsViewModel,
         expenseRepo: MockExpenseRepository,
-        categoryRepo: MockCategoryRepository
+        categoryRepo: MockCategoryRepository,
+        syncMonitorService: MockSyncMonitorService
     ) {
         let expenseRepo = MockExpenseRepository()
         let categoryRepo = MockCategoryRepository()
         let authService = MockAuthenticationService()
         authService.currentUserID = currentUserID
+        let syncMonitor = syncMonitorService ?? MockSyncMonitorService()
 
         let viewModel = InsightsViewModel(
             repository: expenseRepo,
             categoryRepository: categoryRepo,
-            authService: authService
+            authService: authService,
+            syncMonitorService: syncMonitor
         )
 
-        return (viewModel, expenseRepo, categoryRepo)
+        return (viewModel, expenseRepo, categoryRepo, syncMonitor)
     }
 
     private func makeExpense(
@@ -47,7 +51,7 @@ final class InsightsViewModelTests: XCTestCase {
     // MARK: - Default State Tests (AC #1)
 
     func testDefaultSelectedPeriodIsWeekly() {
-        let (viewModel, _, _) = makeSUT()
+        let (viewModel, _, _, _) = makeSUT()
 
         XCTAssertEqual(
             viewModel.selectedPeriod, .weekly,
@@ -58,7 +62,7 @@ final class InsightsViewModelTests: XCTestCase {
     // MARK: - loadData Tests (AC #3, #5)
 
     func testLoadDataCallsFetchExpensesWithCorrectDateIntervals() async {
-        let (viewModel, expenseRepo, _) = makeSUT()
+        let (viewModel, expenseRepo, _, _) = makeSUT()
 
         await viewModel.loadData()
 
@@ -99,7 +103,7 @@ final class InsightsViewModelTests: XCTestCase {
     }
 
     func testLoadDataComputesTotalAmountAsSumOfExpenses() async {
-        let (viewModel, expenseRepo, _) = makeSUT()
+        let (viewModel, expenseRepo, _, _) = makeSUT()
         let catID = UUID()
         expenseRepo.stubbedFetchResult = [
             makeExpense(amount: 1000, categoryID: catID),
@@ -116,7 +120,7 @@ final class InsightsViewModelTests: XCTestCase {
     }
 
     func testLoadDataAggregatesCategoryTotalsGroupedByCategoryIDSortedDescending() async {
-        let (viewModel, expenseRepo, _) = makeSUT()
+        let (viewModel, expenseRepo, _, _) = makeSUT()
         let foodID = UUID()
         let transportID = UUID()
         expenseRepo.stubbedFetchResult = [
@@ -150,7 +154,7 @@ final class InsightsViewModelTests: XCTestCase {
     }
 
     func testLoadDataSetsPreviousPeriodTotalToNilWhenPreviousPeriodEmpty() async {
-        let (viewModel, expenseRepo, _) = makeSUT()
+        let (viewModel, expenseRepo, _, _) = makeSUT()
         // stubbedFetchResult returns same array for both current and previous fetch
         // We need an empty previous period — since both calls get same stub,
         // we use empty stub (both return []) and verify nil
@@ -165,7 +169,7 @@ final class InsightsViewModelTests: XCTestCase {
     }
 
     func testLoadDataSetsPreviousPeriodTotalToSumWhenPreviousPeriodHasData() async {
-        let (viewModel, expenseRepo, _) = makeSUT()
+        let (viewModel, expenseRepo, _, _) = makeSUT()
         // Both current and previous fetch return the same stubbed data
         expenseRepo.stubbedFetchResult = [
             makeExpense(amount: 1000),
@@ -184,7 +188,7 @@ final class InsightsViewModelTests: XCTestCase {
     // MARK: - Comparison Text Tests (AC #6)
 
     func testComparisonTextShowsMoreWhenCurrentExceedsPrevious() async {
-        let (viewModel, expenseRepo, _) = makeSUT()
+        let (viewModel, expenseRepo, _, _) = makeSUT()
         expenseRepo.stubbedFetchResult = [makeExpense(amount: 5000)]
 
         await viewModel.loadData()
@@ -207,7 +211,7 @@ final class InsightsViewModelTests: XCTestCase {
     }
 
     func testComparisonTextShowsLessWhenCurrentBelowPrevious() async {
-        let (viewModel, expenseRepo, _) = makeSUT()
+        let (viewModel, expenseRepo, _, _) = makeSUT()
         expenseRepo.stubbedFetchResult = [makeExpense(amount: 1000)]
 
         await viewModel.loadData()
@@ -224,7 +228,7 @@ final class InsightsViewModelTests: XCTestCase {
     }
 
     func testComparisonTextShowsSameWhenEqual() async {
-        let (viewModel, expenseRepo, _) = makeSUT()
+        let (viewModel, expenseRepo, _, _) = makeSUT()
         expenseRepo.stubbedFetchResult = [makeExpense(amount: 3000)]
 
         await viewModel.loadData()
@@ -237,7 +241,7 @@ final class InsightsViewModelTests: XCTestCase {
     }
 
     func testComparisonTextReturnsNilWhenNoPreviousData() {
-        let (viewModel, _, _) = makeSUT()
+        let (viewModel, _, _, _) = makeSUT()
 
         XCTAssertNil(
             viewModel.comparisonText,
@@ -248,7 +252,7 @@ final class InsightsViewModelTests: XCTestCase {
     // MARK: - Guard Tests (AC #8)
 
     func testLoadDataGuardsAgainstRedundantReload() async {
-        let (viewModel, expenseRepo, _) = makeSUT()
+        let (viewModel, expenseRepo, _, _) = makeSUT()
 
         await viewModel.loadData()
         let firstCallCount = expenseRepo.fetchPeriods.count
@@ -263,7 +267,7 @@ final class InsightsViewModelTests: XCTestCase {
     }
 
     func testLoadDataRefetchesAfterPeriodChange() async {
-        let (viewModel, expenseRepo, _) = makeSUT()
+        let (viewModel, expenseRepo, _, _) = makeSUT()
 
         await viewModel.loadData()
         let firstCallCount = expenseRepo.fetchPeriods.count
@@ -278,7 +282,7 @@ final class InsightsViewModelTests: XCTestCase {
     }
 
     func testInvalidateAndReloadForcesRefetchForSamePeriod() async {
-        let (viewModel, expenseRepo, _) = makeSUT()
+        let (viewModel, expenseRepo, _, _) = makeSUT()
 
         await viewModel.loadData()
         let firstCallCount = expenseRepo.fetchPeriods.count
@@ -294,7 +298,7 @@ final class InsightsViewModelTests: XCTestCase {
     // MARK: - isEmpty Tests (AC #7)
 
     func testIsEmptyReturnsTrueWhenNoExpenses() {
-        let (viewModel, _, _) = makeSUT()
+        let (viewModel, _, _, _) = makeSUT()
 
         XCTAssertTrue(
             viewModel.isEmpty,
@@ -303,7 +307,7 @@ final class InsightsViewModelTests: XCTestCase {
     }
 
     func testIsEmptyReturnsFalseWhenPopulated() async {
-        let (viewModel, expenseRepo, _) = makeSUT()
+        let (viewModel, expenseRepo, _, _) = makeSUT()
         expenseRepo.stubbedFetchResult = [makeExpense(amount: 1000)]
 
         await viewModel.loadData()
@@ -317,7 +321,7 @@ final class InsightsViewModelTests: XCTestCase {
     // MARK: - Error Handling Tests
 
     func testLoadDataSetsErrorMessageOnFetchFailure() async {
-        let (viewModel, expenseRepo, _) = makeSUT()
+        let (viewModel, expenseRepo, _, _) = makeSUT()
         expenseRepo.shouldThrow = true
 
         await viewModel.loadData()
@@ -331,7 +335,7 @@ final class InsightsViewModelTests: XCTestCase {
     // MARK: - Empty State Text Tests
 
     func testEmptyStateTextMatchesPeriod() {
-        let (viewModel, _, _) = makeSUT()
+        let (viewModel, _, _, _) = makeSUT()
 
         viewModel.selectedPeriod = .daily
         XCTAssertEqual(viewModel.emptyStateText, "No entries this day")
@@ -346,7 +350,7 @@ final class InsightsViewModelTests: XCTestCase {
     // MARK: - ChartSlice Tests (Story 3-2, AC #1)
 
     func testChartSlicesPopulatedWithCorrectCategoryNamesColorsAndTotals() async {
-        let (viewModel, expenseRepo, categoryRepo) = makeSUT()
+        let (viewModel, expenseRepo, categoryRepo, _) = makeSUT()
         let foodID = UUID()
         let transportID = UUID()
         expenseRepo.stubbedFetchResult = [
@@ -370,7 +374,7 @@ final class InsightsViewModelTests: XCTestCase {
     }
 
     func testChartSlicesSortedDescendingByTotal() async {
-        let (viewModel, expenseRepo, categoryRepo) = makeSUT()
+        let (viewModel, expenseRepo, categoryRepo, _) = makeSUT()
         let smallID = UUID()
         let largeID = UUID()
         let medID = UUID()
@@ -391,7 +395,7 @@ final class InsightsViewModelTests: XCTestCase {
     }
 
     func testChartSlicesEmptyWhenNoExpenses() async {
-        let (viewModel, expenseRepo, _) = makeSUT()
+        let (viewModel, expenseRepo, _, _) = makeSUT()
         expenseRepo.stubbedFetchResult = []
 
         await viewModel.loadData()
@@ -400,7 +404,7 @@ final class InsightsViewModelTests: XCTestCase {
     }
 
     func testChartSlicesClearedOnError() async {
-        let (viewModel, expenseRepo, categoryRepo) = makeSUT()
+        let (viewModel, expenseRepo, categoryRepo, _) = makeSUT()
         let catID = UUID()
         expenseRepo.stubbedFetchResult = [makeExpense(amount: 1000, categoryID: catID)]
         categoryRepo.categoriesToReturn = [
@@ -421,7 +425,7 @@ final class InsightsViewModelTests: XCTestCase {
     // MARK: - Chart Accessibility Label Tests (Story 3-2, AC #5)
 
     func testChartAccessibilityLabelContainsTotalAndLargestCategory() async {
-        let (viewModel, expenseRepo, categoryRepo) = makeSUT()
+        let (viewModel, expenseRepo, categoryRepo, _) = makeSUT()
         let foodID = UUID()
         let transportID = UUID()
         expenseRepo.stubbedFetchResult = [
@@ -441,7 +445,7 @@ final class InsightsViewModelTests: XCTestCase {
     }
 
     func testChartAccessibilityLabelReturnsEmptyStateTextWhenNoData() {
-        let (viewModel, _, _) = makeSUT()
+        let (viewModel, _, _, _) = makeSUT()
 
         XCTAssertEqual(
             viewModel.chartAccessibilityLabel,
@@ -453,7 +457,7 @@ final class InsightsViewModelTests: XCTestCase {
     // MARK: - selectCategory Tests (Story 3-2, AC #2)
 
     func testSelectCategorySetsSelectedCategoryID() {
-        let (viewModel, _, _) = makeSUT()
+        let (viewModel, _, _, _) = makeSUT()
         let id = UUID()
 
         viewModel.selectCategory(id)
@@ -462,7 +466,7 @@ final class InsightsViewModelTests: XCTestCase {
     }
 
     func testSelectCategoryNilClearsSelection() {
-        let (viewModel, _, _) = makeSUT()
+        let (viewModel, _, _, _) = makeSUT()
         viewModel.selectCategory(UUID())
         viewModel.selectCategory(nil)
 
@@ -472,7 +476,7 @@ final class InsightsViewModelTests: XCTestCase {
     // MARK: - currentPeriodInterval Tests (Story 3-2, AC #2)
 
     func testCurrentPeriodIntervalSetAfterSuccessfulLoad() async {
-        let (viewModel, _, _) = makeSUT()
+        let (viewModel, _, _, _) = makeSUT()
 
         await viewModel.loadData()
 
@@ -484,7 +488,7 @@ final class InsightsViewModelTests: XCTestCase {
     // MARK: - Date Interval Tests (AC #3)
 
     func testLoadDataFetchesCorrectIntervalsForDailyPeriod() async {
-        let (viewModel, expenseRepo, _) = makeSUT()
+        let (viewModel, expenseRepo, _, _) = makeSUT()
         viewModel.selectedPeriod = .daily
 
         await viewModel.loadData()
@@ -497,7 +501,7 @@ final class InsightsViewModelTests: XCTestCase {
     }
 
     func testLoadDataFetchesCorrectIntervalsForMonthlyPeriod() async {
-        let (viewModel, expenseRepo, _) = makeSUT()
+        let (viewModel, expenseRepo, _, _) = makeSUT()
         viewModel.selectedPeriod = .monthly
 
         await viewModel.loadData()
@@ -512,7 +516,7 @@ final class InsightsViewModelTests: XCTestCase {
     // MARK: - Bar Entry Tests (Story 3-3, AC #1)
 
     func testBarEntriesPopulatedAfterLoadData() async {
-        let (viewModel, expenseRepo, _) = makeSUT()
+        let (viewModel, expenseRepo, _, _) = makeSUT()
         expenseRepo.stubbedFetchResult = [makeExpense(amount: 1000)]
 
         await viewModel.loadData()
@@ -524,7 +528,7 @@ final class InsightsViewModelTests: XCTestCase {
     }
 
     func testBarEntriesAllZeroTotalWhenNoExpenses() async {
-        let (viewModel, expenseRepo, _) = makeSUT()
+        let (viewModel, expenseRepo, _, _) = makeSUT()
         expenseRepo.stubbedFetchResult = []
 
         await viewModel.loadData()
@@ -541,7 +545,7 @@ final class InsightsViewModelTests: XCTestCase {
     }
 
     func testBarEntriesForWeeklyPeriodHasSevenEntries() async {
-        let (viewModel, expenseRepo, _) = makeSUT()
+        let (viewModel, expenseRepo, _, _) = makeSUT()
         expenseRepo.stubbedFetchResult = [makeExpense(amount: 500)]
 
         await viewModel.loadData()
@@ -553,7 +557,7 @@ final class InsightsViewModelTests: XCTestCase {
     }
 
     func testBarEntriesForDailyPeriodHasOneEntry() async {
-        let (viewModel, expenseRepo, _) = makeSUT()
+        let (viewModel, expenseRepo, _, _) = makeSUT()
         viewModel.selectedPeriod = .daily
         expenseRepo.stubbedFetchResult = [makeExpense(amount: 2500)]
 
@@ -574,7 +578,7 @@ final class InsightsViewModelTests: XCTestCase {
     }
 
     func testBarEntriesForMonthlyPeriodHasCorrectWeekCount() async {
-        let (viewModel, expenseRepo, _) = makeSUT()
+        let (viewModel, expenseRepo, _, _) = makeSUT()
         viewModel.selectedPeriod = .monthly
         expenseRepo.stubbedFetchResult = []
 
@@ -593,7 +597,7 @@ final class InsightsViewModelTests: XCTestCase {
     }
 
     func testBarEntriesForWeeklyPeriodAreInChronologicalOrder() async {
-        let (viewModel, expenseRepo, _) = makeSUT()
+        let (viewModel, expenseRepo, _, _) = makeSUT()
         expenseRepo.stubbedFetchResult = [makeExpense(amount: 500)]
 
         await viewModel.loadData()
@@ -618,7 +622,7 @@ final class InsightsViewModelTests: XCTestCase {
     }
 
     func testBarEntriesClearedOnError() async {
-        let (viewModel, expenseRepo, categoryRepo) = makeSUT()
+        let (viewModel, expenseRepo, categoryRepo, _) = makeSUT()
         let catID = UUID()
         expenseRepo.stubbedFetchResult = [makeExpense(amount: 1000, categoryID: catID)]
         categoryRepo.categoriesToReturn = [
@@ -637,7 +641,7 @@ final class InsightsViewModelTests: XCTestCase {
     }
 
     func testBarChartAccessibilityLabelContainsEntryLabels() async {
-        let (viewModel, expenseRepo, _) = makeSUT()
+        let (viewModel, expenseRepo, _, _) = makeSUT()
         viewModel.selectedPeriod = .daily
         expenseRepo.stubbedFetchResult = [makeExpense(amount: 3000)]
 
@@ -651,7 +655,7 @@ final class InsightsViewModelTests: XCTestCase {
     }
 
     func testBarChartAccessibilityLabelReturnsNoDataWhenEmpty() {
-        let (viewModel, _, _) = makeSUT()
+        let (viewModel, _, _, _) = makeSUT()
 
         XCTAssertEqual(
             viewModel.barChartAccessibilityLabel,
@@ -663,7 +667,7 @@ final class InsightsViewModelTests: XCTestCase {
     // MARK: - ChartSlice iconName Tests (Story 3-3, AC #3)
 
     func testChartSliceIncludesIconName() async {
-        let (viewModel, expenseRepo, categoryRepo) = makeSUT()
+        let (viewModel, expenseRepo, categoryRepo, _) = makeSUT()
         let foodID = UUID()
         expenseRepo.stubbedFetchResult = [makeExpense(amount: 1000, categoryID: foodID)]
         categoryRepo.categoriesToReturn = [
@@ -675,6 +679,57 @@ final class InsightsViewModelTests: XCTestCase {
         XCTAssertEqual(
             viewModel.chartSlices.first?.iconName, "fork.knife",
             "ChartSlice should include iconName from category data"
+        )
+    }
+
+    // MARK: - Sync Status Tests (Story 4-3)
+
+    func testSyncStatusStartsHealthy() {
+        let (viewModel, _, _, _) = makeSUT()
+
+        XCTAssertEqual(
+            viewModel.syncStatus, .healthy,
+            "syncStatus should start as .healthy"
+        )
+    }
+
+    func testSyncStatusUpdatesOnCallbackSyncFailure() {
+        let (viewModel, _, _, syncMonitor) = makeSUT()
+
+        syncMonitor.syncStatus = .syncFailure
+        syncMonitor.onSyncStatusChanged?(.syncFailure)
+
+        XCTAssertEqual(
+            viewModel.syncStatus, .syncFailure,
+            "syncStatus should update to .syncFailure when callback fires"
+        )
+    }
+
+    func testSyncStatusUpdatesOnCallbackNoICloudAccount() {
+        let (viewModel, _, _, syncMonitor) = makeSUT()
+
+        syncMonitor.syncStatus = .noICloudAccount
+        syncMonitor.onSyncStatusChanged?(.noICloudAccount)
+
+        XCTAssertEqual(
+            viewModel.syncStatus, .noICloudAccount,
+            "syncStatus should update to .noICloudAccount when callback fires"
+        )
+    }
+
+    func testSyncStatusResetsToHealthyAfterFailure() {
+        let (viewModel, _, _, syncMonitor) = makeSUT()
+
+        syncMonitor.syncStatus = .syncFailure
+        syncMonitor.onSyncStatusChanged?(.syncFailure)
+        XCTAssertEqual(viewModel.syncStatus, .syncFailure)
+
+        syncMonitor.syncStatus = .healthy
+        syncMonitor.onSyncStatusChanged?(.healthy)
+
+        XCTAssertEqual(
+            viewModel.syncStatus, .healthy,
+            "syncStatus should reset to .healthy when callback fires after failure"
         )
     }
 }

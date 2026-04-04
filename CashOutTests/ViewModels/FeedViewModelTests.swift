@@ -7,13 +7,15 @@ final class FeedViewModelTests: XCTestCase {
     // MARK: - Test Helpers
 
     private func makeSUT(
-        currentUserID: String? = "test-user"
+        currentUserID: String? = "test-user",
+        syncMonitorService: MockSyncMonitorService? = nil
     ) -> (
         viewModel: FeedViewModel,
         expenseRepo: MockExpenseRepository,
         categoryRepo: MockCategoryRepository,
         authService: MockAuthenticationService,
-        hapticService: MockHapticService
+        hapticService: MockHapticService,
+        syncMonitorService: MockSyncMonitorService
     ) {
         let expenseRepo = MockExpenseRepository()
         let categoryRepo = MockCategoryRepository()
@@ -22,16 +24,18 @@ final class FeedViewModelTests: XCTestCase {
         authService.currentUserID = currentUserID
 
         let cloudSharingService = MockCloudSharingService()
+        let syncMonitor = syncMonitorService ?? MockSyncMonitorService()
 
         let viewModel = FeedViewModel(
             repository: expenseRepo,
             categoryRepository: categoryRepo,
             authService: authService,
             cloudSharingService: cloudSharingService,
+            syncMonitorService: syncMonitor,
             hapticService: hapticService
         )
 
-        return (viewModel, expenseRepo, categoryRepo, authService, hapticService)
+        return (viewModel, expenseRepo, categoryRepo, authService, hapticService, syncMonitor)
     }
 
     private func makeExpense(
@@ -72,7 +76,7 @@ final class FeedViewModelTests: XCTestCase {
     // MARK: - startObserving Tests (AC #1, #4)
 
     func testStartObservingCallsRepositoryStartObservingExpenses() {
-        let (viewModel, expenseRepo, _, _, _) = makeSUT()
+        let (viewModel, expenseRepo, _, _, _, _) = makeSUT()
 
         viewModel.startObserving()
 
@@ -83,7 +87,7 @@ final class FeedViewModelTests: XCTestCase {
     }
 
     func testStartObservingFetchesCategories() {
-        let (viewModel, expenseRepo, categoryRepo, _, _) = makeSUT()
+        let (viewModel, expenseRepo, categoryRepo, _, _, _) = makeSUT()
         let categoryID = UUID()
         categoryRepo.categoriesToReturn = [makeCategory(id: categoryID)]
         expenseRepo.stubbedExpenses = [makeExpense(categoryID: categoryID)]
@@ -106,7 +110,7 @@ final class FeedViewModelTests: XCTestCase {
     }
 
     func testStartObservingTwiceDoesNotCallRepositoryTwice() {
-        let (viewModel, expenseRepo, _, _, _) = makeSUT()
+        let (viewModel, expenseRepo, _, _, _, _) = makeSUT()
 
         viewModel.startObserving()
         expenseRepo.startObservingCalled = false
@@ -121,7 +125,7 @@ final class FeedViewModelTests: XCTestCase {
     // MARK: - expenses Update Tests
 
     func testExpensesUpdateWhenRepositoryCallbackFires() {
-        let (viewModel, expenseRepo, _, _, _) = makeSUT()
+        let (viewModel, expenseRepo, _, _, _, _) = makeSUT()
         let expense = makeExpense()
         expenseRepo.stubbedExpenses = [expense]
 
@@ -134,13 +138,13 @@ final class FeedViewModelTests: XCTestCase {
     // MARK: - isEmpty Tests (AC #6)
 
     func testIsEmptyReturnsTrueWhenNoExpenses() {
-        let (viewModel, _, _, _, _) = makeSUT()
+        let (viewModel, _, _, _, _, _) = makeSUT()
 
         XCTAssertTrue(viewModel.isEmpty, "isEmpty should be true when no expenses")
     }
 
     func testIsEmptyReturnsFalseWhenExpensesExist() {
-        let (viewModel, expenseRepo, _, _, _) = makeSUT()
+        let (viewModel, expenseRepo, _, _, _, _) = makeSUT()
         expenseRepo.stubbedExpenses = [makeExpense()]
 
         viewModel.startObserving()
@@ -151,7 +155,7 @@ final class FeedViewModelTests: XCTestCase {
     // MARK: - isCurrentUser Tests (AC #3)
 
     func testIsCurrentUserReturnsTrueForMatchingUserID() {
-        let (viewModel, _, _, _, _) = makeSUT(currentUserID: "user-123")
+        let (viewModel, _, _, _, _, _) = makeSUT(currentUserID: "user-123")
         let expense = makeExpense(createdByUserID: "user-123")
 
         XCTAssertTrue(
@@ -161,7 +165,7 @@ final class FeedViewModelTests: XCTestCase {
     }
 
     func testIsCurrentUserReturnsFalseForDifferentUserID() {
-        let (viewModel, _, _, _, _) = makeSUT(currentUserID: "user-123")
+        let (viewModel, _, _, _, _, _) = makeSUT(currentUserID: "user-123")
         let expense = makeExpense(createdByUserID: "partner-456")
 
         XCTAssertFalse(
@@ -171,7 +175,7 @@ final class FeedViewModelTests: XCTestCase {
     }
 
     func testIsCurrentUserReturnsTrueForEmptyCreatedByUserID() {
-        let (viewModel, _, _, _, _) = makeSUT(currentUserID: "user-123")
+        let (viewModel, _, _, _, _, _) = makeSUT(currentUserID: "user-123")
         let expense = makeExpense(createdByUserID: "")
 
         XCTAssertTrue(
@@ -183,7 +187,7 @@ final class FeedViewModelTests: XCTestCase {
     // MARK: - partnerInitials Tests (AC #3)
 
     func testPartnerInitialsReturnsMeForCurrentUser() {
-        let (viewModel, _, _, _, _) = makeSUT(currentUserID: "user-123")
+        let (viewModel, _, _, _, _, _) = makeSUT(currentUserID: "user-123")
         let expense = makeExpense(createdByUserID: "user-123")
 
         XCTAssertEqual(
@@ -193,7 +197,7 @@ final class FeedViewModelTests: XCTestCase {
     }
 
     func testPartnerInitialsReturnsPForPartner() {
-        let (viewModel, _, _, _, _) = makeSUT(currentUserID: "user-123")
+        let (viewModel, _, _, _, _, _) = makeSUT(currentUserID: "user-123")
         let expense = makeExpense(createdByUserID: "partner-456")
 
         XCTAssertEqual(
@@ -205,7 +209,7 @@ final class FeedViewModelTests: XCTestCase {
     // MARK: - categoryFor Tests
 
     func testCategoryForReturnsMatchingCategory() {
-        let (viewModel, expenseRepo, categoryRepo, _, _) = makeSUT()
+        let (viewModel, expenseRepo, categoryRepo, _, _, _) = makeSUT()
         let categoryID = UUID()
         let category = makeCategory(id: categoryID, name: "Transport")
         categoryRepo.categoriesToReturn = [category]
@@ -228,7 +232,7 @@ final class FeedViewModelTests: XCTestCase {
     }
 
     func testCategoryForReturnsNilForUnknownCategoryID() {
-        let (viewModel, _, _, _, _) = makeSUT()
+        let (viewModel, _, _, _, _, _) = makeSUT()
         let expense = makeExpense(categoryID: UUID())
 
         let result = viewModel.categoryFor(expense)
@@ -239,7 +243,7 @@ final class FeedViewModelTests: XCTestCase {
     // MARK: - isCurrentUser with nil currentUserID (Review P3)
 
     func testIsCurrentUserReturnsTrueWhenCurrentUserIDIsNil() {
-        let (viewModel, _, _, _, _) = makeSUT(currentUserID: nil)
+        let (viewModel, _, _, _, _, _) = makeSUT(currentUserID: nil)
         let expense = makeExpense(createdByUserID: "partner-456")
 
         XCTAssertTrue(
@@ -251,7 +255,7 @@ final class FeedViewModelTests: XCTestCase {
     // MARK: - Error Handling Tests (Review P2)
 
     func testReloadCategoriesSetsErrorMessageOnFailure() {
-        let (viewModel, expenseRepo, categoryRepo, _, _) = makeSUT()
+        let (viewModel, expenseRepo, categoryRepo, _, _, _) = makeSUT()
         categoryRepo.shouldThrow = true
         expenseRepo.stubbedExpenses = [makeExpense()]
 
@@ -273,7 +277,7 @@ final class FeedViewModelTests: XCTestCase {
     // MARK: - deleteExpense Tests (AC #2)
 
     func testDeleteExpenseCallsRepositoryWithCorrectID() async {
-        let (viewModel, expenseRepo, _, _, _) = makeSUT()
+        let (viewModel, expenseRepo, _, _, _, _) = makeSUT()
         let expense = makeExpense()
 
         await viewModel.deleteExpense(expense)
@@ -289,7 +293,7 @@ final class FeedViewModelTests: XCTestCase {
     }
 
     func testDeleteExpenseTriggersDeleteTapHapticOnSuccess() async {
-        let (viewModel, _, _, _, hapticService) = makeSUT()
+        let (viewModel, _, _, _, hapticService, _) = makeSUT()
         let expense = makeExpense()
 
         await viewModel.deleteExpense(expense)
@@ -301,7 +305,7 @@ final class FeedViewModelTests: XCTestCase {
     }
 
     func testDeleteExpenseDoesNotTriggerHapticOnFailure() async {
-        let (viewModel, expenseRepo, _, _, hapticService) = makeSUT()
+        let (viewModel, expenseRepo, _, _, hapticService, _) = makeSUT()
         expenseRepo.shouldThrow = true
         let expense = makeExpense()
 
@@ -314,7 +318,7 @@ final class FeedViewModelTests: XCTestCase {
     }
 
     func testDeleteExpenseSetsErrorMessageOnFailure() async {
-        let (viewModel, expenseRepo, _, _, _) = makeSUT()
+        let (viewModel, expenseRepo, _, _, _, _) = makeSUT()
         expenseRepo.shouldThrow = true
         let expense = makeExpense()
 
@@ -327,6 +331,57 @@ final class FeedViewModelTests: XCTestCase {
         XCTAssertNotNil(
             viewModel.errorMessage,
             "deleteExpense should set errorMessage when repository throws"
+        )
+    }
+
+    // MARK: - Sync Status Tests (Story 4-3)
+
+    func testSyncStatusStartsHealthy() {
+        let (viewModel, _, _, _, _, _) = makeSUT()
+
+        XCTAssertEqual(
+            viewModel.syncStatus, .healthy,
+            "syncStatus should start as .healthy"
+        )
+    }
+
+    func testSyncStatusUpdatesOnCallbackSyncFailure() {
+        let (viewModel, _, _, _, _, syncMonitor) = makeSUT()
+
+        syncMonitor.syncStatus = .syncFailure
+        syncMonitor.onSyncStatusChanged?(.syncFailure)
+
+        XCTAssertEqual(
+            viewModel.syncStatus, .syncFailure,
+            "syncStatus should update to .syncFailure when callback fires"
+        )
+    }
+
+    func testSyncStatusUpdatesOnCallbackNoICloudAccount() {
+        let (viewModel, _, _, _, _, syncMonitor) = makeSUT()
+
+        syncMonitor.syncStatus = .noICloudAccount
+        syncMonitor.onSyncStatusChanged?(.noICloudAccount)
+
+        XCTAssertEqual(
+            viewModel.syncStatus, .noICloudAccount,
+            "syncStatus should update to .noICloudAccount when callback fires"
+        )
+    }
+
+    func testSyncStatusResetsToHealthyAfterFailure() {
+        let (viewModel, _, _, _, _, syncMonitor) = makeSUT()
+
+        syncMonitor.syncStatus = .syncFailure
+        syncMonitor.onSyncStatusChanged?(.syncFailure)
+        XCTAssertEqual(viewModel.syncStatus, .syncFailure)
+
+        syncMonitor.syncStatus = .healthy
+        syncMonitor.onSyncStatusChanged?(.healthy)
+
+        XCTAssertEqual(
+            viewModel.syncStatus, .healthy,
+            "syncStatus should reset to .healthy when callback fires after failure"
         )
     }
 }

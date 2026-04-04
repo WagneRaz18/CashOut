@@ -9,6 +9,7 @@ final class FeedViewModel {
     var expenses: [ExpenseData] = []
     var categories: [CategoryData] = []
     var errorMessage: String?
+    var syncStatus: SyncStatus = .healthy
 
     var isEmpty: Bool { expenses.isEmpty }
 
@@ -26,6 +27,9 @@ final class FeedViewModel {
     private let cloudSharingService: CloudSharingServiceProtocol
 
     @ObservationIgnored
+    private var syncMonitorService: SyncMonitorServiceProtocol
+
+    @ObservationIgnored
     private let hapticService: HapticServiceProtocol
 
     @ObservationIgnored
@@ -41,13 +45,20 @@ final class FeedViewModel {
         categoryRepository: CategoryRepositoryProtocol = CategoryRepository(),
         authService: AuthenticationServiceProtocol = AuthenticationService(),
         cloudSharingService: CloudSharingServiceProtocol = CloudSharingService.shared,
+        syncMonitorService: SyncMonitorServiceProtocol = SyncMonitorService.shared,
         hapticService: HapticServiceProtocol = HapticService()
     ) {
         self.repository = repository
         self.categoryRepository = categoryRepository
         self.authService = authService
         self.cloudSharingService = cloudSharingService
+        self.syncMonitorService = syncMonitorService
         self.hapticService = hapticService
+
+        self.syncMonitorService.onSyncStatusChanged = { [weak self] newStatus in
+            self?.syncStatus = newStatus
+        }
+        self.syncStatus = syncMonitorService.syncStatus
     }
 
     // MARK: - Observation

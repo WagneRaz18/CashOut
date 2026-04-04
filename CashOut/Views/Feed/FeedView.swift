@@ -52,8 +52,18 @@ struct FeedView: View {
             })
             .presentationDetents([.large])
         }
+        .safeAreaInset(edge: .top) {
+            if viewModel.syncStatus == .noICloudAccount {
+                ICloudBannerView()
+            }
+        }
         .navigationTitle("Feed")
         .toolbar {
+            if viewModel.syncStatus == .syncFailure {
+                ToolbarItem(placement: .topBarLeading) {
+                    SyncStatusIndicator(syncStatus: viewModel.syncStatus)
+                }
+            }
             ToolbarItem(placement: .topBarTrailing) {
                 NavigationLink(destination: SettingsView()) {
                     Image(systemName: "gearshape")
