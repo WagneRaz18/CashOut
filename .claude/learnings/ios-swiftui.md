@@ -30,6 +30,7 @@
 - **2026-04-04**: `chartAngleSelection(value:)` binding type must exactly match the `PlottableValue` type passed to `SectorMark(angle: .value(..., value))`. If `value` is `Int64`, the binding must be `Binding<Int64?>`. Type mismatch silently prevents selection from firing.
 - **2026-04-04**: `.chartAngleSelection` alone uses hold-not-tap gesture (Apple bug). Must pair with `.chartGesture { chart in SpatialTapGesture().onEnded { ... chart.selectAngleValue(at: angle) } }` to enable single-tap selection on donut/pie charts.
 - **2026-04-04**: `chartAngleSelection` raw value can exceed the integer sum of all `SectorMark` values due to floating-point rounding in chart geometry. Always fall back to the last slice in `resolveCategory` instead of returning nil — prevents silent tap failures on the last slice's trailing edge.
+- **2026-04-04**: `BarMark` with String x-values sorts labels alphabetically by default. Use `.chartXScale(domain: entries.map(\.label))` to enforce array-order (chronological). If ordering still breaks, fall back to index-based x-values with custom `AxisValueLabel`.
 
 ## SwiftData Migrations
 - N/A — CashOut uses Core Data, not SwiftData (shared CloudKit database not supported in SwiftData).

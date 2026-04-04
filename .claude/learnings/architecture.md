@@ -58,6 +58,9 @@
 - **2026-03-29**: Currency display formatting must use `Decimal(self) / 100` not `Double(self) / 100.0` — enforces "no floating-point for money" even in display-only contexts. `Decimal.FormatStyle.Currency` works identically to `FloatingPointFormatStyle.Currency`.
 - **2026-03-29**: In `@Observable` classes, declare constants as `private static let` not `private let` — instance `let` occupies heap per instance unnecessarily. Access via `Self.constant`.
 - **2026-04-04**: Never use `Dictionary(uniqueKeysWithValues:)` on data from external sources (Core Data, CloudKit) — it calls `fatalError` on duplicate keys. Use `Dictionary(..., uniquingKeysWith: { _, last in last })` instead. Data corruption or sync conflicts can produce duplicates.
+- **2026-04-04**: `DateFormatter` is expensive to instantiate (loads ICU locale data). In `@Observable` ViewModels, cache as `private static let` with closure initializer, not as a method-local variable recreated on every call. Same applies to `NumberFormatter`.
+- **2026-04-04**: `Calendar.range(of: .weekOfMonth, in: .month, for:)` returns nil on non-Gregorian calendars (e.g., Buddhist calendar, default on Thai devices). Always use `guard let` — never force-unwrap. Return empty array as graceful degradation.
+- **2026-04-04**: `DateFormatter.dateFormat = "EEE"` produces locale-dependent day abbreviations — Thai devices output Thai-script ("จ.", "อ.") not English ("Mon", "Tue"). Pin `locale = Locale(identifier: "en_US_POSIX")` when labels must be English regardless of device locale.
 
 ## Authentication & DI
 - **2026-04-04**: Never create a new `AuthenticationService()` instance in a View — it will be disconnected from the app's shared instance and `currentUserID` will always be `nil`. Always inject `AuthenticationServiceProtocol` through the ViewModel init, matching the pattern used by `FeedViewModel` and `ExpenseEntryViewModel`.

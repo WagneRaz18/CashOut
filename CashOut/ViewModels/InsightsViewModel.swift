@@ -54,8 +54,15 @@ final class InsightsViewModel {
         let categoryID: UUID
         let categoryName: String
         let colorName: String
+        let iconName: String
         let total: Int64
         var id: UUID { categoryID }
+    }
+
+    struct BarEntry: Identifiable, Sendable {
+        let label: String
+        let total: Int64
+        var id: String { label }
     }
 
     // MARK: - Observable Properties
@@ -65,6 +72,7 @@ final class InsightsViewModel {
     var previousPeriodTotal: Int64?
     var categoryTotals: [CategoryTotal] = []
     var chartSlices: [ChartSlice] = []
+    var barEntries: [BarEntry] = []
     var selectedCategoryID: UUID?
     private(set) var currentPeriodInterval: DateInterval?
     private(set) var fetchedCategories: [CategoryData] = []
@@ -93,6 +101,11 @@ final class InsightsViewModel {
     var currentUserID: String? { authService.currentUserID }
 
     var emptyStateText: String { "No entries this \(selectedPeriod.emptyStateLabel)" }
+
+    var barChartAccessibilityLabel: String {
+        guard !barEntries.isEmpty else { return "No spending data" }
+        return barEntries.map { "\($0.label): \($0.total.displayAmount)" }.joined(separator: ". ")
+    }
 
     var chartAccessibilityLabel: String {
         guard let largest = chartSlices.first else {
@@ -192,9 +205,12 @@ final class InsightsViewModel {
                     categoryID: ct.categoryID,
                     categoryName: category?.name ?? "Unknown",
                     colorName: category?.colorName ?? "CoolGray",
+                    iconName: category?.iconName ?? "ellipsis.circle.fill",
                     total: ct.total
                 )
             }
+
+            barEntries = computeBarEntries(from: currentExpenses, period: period, interval: currentInterval)
 
             previousPeriodTotal = previousExpenses.isEmpty ? nil : previousExpenses.reduce(Int64(0)) { $0 + $1.amount }
 
@@ -206,10 +222,57 @@ final class InsightsViewModel {
             totalAmount = 0
             categoryTotals = []
             chartSlices = []
+            barEntries = []
             fetchedCategories = []
             previousPeriodTotal = nil
             currentPeriodInterval = nil
             errorMessage = error.localizedDescription
+        }
+    }
+
+    // MARK: - Bar Entry Computation
+
+    private static let weekdayFormatter: DateFormatter = {
+        let formatter = DateFormatter()
+        formatter.dateFormat = "EEE"
+        formatter.locale = Locale(identifier: "en_US_POSIX")
+        return formatter
+    }()
+
+    private func computeBarEntries(from expenses: [ExpenseData], period: TimePeriod, interval: DateInterval) -> [BarEntry] {
+        let calendar = Calendar.current
+
+        switch period {
+        case .daily:
+            let total = expenses.reduce(Int64(0)) { $0 + $1.amount }
+            return [BarEntry(label: "Today", total: total)]
+
+        case .weekly:
+            var entries: [BarEntry] = []
+            var date = interval.start
+            while date < interval.end {
+                let dayTotal = expenses
+                    .filter { calendar.isDate($0.createdAt, inSameDayAs: date) }
+                    .reduce(Int64(0)) { $0 + $1.amount }
+                entries.append(BarEntry(label: Self.weekdayFormatter.string(from: date), total: dayTotal))
+                date = calendar.date(byAdding: .day, value: 1, to: date) ?? interval.end
+            }
+            return entries
+
+        case .monthly:
+            guard let range = calendar.range(of: .weekOfMonth, in: .month, for: interval.start) else {
+                return []
+            }
+
+            var weeklyTotals: [Int: Int64] = [:]
+            for expense in expenses {
+                let weekNum = calendar.component(.weekOfMonth, from: expense.createdAt)
+                weeklyTotals[weekNum, default: 0] += expense.amount
+            }
+
+            return range.map { week in
+                BarEntry(label: "W\(week)", total: weeklyTotals[week, default: 0])
+            }
         }
     }
 

@@ -1,0 +1,60 @@
+import SwiftUI
+
+struct CategoryBreakdownView: View {
+    let slices: [InsightsViewModel.ChartSlice]
+    let totalAmount: Int64
+    let onCategoryTapped: (UUID) -> Void
+
+    var body: some View {
+        if slices.isEmpty {
+            EmptyView()
+        } else {
+            VStack(spacing: Spacing.sm) {
+                ForEach(slices) { slice in
+                    let proportion = totalAmount > 0 ? Double(slice.total) / Double(totalAmount) : 0.0
+
+                    Button {
+                        onCategoryTapped(slice.categoryID)
+                    } label: {
+                        VStack(alignment: .leading, spacing: Spacing.xs) {
+                            HStack(spacing: Spacing.sm) {
+                                categoryBadge(iconName: slice.iconName, colorName: slice.colorName)
+
+                                Text(slice.categoryName)
+                                    .font(.subheadline)
+
+                                Spacer()
+
+                                Text(slice.total.displayAmount)
+                                    .font(.subheadline)
+                                    .monospacedDigit()
+                            }
+
+                            GeometryReader { geometry in
+                                RoundedRectangle(cornerRadius: 2)
+                                    .fill(Color(slice.colorName))
+                                    .frame(width: max(geometry.size.width * proportion, 2))
+                            }
+                            .frame(height: 4)
+                        }
+                    }
+                    .buttonStyle(.plain)
+                    .accessibilityElement(children: .combine)
+                    .accessibilityLabel("\(slice.categoryName), \(slice.total.displayAmount), \(Int(proportion * 100))% of total")
+                }
+            }
+            .padding(.horizontal, Spacing.md)
+        }
+    }
+
+    // MARK: - Subviews
+
+    private func categoryBadge(iconName: String, colorName: String) -> some View {
+        let color = CategoryColor(from: colorName)?.color ?? .gray
+        return Image(systemName: iconName)
+            .font(.system(size: 14))
+            .foregroundStyle(.white)
+            .frame(width: 28, height: 28)
+            .background(color, in: Circle())
+    }
+}

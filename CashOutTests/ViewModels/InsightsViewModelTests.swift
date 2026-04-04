@@ -508,4 +508,148 @@ final class InsightsViewModelTests: XCTestCase {
             "Monthly period should fetch this month's interval"
         )
     }
+
+    // MARK: - Bar Entry Tests (Story 3-3, AC #1)
+
+    func testBarEntriesPopulatedAfterLoadData() async {
+        let (viewModel, expenseRepo, _) = makeSUT()
+        expenseRepo.stubbedFetchResult = [makeExpense(amount: 1000)]
+
+        await viewModel.loadData()
+
+        XCTAssertFalse(
+            viewModel.barEntries.isEmpty,
+            "barEntries should be populated after loadData with expenses"
+        )
+    }
+
+    func testBarEntriesAllZeroTotalWhenNoExpenses() async {
+        let (viewModel, expenseRepo, _) = makeSUT()
+        expenseRepo.stubbedFetchResult = []
+
+        await viewModel.loadData()
+
+        // Default period is .weekly → should have 7 entries, all zero
+        XCTAssertEqual(
+            viewModel.barEntries.count, 7,
+            "Weekly period should have 7 bar entries even with no expenses"
+        )
+        XCTAssertTrue(
+            viewModel.barEntries.allSatisfy { $0.total == 0 },
+            "All bar entries should have zero total when no expenses"
+        )
+    }
+
+    func testBarEntriesForWeeklyPeriodHasSevenEntries() async {
+        let (viewModel, expenseRepo, _) = makeSUT()
+        expenseRepo.stubbedFetchResult = [makeExpense(amount: 500)]
+
+        await viewModel.loadData()
+
+        XCTAssertEqual(
+            viewModel.barEntries.count, 7,
+            "Weekly period should produce exactly 7 bar entries"
+        )
+    }
+
+    func testBarEntriesForDailyPeriodHasOneEntry() async {
+        let (viewModel, expenseRepo, _) = makeSUT()
+        viewModel.selectedPeriod = .daily
+        expenseRepo.stubbedFetchResult = [makeExpense(amount: 2500)]
+
+        await viewModel.loadData()
+
+        XCTAssertEqual(
+            viewModel.barEntries.count, 1,
+            "Daily period should produce exactly 1 bar entry"
+        )
+        XCTAssertEqual(
+            viewModel.barEntries.first?.label, "Today",
+            "Daily bar entry label should be 'Today'"
+        )
+        XCTAssertEqual(
+            viewModel.barEntries.first?.total, 2500,
+            "Daily bar entry total should match expense sum"
+        )
+    }
+
+    func testBarEntriesForMonthlyPeriodHasCorrectWeekCount() async {
+        let (viewModel, expenseRepo, _) = makeSUT()
+        viewModel.selectedPeriod = .monthly
+        expenseRepo.stubbedFetchResult = []
+
+        await viewModel.loadData()
+
+        let thisMonth = Calendar.current.dateInterval(of: .month, for: Date())!
+        let expectedWeeks = Calendar.current.range(of: .weekOfMonth, in: .month, for: thisMonth.start)?.count ?? 0
+        XCTAssertEqual(
+            viewModel.barEntries.count, expectedWeeks,
+            "Monthly period should have one entry per week in current month"
+        )
+        XCTAssertEqual(
+            viewModel.barEntries.first?.label, "W1",
+            "First monthly entry should be labeled 'W1'"
+        )
+    }
+
+    func testBarEntriesClearedOnError() async {
+        let (viewModel, expenseRepo, categoryRepo) = makeSUT()
+        let catID = UUID()
+        expenseRepo.stubbedFetchResult = [makeExpense(amount: 1000, categoryID: catID)]
+        categoryRepo.categoriesToReturn = [
+            CategoryData(id: catID, name: "Food", iconName: "fork.knife", colorName: "Sage", isDefault: true, sortOrder: 0)
+        ]
+        await viewModel.loadData()
+        XCTAssertFalse(viewModel.barEntries.isEmpty, "Precondition: barEntries should be populated")
+
+        expenseRepo.shouldThrow = true
+        await viewModel.invalidateAndReload()
+
+        XCTAssertTrue(
+            viewModel.barEntries.isEmpty,
+            "barEntries should be cleared on error"
+        )
+    }
+
+    func testBarChartAccessibilityLabelContainsEntryLabels() async {
+        let (viewModel, expenseRepo, _) = makeSUT()
+        viewModel.selectedPeriod = .daily
+        expenseRepo.stubbedFetchResult = [makeExpense(amount: 3000)]
+
+        await viewModel.loadData()
+
+        let label = viewModel.barChartAccessibilityLabel
+        XCTAssertTrue(
+            label.contains("Today"),
+            "Bar chart accessibility label should contain entry label. Got: \(label)"
+        )
+    }
+
+    func testBarChartAccessibilityLabelReturnsNoDataWhenEmpty() {
+        let (viewModel, _, _) = makeSUT()
+
+        XCTAssertEqual(
+            viewModel.barChartAccessibilityLabel,
+            "No spending data",
+            "Should return 'No spending data' when barEntries is empty"
+        )
+    }
+
+    // MARK: - ChartSlice iconName Tests (Story 3-3, AC #3)
+
+    func testChartSliceIncludesIconName() async {
+        let (viewModel, expenseRepo, categoryRepo) = makeSUT()
+        let foodID = UUID()
+        expenseRepo.stubbedFetchResult = [makeExpense(amount: 1000, categoryID: foodID)]
+        categoryRepo.categoriesToReturn = [
+            CategoryData(id: foodID, name: "Food & Drink", iconName: "fork.knife", colorName: "Sage", isDefault: true, sortOrder: 0)
+        ]
+
+        await viewModel.loadData()
+
+        XCTAssertEqual(
+            viewModel.chartSlices.first?.iconName, "fork.knife",
+            "ChartSlice should include iconName from category data"
+        )
+    }
 }

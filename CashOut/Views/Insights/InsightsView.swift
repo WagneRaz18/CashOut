@@ -51,7 +51,18 @@ struct InsightsView: View {
                             }
                         )
 
-                        // Placeholder for bar chart and category breakdown (Story 3-3)
+                        DailyBarChartView(
+                            entries: viewModel.barEntries,
+                            accessibilityLabel: viewModel.barChartAccessibilityLabel
+                        )
+
+                        CategoryBreakdownView(
+                            slices: viewModel.chartSlices,
+                            totalAmount: viewModel.totalAmount,
+                            onCategoryTapped: { categoryID in
+                                viewModel.selectCategory(categoryID)
+                            }
+                        )
                     }
                 }
             }
