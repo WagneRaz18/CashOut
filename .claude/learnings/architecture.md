@@ -40,7 +40,8 @@
 - **2026-04-03**: When a ViewModel method calls the same repository method N times per invocation (e.g., `fetchExpenses` for current + previous period), the mock must track calls in an array (`fetchPeriods: [DateInterval]`), not a single optional — otherwise only the last call is captured and earlier calls are lost for assertions.
 
 ## Dependency Injection
-- Repositories should be transient instances (not singletons) — only PersistenceController is a singleton.
+- **2026-04-04**: `CloudSharingService.shared` is the second accepted singleton (after `PersistenceController.shared`) — sharing state (`isShared`, `partnerName`, `currentShare`) must be consistent across all consumers (`SettingsViewModel`, `ExpenseRepository`, `FeedViewModel`). Init remains internal for test injection.
+- Repositories should be transient instances (not singletons) — only PersistenceController and CloudSharingService are singletons.
 - Use init(repository: Protocol = ConcreteType()) — transient, not .shared.
 - Every service consumed by ViewModels must have a protocol (including HapticServiceProtocol) with a Mock in test targets.
 - App-wide services (PersistenceController) injected at @main App via .environment(\.managedObjectContext). Add EnvironmentKey for PersistenceController itself when repositories need both viewContext and newBackgroundContext().

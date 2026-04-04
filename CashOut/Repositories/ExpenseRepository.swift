@@ -8,6 +8,7 @@ enum RepositoryError: Error {
 @MainActor
 final class ExpenseRepository: ExpenseRepositoryProtocol {
     private let persistence: PersistenceController
+    private let cloudSharingService: CloudSharingServiceProtocol?
 
     // MARK: - FRC Observation (Story 2-1)
 
@@ -15,8 +16,12 @@ final class ExpenseRepository: ExpenseRepositoryProtocol {
     private var feedFRC: NSFetchedResultsController<Expense>?
     private var frcDelegate: FRCDelegate?
 
-    init(persistence: PersistenceController = .shared) {
+    init(
+        persistence: PersistenceController = .shared,
+        cloudSharingService: CloudSharingServiceProtocol? = CloudSharingService.shared
+    ) {
         self.persistence = persistence
+        self.cloudSharingService = cloudSharingService
     }
 
     func startObservingExpenses() {
@@ -119,6 +124,7 @@ final class ExpenseRepository: ExpenseRepositoryProtocol {
         request.fetchLimit = 1
 
         let existing = try context.fetch(request).first
+        let isNewObject = existing == nil
         let expense = existing ?? Expense(context: context)
 
         expense.id = data.id
@@ -129,7 +135,17 @@ final class ExpenseRepository: ExpenseRepositoryProtocol {
         expense.createdAt = data.createdAt
         expense.modifiedAt = data.modifiedAt
 
+        // PRE-SAVE: Route to shared store if participant (new objects only)
+        if isNewObject {
+            cloudSharingService?.prepareObjectForSharedSave(expense)
+        }
+
         try context.save()
+
+        // POST-SAVE: Move to shared zone if owner (new objects only)
+        if isNewObject {
+            try await cloudSharingService?.shareObjectsToHouseholdIfNeeded([expense])
+        }
     }
 
     func deleteExpense(id: UUID) async throws {

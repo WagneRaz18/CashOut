@@ -18,7 +18,7 @@ final class SettingsViewModel {
     private let persistenceController: PersistenceController
 
     init(
-        cloudSharingService: CloudSharingServiceProtocol = CloudSharingService(),
+        cloudSharingService: CloudSharingServiceProtocol = CloudSharingService.shared,
         persistenceController: PersistenceController = .shared
     ) {
         self.cloudSharingService = cloudSharingService

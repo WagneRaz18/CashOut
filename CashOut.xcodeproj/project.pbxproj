@@ -64,6 +64,10 @@
 		H1I2J3K4L5M60812H1I2J3K4 /* FeedViewModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = H1I2J3K4L5M60802H1I2J3K4 /* FeedViewModel.swift */; };
 		H1I2J3K4L5M60813H1I2J3K4 /* FeedRowView.swift in Sources */ = {isa = PBXBuildFile; fileRef = H1I2J3K4L5M60803H1I2J3K4 /* FeedRowView.swift */; };
 		H1I2J3K4L5M60814H1I2J3K4 /* FeedViewModelTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = H1I2J3K4L5M60804H1I2J3K4 /* FeedViewModelTests.swift */; };
+		8ACDE04A8C824DC4B54F3F0A /* FeedViewModelSharingTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FeedViewModelSharingTests.swift; sourceTree = "<group>"; };
+		3FA5C09A57894CF0B96741CA /* ExpenseRepositorySharingTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ExpenseRepositorySharingTests.swift; sourceTree = "<group>"; };
+		BD415C870533494D8A462A66 /* FeedViewModelSharingTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8ACDE04A8C824DC4B54F3F0A /* FeedViewModelSharingTests.swift */; };
+		498E2B5BCEDD4FDFAF14120D /* ExpenseRepositorySharingTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3FA5C09A57894CF0B96741CA /* ExpenseRepositorySharingTests.swift */; };
 		I1J2K3L4M5N60911I1J2K3L4 /* FloatingAddButton.swift in Sources */ = {isa = PBXBuildFile; fileRef = I1J2K3L4M5N60901I1J2K3L4 /* FloatingAddButton.swift */; };
 		J1K2L3M4N5O60A11 /* EditExpenseViewModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = J1K2L3M4N5O60A01 /* EditExpenseViewModel.swift */; };
 		J1K2L3M4N5O60A12 /* EditExpenseSheet.swift in Sources */ = {isa = PBXBuildFile; fileRef = J1K2L3M4N5O60A02 /* EditExpenseSheet.swift */; };
@@ -280,6 +284,7 @@
 				J1K2L3M4N5O60A03 /* EditExpenseViewModelTests.swift */,
 				D1E2F3A4B5C60104 /* ExpenseEntryViewModelTests.swift */,
 				H1I2J3K4L5M60804H1I2J3K4 /* FeedViewModelTests.swift */,
+				8ACDE04A8C824DC4B54F3F0A /* FeedViewModelSharingTests.swift */,
 				K1L2M3N4O5P60B02 /* InsightsViewModelTests.swift */,
 				85EF3A66719955A8ECD9748F /* SettingsViewModelTests.swift */,
 			);
@@ -371,6 +376,7 @@
 			children = (
 				C1D2E3F4A5B6000BC1D2E3F4 /* CategoryRepositoryTests.swift */,
 				C1D2E3F4A5B6000CC1D2E3F4 /* ExpenseRepositoryTests.swift */,
+				3FA5C09A57894CF0B96741CA /* ExpenseRepositorySharingTests.swift */,
 				F1A2B3C4D5E60301F1A2B3C4 /* MockCategoryRepository.swift */,
 				F1A2B3C4D5E60302F1A2B3C4 /* MockExpenseRepository.swift */,
 			);
@@ -543,6 +549,8 @@
 				F1A2B3C4D5E60312F1A2B3C4 /* MockExpenseRepository.swift in Sources */,
 				G1H2I3J4K5L60712G1H2I3J4 /* MockHapticService.swift in Sources */,
 				H1I2J3K4L5M60814H1I2J3K4 /* FeedViewModelTests.swift in Sources */,
+				BD415C870533494D8A462A66 /* FeedViewModelSharingTests.swift in Sources */,
+				498E2B5BCEDD4FDFAF14120D /* ExpenseRepositorySharingTests.swift in Sources */,
 				J1K2L3M4N5O60A13 /* EditExpenseViewModelTests.swift in Sources */,
 				K1L2M3N4O5P60B12 /* InsightsViewModelTests.swift in Sources */,
 				C323186B69203CC8485DB559 /* MockCloudSharingService.swift in Sources */,

@@ -21,10 +21,13 @@ final class FeedViewModelTests: XCTestCase {
         let hapticService = MockHapticService()
         authService.currentUserID = currentUserID
 
+        let cloudSharingService = MockCloudSharingService()
+
         let viewModel = FeedViewModel(
             repository: expenseRepo,
             categoryRepository: categoryRepo,
             authService: authService,
+            cloudSharingService: cloudSharingService,
             hapticService: hapticService
         )
 

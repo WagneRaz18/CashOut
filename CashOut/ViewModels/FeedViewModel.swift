@@ -23,6 +23,8 @@ final class FeedViewModel {
     @ObservationIgnored
     private let authService: AuthenticationServiceProtocol
 
+    private let cloudSharingService: CloudSharingServiceProtocol
+
     @ObservationIgnored
     private let hapticService: HapticServiceProtocol
 
@@ -38,11 +40,13 @@ final class FeedViewModel {
         repository: ExpenseRepositoryProtocol = ExpenseRepository(),
         categoryRepository: CategoryRepositoryProtocol = CategoryRepository(),
         authService: AuthenticationServiceProtocol = AuthenticationService(),
+        cloudSharingService: CloudSharingServiceProtocol = CloudSharingService.shared,
         hapticService: HapticServiceProtocol = HapticService()
     ) {
         self.repository = repository
         self.categoryRepository = categoryRepository
         self.authService = authService
+        self.cloudSharingService = cloudSharingService
         self.hapticService = hapticService
     }
 
@@ -75,7 +79,19 @@ final class FeedViewModel {
     }
 
     func partnerInitials(for expense: ExpenseData) -> String {
-        isCurrentUser(expense) ? "Me" : "P"
+        if isCurrentUser(expense) {
+            return "Me"
+        }
+        // Use real partner name from CloudSharingService
+        if let name = cloudSharingService.partnerName {
+            let initial = name.prefix(1).uppercased()
+            return initial.isEmpty ? "P" : initial
+        }
+        return "P"
+    }
+
+    var partnerDisplayName: String {
+        cloudSharingService.partnerName ?? "Partner"
     }
 
     // MARK: - Delete

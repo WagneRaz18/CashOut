@@ -1,4 +1,5 @@
 import SwiftUI
+import CoreData
 
 struct ContentView: View {
     @State private var selectedTab = 0
@@ -34,6 +35,15 @@ struct ContentView: View {
                 showingAddExpenseSheet = false
             })
             .presentationDetents([.large])
+        }
+        .task {
+            await CloudSharingService.shared.checkSharingStatus()
+        }
+        .task {
+            for await _ in NotificationCenter.default.notifications(named: .NSPersistentStoreRemoteChange) {
+                guard !CloudSharingService.shared.isShared else { continue }
+                await CloudSharingService.shared.checkSharingStatus()
+            }
         }
     }
 }

@@ -23,6 +23,10 @@
 - Filter `CKShare.participants` for `.accepted` acceptance status when displaying partner info — pending/removed participants should not show as connected.
 - App must implement `userDidAcceptCloudKitShareWith` and call `container.acceptShareInvitations(from:into:)` for partner join flow. There is NO `container.accept(metadata)` convenience method on NSPersistentCloudKitContainer.
 - `.onCKShareAccepted` is NOT a real SwiftUI scene modifier — use `UIApplicationDelegate.userDidAcceptCloudKitShareWith` for share acceptance.
+- **2026-04-04**: `checkSharingStatus()` must check BOTH `privatePersistentStore` and `sharedPersistentStore` — the owner's share metadata lives in the private store, but the partner's share metadata lives in the shared store. Checking only private store silently fails for the partner.
+- **2026-04-04**: `extractPartnerInfo` must filter by `currentUserParticipant?.userIdentity.userRecordID` (not `role != .owner`) to find "the other person" — filtering by role breaks for the participant (they're `.privateUser`, not `.owner`, so they get themselves back instead of the owner).
+- **2026-04-04**: Owner and participant use different save paths for shared zone routing: Owner calls `container.share(objects, to: existingShare)` AFTER `context.save()` (post-save). Participant calls `context.assign(object, to: sharedStore)` BEFORE `context.save()` (pre-save). Both result in the expense in the shared zone. Edits/deletes need no sharing calls — `NSPersistentCloudKitContainer` handles them automatically.
+- **2026-04-04**: `persistUpdatedShare` must route to the correct store based on `isShareOwner` — owner's share is in `privatePersistentStore`, partner's share is in `sharedPersistentStore`. Hardcoding `privatePersistentStore` silently fails on the partner's device.
 
 ## Conflict Resolution (Last-Write-Wins)
 - NSPersistentCloudKitContainer uses CKRecord change tags for framework-level LWW — NOT any custom `modifiedAt` field.
