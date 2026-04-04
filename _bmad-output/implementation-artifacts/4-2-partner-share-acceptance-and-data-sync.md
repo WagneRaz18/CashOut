@@ -1,6 +1,6 @@
 # Story 4.2: Partner Share Acceptance & Data Sync
 
-Status: review
+Status: done
 
 ## Story
 
@@ -542,6 +542,16 @@ Noted (pre-existing, out of scope):
 
 False positive dismissed:
 - Architecture guardian concern about reactivity gap through protocol references — `CloudSharingService` IS `@Observable`, so Swift Observation tracks access at runtime regardless of protocol typing.
+
+### Review Findings
+
+- [x] [Review][Patch] `extractPartnerInfo` fails when `currentUserParticipant` is nil — `currentUserRecordID` is nil, all participants pass filter, current user could be reported as own partner. Add `guard let currentUserRecordID` early return. [CloudSharingService.swift:151]
+- [x] [Review][Defer] PersistenceController stores may not be loaded when `checkSharingStatus()` first runs on cold launch [ContentView.swift:40] — deferred, pre-existing infrastructure issue from Epic 1
+- [x] [Review][Defer] ContentView directly calls `CloudSharingService.shared` — MVVM boundary violation, spec-directed pragmatic choice [ContentView.swift:40-47] — deferred, architectural debt
+- [x] [Review][Defer] `createShare` reuses `currentShare` without checking if share is still valid on CloudKit server [CloudSharingService.swift:58] — deferred, pre-existing from story 4-1
+- [x] [Review][Defer] `SettingsViewModel.handleShareDismiss` fire-and-forget Task [SettingsViewModel.swift:67] — deferred, pre-existing from story 4-1
+- [x] [Review][Defer] `invitePartner` shares categories — race with async seeding on new installs [SettingsViewModel.swift:35] — deferred, pre-existing from story 4-1
+- [x] [Review][Defer] Cold-launch via share URL timing — `checkSharingStatus()` may run before `acceptShareInvitations` completes [AppDelegate.swift:29 / ContentView.swift:40] — deferred, notification listener handles eventually
 
 ## Change Log
 

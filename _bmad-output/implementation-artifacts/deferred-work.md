@@ -92,6 +92,15 @@
 - **W3: `sharedPersistentStore` nil when iCloud unavailable — silent share rejection** — `AppDelegate.swift:28`. When iCloud is unavailable at launch, shared store is never created. Partner acceptance silently fails until app restart. Needs `handleAccountChange()` implementation.
 - **W4: Multiple SettingsView instances from tab navigation — no shared state** — `FeedView.swift:58`, `InsightsView.swift:81`. Each tab creates independent SettingsView/SettingsViewModel/CloudSharingService. State not shared across navigations. Consider singleton CloudSharingService or environment injection.
 
+## Deferred from: code review of 4-2-partner-share-acceptance-and-data-sync (2026-04-04)
+
+- **D1: PersistenceController stores may not be loaded on cold launch** — `ContentView.swift:40`. `checkSharingStatus()` runs at app launch but persistent stores load asynchronously. Both `privatePersistentStore` and `sharedPersistentStore` may be nil, causing the method to fall through to solo mode. Pre-existing from Epic 1 PersistenceController design.
+- **D2: ContentView MVVM boundary violation** — `ContentView.swift:40-47`. View directly calls `CloudSharingService.shared` instead of routing through a ViewModel. Spec-directed pragmatic choice. Consider app-scoped ViewModel for startup checks.
+- **D3: `createShare` reuses stale `currentShare`** — `CloudSharingService.swift:58`. No staleness or server-side validity check before returning cached share to UICloudSharingController. Pre-existing from story 4-1.
+- **D4: `SettingsViewModel.handleShareDismiss` fire-and-forget Task** — `SettingsViewModel.swift:67`. Task not stored or cancelled. Pre-existing from story 4-1.
+- **D5: `invitePartner` race with async category seeding** — `SettingsViewModel.swift:35`. Share created from categories; if seeding hasn't completed on new install, invite fails with "No categories found". Pre-existing from story 4-1.
+- **D6: Cold-launch share acceptance timing** — `AppDelegate.swift:29` / `ContentView.swift:40`. When app launches via share URL, `checkSharingStatus()` may fire before `acceptShareInvitations` completes. Notification listener will catch the store change eventually.
+
 ## Deferred from: code review of 3-2-category-donut-chart (2026-04-04)
 
 - **D1: Default `AuthenticationService()` in ViewModel init** — All ViewModels (FeedViewModel, ExpenseEntryViewModel, InsightsViewModel) use `authService: AuthenticationServiceProtocol = AuthenticationService()` as default parameter. The learnings entry warns against creating instances in Views; the ViewModel default parameter is the established DI convention. If the shared instance pattern changes, all ViewModels need updating.

@@ -148,7 +148,11 @@ final class CloudSharingService: CloudSharingServiceProtocol {
 
     private func extractPartnerInfo(from share: CKShare) {
         // Filter out the CURRENT user to find the OTHER person
-        let currentUserRecordID = share.currentUserParticipant?.userIdentity.userRecordID
+        guard let currentUserRecordID = share.currentUserParticipant?.userIdentity.userRecordID else {
+            // Can't identify current user — can't determine who the partner is
+            partnerName = nil
+            return
+        }
         let otherParticipants = share.participants.filter { participant in
             participant.userIdentity.userRecordID != currentUserRecordID
         }
