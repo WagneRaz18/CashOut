@@ -1,6 +1,7 @@
 import Foundation
 import CloudKit
 @preconcurrency import CoreData
+import os
 
 @MainActor
 @Observable
@@ -9,20 +10,26 @@ final class SettingsViewModel {
     var hasPartner: Bool { cloudSharingService.isShared }
     var partnerDisplayName: String? { cloudSharingService.partnerName }
     var errorMessage: String?
+    var categories: [CategoryData] = []
 
     var activeShare: CKShare?
     var activeContainer: CKContainer?
     private(set) var isInviting = false
 
+    @ObservationIgnored
     private let cloudSharingService: CloudSharingServiceProtocol
     private let persistenceController: PersistenceController
+    @ObservationIgnored
+    private let categoryRepository: CategoryRepositoryProtocol
 
     init(
         cloudSharingService: CloudSharingServiceProtocol = CloudSharingService.shared,
-        persistenceController: PersistenceController = .shared
+        persistenceController: PersistenceController = .shared,
+        categoryRepository: CategoryRepositoryProtocol = CategoryRepository()
     ) {
         self.cloudSharingService = cloudSharingService
         self.persistenceController = persistenceController
+        self.categoryRepository = categoryRepository
     }
 
     func invitePartner() async {
@@ -52,6 +59,21 @@ final class SettingsViewModel {
             errorMessage = error.localizedDescription
             activeShare = nil
             activeContainer = nil
+        }
+    }
+
+    func loadCategories() async {
+        do {
+            let result = try await categoryRepository.fetchCategories()
+            guard !Task.isCancelled else { return }
+            categories = result
+        } catch {
+            guard !Task.isCancelled else { return }
+            // Categories are seeded at startup — empty state is infrastructure failure.
+            // No errorMessage set — category list in Settings is informational only.
+            // The entry screen has its own independent category loading path.
+            os_log(.error, "SettingsViewModel: loadCategories failed: %{public}@", error.localizedDescription)
+            categories = []
         }
     }
 

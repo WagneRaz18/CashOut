@@ -10,14 +10,20 @@ final class SettingsViewModelTests: XCTestCase {
 
     private func makeSUT(
         isShared: Bool = false,
-        partnerName: String? = nil
-    ) -> (viewModel: SettingsViewModel, mockService: MockCloudSharingService) {
+        partnerName: String? = nil,
+        categories: [CategoryData] = []
+    ) -> (viewModel: SettingsViewModel, mockService: MockCloudSharingService, mockCategories: MockCategoryRepository) {
         let mockService = MockCloudSharingService()
         mockService.isShared = isShared
         mockService.partnerName = partnerName
+        let mockCategories = MockCategoryRepository()
+        mockCategories.categoriesToReturn = categories
 
-        let viewModel = SettingsViewModel(cloudSharingService: mockService)
-        return (viewModel, mockService)
+        let viewModel = SettingsViewModel(
+            cloudSharingService: mockService,
+            categoryRepository: mockCategories
+        )
+        return (viewModel, mockService, mockCategories)
     }
 
     private func makeSUTWithPersistence() -> (
@@ -50,24 +56,24 @@ final class SettingsViewModelTests: XCTestCase {
     // MARK: - Solo Mode Tests
 
     func testSoloModeHasPartnerIsFalse() {
-        let (viewModel, _) = makeSUT(isShared: false)
+        let (viewModel, _, _) = makeSUT(isShared: false)
         XCTAssertFalse(viewModel.hasPartner)
     }
 
     func testSoloModePartnerDisplayNameIsNil() {
-        let (viewModel, _) = makeSUT(isShared: false)
+        let (viewModel, _, _) = makeSUT(isShared: false)
         XCTAssertNil(viewModel.partnerDisplayName)
     }
 
     // MARK: - Partner Connected Tests
 
     func testPartnerConnectedHasPartnerIsTrue() {
-        let (viewModel, _) = makeSUT(isShared: true, partnerName: "Jane")
+        let (viewModel, _, _) = makeSUT(isShared: true, partnerName: "Jane")
         XCTAssertTrue(viewModel.hasPartner)
     }
 
     func testPartnerConnectedDisplaysPartnerName() {
-        let (viewModel, _) = makeSUT(isShared: true, partnerName: "Jane Smith")
+        let (viewModel, _, _) = makeSUT(isShared: true, partnerName: "Jane Smith")
         XCTAssertEqual(viewModel.partnerDisplayName, "Jane Smith")
     }
 
@@ -125,7 +131,7 @@ final class SettingsViewModelTests: XCTestCase {
     // MARK: - Refresh Sharing Status Tests
 
     func testRefreshSharingStatusCallsCheckOnService() async {
-        let (viewModel, mockService) = makeSUT()
+        let (viewModel, mockService, _) = makeSUT()
 
         await viewModel.refreshSharingStatus()
 
@@ -135,7 +141,7 @@ final class SettingsViewModelTests: XCTestCase {
     // MARK: - Handle Share Dismiss Tests
 
     func testHandleDismissWithShareCallsPersistAndRefresh() {
-        let (viewModel, mockService) = makeSUT()
+        let (viewModel, mockService, _) = makeSUT()
         viewModel.isShowingShareSheet = true
 
         let testShare = CKShare(recordZoneID: CKRecordZone.ID(zoneName: "test", ownerName: CKCurrentUserDefaultName))
@@ -146,12 +152,62 @@ final class SettingsViewModelTests: XCTestCase {
     }
 
     func testHandleDismissWithNilDoesNotCallPersist() {
-        let (viewModel, mockService) = makeSUT()
+        let (viewModel, mockService, _) = makeSUT()
         viewModel.isShowingShareSheet = true
 
         viewModel.handleShareDismiss(nil)
 
         XCTAssertFalse(mockService.persistUpdatedShareCalled)
         XCTAssertFalse(viewModel.isShowingShareSheet)
+    }
+
+    // MARK: - Category Loading Tests
+
+    func testLoadCategoriesPopulatesCategoriesArray() async {
+        let defaultCategories = makeDefaultCategories()
+        let (viewModel, _, _) = makeSUT(categories: defaultCategories)
+
+        await viewModel.loadCategories()
+
+        XCTAssertEqual(viewModel.categories.count, 6)
+    }
+
+    func testLoadCategoriesOnErrorSetsEmptyArrayWithNoErrorMessage() async {
+        let (viewModel, _, mockCategories) = makeSUT()
+        mockCategories.shouldThrow = true
+
+        await viewModel.loadCategories()
+
+        XCTAssertTrue(viewModel.categories.isEmpty)
+        XCTAssertNil(viewModel.errorMessage)
+    }
+
+    func testLoadCategoriesIncludesCustomCategories() async {
+        var allCategories = makeDefaultCategories()
+        allCategories.append(CategoryData(id: UUID(), name: "Groceries", iconName: "cart.fill", colorName: "Sage", isDefault: false, sortOrder: 6))
+        allCategories.append(CategoryData(id: UUID(), name: "Pets", iconName: "pawprint.fill", colorName: "Amber", isDefault: false, sortOrder: 7))
+
+        let (viewModel, _, _) = makeSUT(categories: allCategories)
+
+        await viewModel.loadCategories()
+
+        XCTAssertEqual(viewModel.categories.count, 8)
+        let customCategories = viewModel.categories.filter { !$0.isDefault }
+        XCTAssertEqual(customCategories.count, 2)
+    }
+
+    // MARK: - Category Test Helpers
+
+    private func makeDefaultCategories() -> [CategoryData] {
+        DefaultCategory.allCases.map { dc in
+            CategoryData(
+                id: UUID(),
+                name: dc.name,
+                iconName: dc.iconName,
+                colorName: dc.colorName,
+                isDefault: true,
+                sortOrder: dc.sortOrder
+            )
+        }
     }
 }

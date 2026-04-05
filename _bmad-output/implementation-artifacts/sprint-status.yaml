@@ -1,5 +1,5 @@
 # generated: 2026-03-27
-# last_updated: 2026-03-27
+# last_updated: 2026-04-05
 # project: CashOut
 # project_key: NOKEY
 # tracking_system: file-system
@@ -35,7 +35,11 @@
 # - Dev moves story to 'review', then runs code-review (fresh context, different LLM recommended)
 
 generated: 2026-03-27
-last_updated: "2026-04-04"
+last_updated: "2026-04-05"
+# Story 5-1 review 2026-04-05
+# Story 5-1 in-progress 2026-04-05
+# Story 5-1 created 2026-04-05
+# Sprint planning refreshed — Epic 4 complete (all stories done), next: Epic 5 2026-04-05
 # Story 4-3 done (code review passed) 2026-04-04
 # Story 4-3 review 2026-04-04
 # Story 4-3 in-progress 2026-04-04
@@ -132,14 +136,14 @@ development_status:
   epic-3-retrospective: optional
 
   # Epic 4: Household Sharing & Real-Time Sync
-  epic-4: in-progress
+  epic-4: done
   4-1-cloudkit-shared-zone-and-partner-invitation: done
   4-2-partner-share-acceptance-and-data-sync: done
   4-3-real-time-feed-updates-and-sync-management: done
   epic-4-retrospective: optional
 
   # Epic 5: Category Customization & Settings
-  epic-5: backlog
-  5-1-settings-screen: backlog
+  epic-5: in-progress
+  5-1-settings-screen: review
   5-2-custom-category-creation-and-editing: backlog
   epic-5-retrospective: optional

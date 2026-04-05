@@ -7,8 +7,9 @@ struct SettingsView: View {
     var body: some View {
         Form {
             Section("Categories") {
-                Text("6 default categories active")
-                    .foregroundStyle(.secondary)
+                ForEach(viewModel.categories, id: \.id) { category in
+                    CategoryRowView(category: category)
+                }
             }
 
             Section("Household") {
@@ -23,7 +24,13 @@ struct SettingsView: View {
             }
         }
         .navigationTitle("Settings")
-        .task { await viewModel.refreshSharingStatus() }
+        // Both calls re-fire on every NavigationStack appear — intentional.
+        // Categories list is small, re-fetch ensures partner-added custom categories
+        // appear immediately via NSPersistentCloudKitContainer auto-merge.
+        .task {
+            await viewModel.refreshSharingStatus()
+            await viewModel.loadCategories()
+        }
         .sheet(isPresented: Bindable(viewModel).isShowingShareSheet, onDismiss: {
             // Catches interactive dismiss (swipe-down) when no delegate method fires
             if viewModel.isShowingShareSheet {
