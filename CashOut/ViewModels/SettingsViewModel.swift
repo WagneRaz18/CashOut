@@ -18,6 +18,7 @@ final class SettingsViewModel {
 
     @ObservationIgnored
     private let cloudSharingService: CloudSharingServiceProtocol
+    @ObservationIgnored
     private let persistenceController: PersistenceController
     @ObservationIgnored
     private let categoryRepository: CategoryRepositoryProtocol

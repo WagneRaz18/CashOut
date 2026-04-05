@@ -1,6 +1,6 @@
 # Story 5.1: Settings Screen
 
-Status: review
+Status: done
 
 ## Story
 
@@ -227,5 +227,16 @@ None — clean implementation, no debugging required.
 - `CashOutTests/ViewModels/SettingsViewModelTests.swift` — MODIFIED (updated makeSUT, added 3 category loading tests)
 - `CashOut.xcodeproj/project.pbxproj` — MODIFIED (added CategoryRowView.swift to project)
 
+### Review Findings
+
+- [x] [Review][Patch] `@ObservationIgnored` missing on `persistenceController` — FIXED [`SettingsViewModel.swift:21`]
+- [x] [Review][Patch] Test hard-codes category count as literal `6` — FIXED, uses `defaultCategories.count` [`SettingsViewModelTests.swift:172`]
+- [x] [Review][Patch] Happy-path test does not assert `mockCategories.fetchCategoriesCalled` — FIXED [`SettingsViewModelTests.swift:171`]
+- [x] [Review][Defer] Invalid SF Symbol `iconName` renders zero-size invisible icon with no fallback [`CategoryRowView.swift:8`] — deferred, validation concern for custom categories (Story 5-2)
+- [x] [Review][Defer] `ForEach(id: \.id)` with nil Core Data id generates new UUID each fetch — unstable identity [`SettingsView.swift:10`] — deferred, pre-existing (tracked as W1 in Story 1-1)
+- [x] [Review][Defer] `makeSUTWithPersistence()` does not inject `MockCategoryRepository` — latent test isolation gap [`SettingsViewModelTests.swift:29-42`] — deferred, pre-existing helper
+- [x] [Review][Defer] `CategoryData` lacks `Identifiable` conformance — requires `id: \.id` in every ForEach — deferred, already tracked (W3 in Story 2-1)
+
 ## Change Log
+- 2026-04-05: Code review complete — 0 CRITICAL, 3 PATCH, 4 DEFER, 8 DISMISSED. All 7 ACs pass.
 - 2026-04-05: Story implemented — replaced Categories placeholder with real category data from CategoryRepositoryProtocol, created CategoryRowView, added 3 unit tests. Verified all existing sections (Household, About, Navigation). Addressed 3 orchestrator warnings (VoiceOver, os_log, icon scaling). 189/189 tests pass.

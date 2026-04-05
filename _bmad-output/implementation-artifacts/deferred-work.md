@@ -109,6 +109,11 @@
 - **D4: ContentView remote-change guard misses share-revoked** — `ContentView.swift:45`. `guard !CloudSharingService.shared.isShared` skips all `checkSharingStatus()` refreshes once shared. If partner revokes share, `isShared` remains stale. Pre-existing from story 4-2.
 - **D5: Test sleep-polling pattern fragile** — `FeedViewModelTests.swift:99-104`. Uses `Task.sleep(50ms)` + `XCTestExpectation` for async synchronization. Fragile on slow CI. Pre-existing from story 2-1.
 
+## Deferred from: code review of 5-1-settings-screen (2026-04-05)
+
+- **D1: Invalid SF Symbol `iconName` renders invisible icon** — `CategoryRowView.swift:8`. `Image(systemName:)` produces a zero-size image for unrecognized symbol names. `wrappedIconName` fallback (`"questionmark"`) only handles nil, not invalid strings. Relevant when custom categories arrive in Story 5-2.
+- **D2: `makeSUTWithPersistence()` missing MockCategoryRepository injection** — `SettingsViewModelTests.swift:29-42`. Helper creates real `CategoryRepository()` via default parameter. No current test calls `loadCategories()` through this path, but future tests could hit real persistence. Low priority.
+
 ## Deferred from: code review of 3-2-category-donut-chart (2026-04-04)
 
 - **D1: Default `AuthenticationService()` in ViewModel init** — All ViewModels (FeedViewModel, ExpenseEntryViewModel, InsightsViewModel) use `authService: AuthenticationServiceProtocol = AuthenticationService()` as default parameter. The learnings entry warns against creating instances in Views; the ViewModel default parameter is the established DI convention. If the shared instance pattern changes, all ViewModels need updating.

@@ -165,11 +165,12 @@ final class SettingsViewModelTests: XCTestCase {
 
     func testLoadCategoriesPopulatesCategoriesArray() async {
         let defaultCategories = makeDefaultCategories()
-        let (viewModel, _, _) = makeSUT(categories: defaultCategories)
+        let (viewModel, _, mockCategories) = makeSUT(categories: defaultCategories)
 
         await viewModel.loadCategories()
 
-        XCTAssertEqual(viewModel.categories.count, 6)
+        XCTAssertTrue(mockCategories.fetchCategoriesCalled)
+        XCTAssertEqual(viewModel.categories.count, defaultCategories.count)
     }
 
     func testLoadCategoriesOnErrorSetsEmptyArrayWithNoErrorMessage() async {
