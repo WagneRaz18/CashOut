@@ -56,9 +56,12 @@ final class CloudSharingService: CloudSharingServiceProtocol {
 
         // Re-validate cached share before reuse (may have been revoked)
         if let existingShare = currentShare {
-            if let privateStore = persistenceController.privatePersistentStore {
+            let validationStore = isShareOwner
+                ? persistenceController.privatePersistentStore
+                : persistenceController.sharedPersistentStore
+            if let store = validationStore {
                 do {
-                    let freshShares = try persistenceController.container.fetchShares(in: privateStore)
+                    let freshShares = try persistenceController.container.fetchShares(in: store)
                     if freshShares.contains(where: { $0.recordID == existingShare.recordID }) {
                         return (existingShare, CKContainer(identifier: Self.containerIdentifier))
                     }
@@ -109,7 +112,12 @@ final class CloudSharingService: CloudSharingServiceProtocol {
             }
         }
 
-        // 3. No shares found — solo mode
+        // 3. No shares found — solo mode (only reset if both stores are loaded)
+        guard persistenceController.privatePersistentStore != nil ||
+              persistenceController.sharedPersistentStore != nil else {
+            // Store references nil (e.g., mid-account-change) — don't reset sharing state
+            return
+        }
         isShared = false
         partnerName = nil
         currentShare = nil

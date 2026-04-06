@@ -73,31 +73,33 @@ private struct HouseholdSectionView: View {
     @State private var inviteTask: Task<Void, Never>?
 
     var body: some View {
-        if viewModel.hasPartner {
-            HStack {
-                partnerAvatar
-                VStack(alignment: .leading) {
-                    Text(viewModel.partnerDisplayName ?? "Partner")
-                        .font(.body)
-                    Text("Connected")
+        Group {
+            if viewModel.hasPartner {
+                HStack {
+                    partnerAvatar
+                    VStack(alignment: .leading) {
+                        Text(viewModel.partnerDisplayName ?? "Partner")
+                            .font(.body)
+                        Text("Connected")
+                            .font(.caption)
+                            .foregroundStyle(.secondary)
+                    }
+                }
+            } else {
+                Button("Invite Partner") {
+                    inviteTask?.cancel()
+                    inviteTask = Task { await viewModel.invitePartner() }
+                }
+                .disabled(viewModel.isInviting)
+
+                if let error = viewModel.errorMessage {
+                    Text(error)
                         .font(.caption)
-                        .foregroundStyle(.secondary)
+                        .foregroundStyle(.red)
                 }
             }
-        } else {
-            Button("Invite Partner") {
-                inviteTask?.cancel()
-                inviteTask = Task { await viewModel.invitePartner() }
-            }
-            .disabled(viewModel.isInviting)
-            .onDisappear { inviteTask?.cancel() }
-
-            if let error = viewModel.errorMessage {
-                Text(error)
-                    .font(.caption)
-                    .foregroundStyle(.red)
-            }
         }
+        .onDisappear { inviteTask?.cancel() }
     }
 
     private var partnerAvatar: some View {
