@@ -11,13 +11,14 @@ struct EntryView: View {
             if let error = viewModel.saveError {
                 Text(error)
                     .font(.caption)
-                    .foregroundStyle(.secondary)
+                    .foregroundStyle(SemanticColor.error)
                     .padding(.horizontal, Spacing.md)
                     .padding(.top, Spacing.xs)
             }
 
+            Spacer(minLength: 0)
+
             AmountDisplayView(amount: viewModel.amountInCents)
-                .padding(.top, Spacing.lg)
                 .padding(.horizontal, Spacing.md)
 
             CategoryPickerView(
@@ -26,6 +27,8 @@ struct EntryView: View {
                 onSelect: { viewModel.selectCategory($0) }
             )
             .padding(.vertical, Spacing.sm)
+
+            Spacer(minLength: 0)
 
             NumpadView(
                 onDigit: { viewModel.appendDigit($0) },
@@ -54,6 +57,7 @@ struct EntryView: View {
             .padding(.horizontal, Spacing.md)
             .padding(.bottom, Spacing.md)
         }
+        .background(Surface.base)
         .task {
             await viewModel.loadCategories()
         }

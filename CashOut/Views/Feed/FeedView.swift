@@ -9,7 +9,7 @@ struct FeedView: View {
             if viewModel.isEmpty {
                 Text("No entries yet")
                     .font(.body)
-                    .foregroundStyle(.secondary)
+                    .foregroundStyle(SemanticColor.onSurfaceVariant)
                     .frame(maxWidth: .infinity, maxHeight: .infinity)
             } else {
                 List {
@@ -25,6 +25,8 @@ struct FeedView: View {
                             )
                         }
                         .buttonStyle(.plain)
+                        .listRowBackground(Surface.containerLow)
+                        .listRowSeparator(.hidden)
                         .swipeActions(edge: .leading, allowsFullSwipe: false) {
                             Button(role: .destructive) {
                                 Task {
@@ -40,10 +42,12 @@ struct FeedView: View {
                             } label: {
                                 Label("Edit", systemImage: "pencil")
                             }
-                            .tint(.blue)
+                            .tint(SemanticColor.primary)
                         }
                     }
                 }
+                .scrollContentBackground(.hidden)
+                .background(Surface.base)
             }
         }
         .sheet(item: $expenseToEdit) { expense in
@@ -60,7 +64,7 @@ struct FeedView: View {
                 if let error = viewModel.errorMessage {
                     Text(error)
                         .font(.caption)
-                        .foregroundStyle(.secondary)
+                        .foregroundStyle(SemanticColor.error)
                         .frame(maxWidth: .infinity, alignment: .center)
                         .padding(.horizontal, Spacing.md)
                         .padding(.vertical, Spacing.xs)

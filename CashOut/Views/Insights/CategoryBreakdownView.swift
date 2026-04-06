@@ -22,12 +22,13 @@ struct CategoryBreakdownView: View {
 
                                 Text(slice.categoryName)
                                     .font(.subheadline)
+                                    .foregroundStyle(SemanticColor.onSurface)
 
                                 Spacer()
 
                                 Text(slice.total.displayAmount)
-                                    .font(.subheadline)
-                                    .monospacedDigit()
+                                    .font(.system(.subheadline, design: .monospaced))
+                                    .foregroundStyle(SemanticColor.onSurface)
                             }
 
                             GeometryReader { geometry in
@@ -37,6 +38,7 @@ struct CategoryBreakdownView: View {
                             }
                             .frame(height: 4)
                         }
+                        .padding(.vertical, Spacing.xs)
                     }
                     .buttonStyle(.plain)
                     .accessibilityElement(children: .combine)

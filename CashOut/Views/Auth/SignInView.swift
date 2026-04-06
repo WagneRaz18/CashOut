@@ -4,16 +4,24 @@ import AuthenticationServices
 struct SignInView: View {
     let viewModel: AuthenticationViewModel
 
-    @Environment(\.colorScheme) private var colorScheme
-
     var body: some View {
         VStack(spacing: 32) {
             Spacer()
+
+            // App icon
+            Image(systemName: "creditcard.fill")
+                .font(.system(size: 48))
+                .foregroundStyle(SemanticColor.primary)
 
             // App name
             Text("CashOut")
                 .font(.largeTitle)
                 .fontWeight(.bold)
+                .foregroundStyle(SemanticColor.onSurface)
+
+            Text("The Silent Steward")
+                .font(.subheadline)
+                .foregroundStyle(SemanticColor.onSurfaceVariant)
 
             // Sign in with Apple button — Apple's official SwiftUI component
             SignInWithAppleButton(.signIn) { request in
@@ -42,14 +50,14 @@ struct SignInView: View {
                     )
                 }
             }
-            .signInWithAppleButtonStyle(colorScheme == .dark ? .white : .black)
+            .signInWithAppleButtonStyle(.white)
             .frame(height: 50)
             .frame(maxWidth: 280)
 
             // Explanation / error text
             Text(viewModel.errorMessage ?? "Sign in to sync expenses with your partner")
                 .font(.subheadline)
-                .foregroundStyle(.secondary)
+                .foregroundStyle(viewModel.errorMessage != nil ? SemanticColor.error : SemanticColor.onSurfaceVariant)
                 .multilineTextAlignment(.center)
                 .padding(.horizontal, 40)
                 .accessibilityLabel(
@@ -57,7 +65,13 @@ struct SignInView: View {
                 )
 
             Spacer()
+
+            Text("created by WagneRaz")
+                .font(.caption2)
+                .foregroundStyle(SemanticColor.onSurfaceVariant.opacity(0.6))
+                .padding(.bottom, Spacing.md)
         }
+        .background(Surface.base)
     }
 }
 

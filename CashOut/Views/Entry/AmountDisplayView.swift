@@ -5,11 +5,12 @@ struct AmountDisplayView: View {
 
     var body: some View {
         Text(amount.displayAmount)
-            .font(.system(size: 48, weight: .medium, design: .rounded))
-            .foregroundStyle(amount == 0 ? .secondary : .primary)
+            .font(.system(size: 56, weight: .medium, design: .rounded))
+            .foregroundStyle(amount == 0 ? SemanticColor.onSurfaceVariant : SemanticColor.onSurface)
             .lineLimit(1)
-            .minimumScaleFactor(0.7)
+            .minimumScaleFactor(0.5)
             .frame(maxWidth: .infinity)
+            .padding(.vertical, Spacing.lg)
             .accessibilityLabel("Amount: \(amount.displayAmount)")
             .accessibilityAddTraits(.updatesFrequently)
     }

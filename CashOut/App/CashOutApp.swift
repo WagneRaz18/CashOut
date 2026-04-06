@@ -20,6 +20,7 @@ struct CashOutApp: App {
                     SignInView(viewModel: authViewModel)
                 }
             }
+            .preferredColorScheme(.dark)
             .environment(
                 \.managedObjectContext,
                 persistenceController.container.viewContext

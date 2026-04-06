@@ -15,7 +15,7 @@ struct DailyBarChartView: View {
                         x: .value("Period", entry.label),
                         y: .value("Amount", entry.total)
                     )
-                    .foregroundStyle(Color.accentColor.opacity(0.7))
+                    .foregroundStyle(SemanticColor.primary.opacity(0.7))
                     .cornerRadius(4)
                     .accessibilityLabel(entry.label)
                     .accessibilityValue(entry.total.displayAmount)

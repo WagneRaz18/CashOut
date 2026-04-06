@@ -17,13 +17,14 @@ struct FeedRowView: View {
             VStack(alignment: .leading, spacing: Spacing.xs) {
                 Text(category?.name ?? "Unknown")
                     .font(.body)
+                    .foregroundStyle(SemanticColor.onSurface)
                     .lineLimit(1)
 
                 HStack(spacing: Spacing.xs) {
                     partnerCircle
                     Text(expense.createdAt.relativeFormatted)
                         .font(.caption)
-                        .foregroundStyle(.secondary)
+                        .foregroundStyle(SemanticColor.onSurfaceVariant)
                 }
             }
 
@@ -32,12 +33,13 @@ struct FeedRowView: View {
             // Trailing: amount + optional note indicator
             VStack(alignment: .trailing, spacing: Spacing.xs) {
                 Text(expense.amount.displayAmount)
-                    .font(.body.monospacedDigit())
+                    .font(.system(.body, design: .monospaced).monospacedDigit())
+                    .foregroundStyle(SemanticColor.onSurface)
 
                 if let note = expense.note, !note.isEmpty {
                     Image(systemName: "text.bubble")
                         .font(.caption2)
-                        .foregroundStyle(.secondary)
+                        .foregroundStyle(SemanticColor.onSurfaceVariant)
                 }
             }
         }

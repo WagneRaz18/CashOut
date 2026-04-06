@@ -22,7 +22,7 @@ struct InsightsView: View {
                 if let error = viewModel.errorMessage {
                     Text(error)
                         .font(.caption)
-                        .foregroundStyle(.red)
+                        .foregroundStyle(SemanticColor.error)
                         .frame(maxWidth: .infinity, alignment: .center)
                         .padding(.horizontal, Spacing.md)
                         .padding(.top, Spacing.sm)
@@ -80,6 +80,7 @@ struct InsightsView: View {
                 )
             }
         }
+        .background(Surface.base)
         .navigationTitle("Insights")
         .toolbar {
             if viewModel.syncStatus == .syncFailure {

@@ -43,13 +43,15 @@ struct NumpadView: View {
         switch key {
         case .digit(let value):
             Text(value)
-                .font(.title)
+                .font(.system(size: 24, weight: .regular, design: .rounded))
+                .foregroundStyle(SemanticColor.onSurface)
                 .minimumScaleFactor(0.8)
         case .empty:
             Color.clear
         case .backspace:
             Image(systemName: "delete.backward")
-                .font(.title2)
+                .font(.system(size: 20))
+                .foregroundStyle(SemanticColor.onSurfaceVariant)
         }
     }
 

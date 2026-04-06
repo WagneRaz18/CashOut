@@ -15,7 +15,7 @@ struct SaveButtonView: View {
                     .frame(width: 44, height: 44)
             }
             .buttonStyle(.plain)
-            .foregroundStyle(.secondary)
+            .foregroundStyle(SemanticColor.onSurfaceVariant)
             .accessibilityLabel("Add note")
 
             Button {

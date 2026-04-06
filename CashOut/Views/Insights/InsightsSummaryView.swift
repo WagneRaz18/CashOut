@@ -77,7 +77,7 @@ struct InsightsSummaryView: View {
                 angle: .value("Empty", 1),
                 innerRadius: .ratio(0.618)
             )
-            .foregroundStyle(Color.secondary.opacity(0.2))
+            .foregroundStyle(SemanticColor.outlineVariant.opacity(0.4))
         }
         .chartLegend(.hidden)
         .accessibilityLabel(accessibilityLabel)
@@ -92,25 +92,27 @@ struct InsightsSummaryView: View {
                     Text(headlineText)
                         .font(.title3)
                         .monospacedDigit()
+                        .foregroundStyle(SemanticColor.onSurface)
 
                     Text(emptyStateText)
                         .font(.body)
-                        .foregroundStyle(.secondary)
+                        .foregroundStyle(SemanticColor.onSurfaceVariant)
                 }
             } else {
                 VStack(alignment: .leading, spacing: Spacing.xs) {
                     Text(headlineText)
                         .font(.title3)
                         .monospacedDigit()
+                        .foregroundStyle(SemanticColor.onSurface)
 
                     Text(periodLabel)
                         .font(.subheadline)
-                        .foregroundStyle(.secondary)
+                        .foregroundStyle(SemanticColor.onSurfaceVariant)
 
                     if let comparison = comparisonText {
                         Text(comparison)
                             .font(.caption)
-                            .foregroundStyle(.secondary)
+                            .foregroundStyle(SemanticColor.onSurfaceVariant)
                     }
                 }
             }

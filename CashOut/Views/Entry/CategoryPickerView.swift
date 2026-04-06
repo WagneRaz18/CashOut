@@ -31,7 +31,7 @@ struct CategoryPickerView: View {
     @ViewBuilder
     private func categoryChip(_ category: CategoryData) -> some View {
         let isSelected = category.id == selectedCategoryID
-        let categoryColor = Color(category.colorName)
+        let categoryColor = CategoryColor(from: category.colorName)?.color ?? .gray
 
         Button {
             onSelect(category.id)
@@ -48,18 +48,11 @@ struct CategoryPickerView: View {
             .frame(minHeight: 44)
             .background(
                 isSelected
-                    ? categoryColor.opacity(0.15)
-                    : Color.clear
+                    ? categoryColor.opacity(0.2)
+                    : SemanticColor.secondaryContainer.opacity(0.6)
             )
-            .foregroundStyle(isSelected ? categoryColor : .secondary)
-            .clipShape(Capsule())
-            .overlay(
-                Capsule()
-                    .strokeBorder(
-                        isSelected ? categoryColor : Color.clear,
-                        lineWidth: 1
-                    )
-            )
+            .foregroundStyle(isSelected ? categoryColor : SemanticColor.onSurfaceVariant)
+            .clipShape(RoundedRectangle(cornerRadius: 12))
         }
         .buttonStyle(.plain)
         .accessibilityLabel(category.name)
