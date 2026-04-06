@@ -18,6 +18,14 @@ struct EditExpenseSheet: View {
 
     var body: some View {
         VStack(spacing: 0) {
+            if let error = viewModel.saveError {
+                Text(error)
+                    .font(.caption)
+                    .foregroundStyle(.secondary)
+                    .padding(.horizontal, Spacing.md)
+                    .padding(.top, Spacing.xs)
+            }
+
             AmountDisplayView(amount: viewModel.amountInCents)
                 .padding(.top, Spacing.lg)
                 .padding(.horizontal, Spacing.md)
@@ -42,13 +50,13 @@ struct EditExpenseSheet: View {
                 onSave: {
                     Task {
                         do {
+                            viewModel.saveError = nil
                             try await viewModel.saveExpense()
                             guard !Task.isCancelled else { return }
                             onSaveComplete?()
                         } catch {
-                            #if DEBUG
-                            print("Edit save failed: \(error)")
-                            #endif
+                            guard !Task.isCancelled else { return }
+                            viewModel.saveError = "Could not save changes. Please try again."
                         }
                     }
                 },

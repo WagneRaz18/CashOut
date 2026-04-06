@@ -1,5 +1,6 @@
 import UIKit
 import CloudKit
+import os.log
 
 class AppDelegate: NSObject, UIApplicationDelegate {
     func application(
@@ -31,7 +32,8 @@ class AppDelegate: NSObject, UIApplicationDelegate {
             into: sharedStore
         ) { _, error in
             if let error {
-                print("Error accepting share: \(error)")
+                Logger(subsystem: "com.wagneraz.CashOut", category: "AppDelegate")
+                    .error("Error accepting share: \(error.localizedDescription)")
             }
         }
     }

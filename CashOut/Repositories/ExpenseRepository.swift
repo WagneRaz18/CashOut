@@ -140,7 +140,12 @@ final class ExpenseRepository: ExpenseRepositoryProtocol {
             cloudSharingService?.prepareObjectForSharedSave(expense)
         }
 
-        try context.save()
+        do {
+            try context.save()
+        } catch {
+            context.rollback()
+            throw error
+        }
 
         // POST-SAVE: Move to shared zone if owner (new objects only)
         if isNewObject {
@@ -157,6 +162,11 @@ final class ExpenseRepository: ExpenseRepositoryProtocol {
 
         guard let expense = try context.fetch(request).first else { return }
         context.delete(expense)
-        try context.save()
+        do {
+            try context.save()
+        } catch {
+            context.rollback()
+            throw error
+        }
     }
 }

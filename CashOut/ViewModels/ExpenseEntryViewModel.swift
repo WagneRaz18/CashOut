@@ -1,4 +1,5 @@
 import Foundation
+import os.log
 
 enum ExpenseEntryError: Error {
     case notAuthenticated
@@ -15,6 +16,7 @@ final class ExpenseEntryViewModel {
     var selectedCategoryID: UUID?
     var noteText: String = ""
     var isSaving: Bool = false
+    var saveError: String?
 
     var isAmountZero: Bool {
         amountInCents == 0
@@ -102,7 +104,8 @@ final class ExpenseEntryViewModel {
                 selectedCategoryID = fetched.first?.id
             }
         } catch {
-            // Categories failed to load — UI will show empty picker
+            Logger(subsystem: "com.wagneraz.CashOut", category: "ExpenseEntryViewModel")
+                .error("loadCategories failed: \(error.localizedDescription)")
         }
     }
 
@@ -128,7 +131,7 @@ final class ExpenseEntryViewModel {
         let expense = ExpenseData(
             id: UUID(),
             amount: amountInCents,
-            note: noteText.isEmpty ? nil : noteText,
+            note: { let t = noteText.trimmingCharacters(in: .whitespacesAndNewlines); return t.isEmpty ? nil : t }(),
             categoryID: categoryID,
             createdByUserID: userID,
             createdAt: now,
