@@ -85,8 +85,13 @@ final class SettingsViewModel {
     }
 
     func saveCategory(name: String, iconName: String, colorName: String, existingID: UUID?) async {
-        let trimmedName = name.trimmingCharacters(in: .whitespaces)
+        let trimmedName = name.trimmingCharacters(in: .whitespacesAndNewlines)
         guard !trimmedName.isEmpty else { return }
+
+        // Prevent accidental demotion of default categories
+        if let existingID, categories.first(where: { $0.id == existingID })?.isDefault == true {
+            return
+        }
 
         guard !isSavingCategory else { return }
         isSavingCategory = true

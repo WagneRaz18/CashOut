@@ -14,6 +14,9 @@
 - **2026-04-03**: `@ObservationIgnored` is only for `var` stored properties — `let` constants are never tracked by `@Observable`, so annotating them is redundant and semantically misleading. Only annotate `var` dependencies.
 - **2026-04-06**: Child views receiving an `@Observable` ViewModel should use `@Bindable var` (not plain `var`/`let`) when they read reactive state AND mutate ViewModel properties (e.g., clearing `categorySaveError` on appear). `@Bindable` enables both observation tracking and direct property assignment.
 
+- **2026-04-06**: Use `.whitespacesAndNewlines` not `.whitespaces` in `trimmingCharacters(in:)` for user text input validation — `.whitespaces` only covers spaces and tabs, so a paste containing only newlines passes the `.isEmpty` check and creates a visually blank record.
+- **2026-04-06**: ViewModel upsert methods accepting `existingID: UUID?` must guard against unintended entity-type demotion — `saveCategory` hardcoded `isDefault: false`, which would silently convert a default category to custom if a default's UUID were passed. Add an early-return guard checking the existing entity's type before mutation.
+
 ## Async & Task Lifecycle
 - Long-running async ViewModel methods must check Task.checkCancellation() at natural boundaries.
 - Remote change notification subscriptions must use NotificationCenter.notifications(named:) async sequence inside .task {} — never addObserver in init().

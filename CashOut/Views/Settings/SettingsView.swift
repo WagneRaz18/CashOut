@@ -18,6 +18,7 @@ struct SettingsView: View {
                         )) {
                             CategoryRowView(category: category)
                         }
+                        .accessibilityHint("Double tap to edit")
                     }
                 }
                 Button {

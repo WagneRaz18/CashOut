@@ -1,6 +1,6 @@
 # Story 5.2: Custom Category Creation & Editing
 
-Status: review
+Status: done
 
 ## Story
 
@@ -398,6 +398,19 @@ None — clean implementation with no blockers.
 - [ios-swiftui] Mixed navigation trigger mechanisms (NavigationLink + navigationDestination) — both work correctly.
 - [architecture] `@ObservationIgnored` on `let` constants is redundant — pre-existing pattern, not introduced by this story.
 - [architecture] `.task` re-fires on every NavigationStack appear — intentional for CloudKit freshness, documented in code comment.
+
+### Review Findings
+
+- [x] [Review][Patch] saveCategory hardcodes isDefault: false — added guard rejecting edits to default categories + test [SettingsViewModel.swift:90]
+- [x] [Review][Patch] saveTask not cancelled before reassignment on rapid Save taps — added saveTask?.cancel() [CategoryManagementView.swift:144]
+- [x] [Review][Patch] Name validation uses .whitespaces not .whitespacesAndNewlines — updated both ViewModel and View [SettingsViewModel.swift:88, CategoryManagementView.swift:158]
+- [x] [Review][Patch] Custom category rows lack VoiceOver edit hint — added .accessibilityHint("Double tap to edit") [SettingsView.swift:21]
+- [x] [Review][Patch] customPalette is computed var, should be static let — changed to static let [Color+CategoryTokens.swift:24]
+- [x] [Review][Patch] No unit test for CategoryColor.customPalette — added test + default-category-edit-rejection test [SettingsViewModelTests.swift]
+- [x] [Review][Defer] prepareObjectForSharedSave + shareObjectsToHouseholdIfNeeded called unconditionally (no owner/participant split) — deferred, pre-existing pattern matching ExpenseRepository
+- [x] [Review][Defer] AC #7 edit sync: updates to existing categories skip shared-zone routing — deferred, pre-existing gap documented in story spec and orchestrator findings
+- [x] [Review][Defer] @ObservationIgnored on let constants is redundant — deferred, pre-existing across codebase
+- [x] [Review][Defer] Unstructured Task {} in HouseholdSectionView invitePartner (no stored handle) — deferred, pre-existing from previous story
 
 ### Change Log
 

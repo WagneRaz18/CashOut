@@ -21,9 +21,7 @@ enum CategoryColor: String, CaseIterable {
         Color(self.rawValue)
     }
 
-    static var customPalette: [CategoryColor] {
-        [.teal, .coral, .plum, .olive, .indigo, .clay]
-    }
+    static let customPalette: [CategoryColor] = [.teal, .coral, .plum, .olive, .indigo, .clay]
 
     init?(from colorName: String) {
         self.init(rawValue: colorName)

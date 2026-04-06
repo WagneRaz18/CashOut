@@ -297,6 +297,25 @@ final class SettingsViewModelTests: XCTestCase {
         XCTAssertEqual(mockCategories.fetchCategoriesCallCount, 1)
     }
 
+    // MARK: - Color Palette Tests
+
+    func testCustomPaletteContainsExactlySixSecondaryColors() {
+        let palette = CategoryColor.customPalette
+        XCTAssertEqual(palette.count, 6)
+        XCTAssertEqual(palette, [.teal, .coral, .plum, .olive, .indigo, .clay])
+    }
+
+    func testSaveCategoryRejectsDefaultCategoryEdit() async {
+        let defaultID = UUID()
+        let defaults = [CategoryData(id: defaultID, name: "Food", iconName: "fork.knife", colorName: "Sage", isDefault: true, sortOrder: 0)]
+        let (viewModel, _, mockCategories, _) = makeSUT(categories: defaults)
+        await viewModel.loadCategories()
+
+        await viewModel.saveCategory(name: "Hacked", iconName: "star.fill", colorName: "Teal", existingID: defaultID)
+
+        XCTAssertFalse(mockCategories.saveCategoryCalled)
+    }
+
     // MARK: - Category Test Helpers
 
     private func makeDefaultCategories() -> [CategoryData] {

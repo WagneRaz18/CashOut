@@ -141,6 +141,7 @@ struct CategoryManagementView: View {
     private var saveSection: some View {
         Section {
             Button("Save") {
+                saveTask?.cancel()
                 saveTask = Task {
                     await viewModel.saveCategory(
                         name: name,
@@ -154,7 +155,7 @@ struct CategoryManagementView: View {
                     }
                 }
             }
-            .disabled(name.trimmingCharacters(in: .whitespaces).isEmpty || viewModel.isSavingCategory)
+            .disabled(name.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty || viewModel.isSavingCategory)
             .frame(maxWidth: .infinity)
 
             if let error = viewModel.categorySaveError {

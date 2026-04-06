@@ -35,7 +35,8 @@
 # - Dev moves story to 'review', then runs code-review (fresh context, different LLM recommended)
 
 generated: 2026-03-27
-last_updated: "2026-04-05"
+last_updated: "2026-04-06"
+# Story 5-2 done (code review passed) 2026-04-06
 # Story 5-2 review 2026-04-05
 # Story 5-2 in-progress 2026-04-05
 # Story 5-2 created 2026-04-05
@@ -150,5 +151,5 @@ development_status:
   # Epic 5: Category Customization & Settings
   epic-5: in-progress
   5-1-settings-screen: done
-  5-2-custom-category-creation-and-editing: review
+  5-2-custom-category-creation-and-editing: done
   epic-5-retrospective: optional
