@@ -73,6 +73,8 @@
 - **2026-04-04**: Never use `Dictionary(uniqueKeysWithValues:)` on data from external sources (Core Data, CloudKit) — it calls `fatalError` on duplicate keys. Use `Dictionary(..., uniquingKeysWith: { _, last in last })` instead. Data corruption or sync conflicts can produce duplicates.
 - **2026-04-04**: `DateFormatter` is expensive to instantiate (loads ICU locale data). In `@Observable` ViewModels, cache as `private static let` with closure initializer, not as a method-local variable recreated on every call. Same applies to `NumberFormatter`.
 - **2026-04-04**: `Calendar.range(of: .weekOfMonth, in: .month, for:)` returns nil on non-Gregorian calendars (e.g., Buddhist calendar, default on Thai devices). Always use `guard let` — never force-unwrap. Return empty array as graceful degradation.
+- **2026-04-06**: All date arithmetic in ViewModels must use `Calendar(identifier: .gregorian)` as a `private static let` — never `Calendar.current`. Thai devices default to Buddhist calendar where `dateInterval(of:for:)` and `date(byAdding:)` can return nil. Add `logger.fault()` before nil-coalescing fallbacks so regressions are detectable.
+- **2026-04-06**: Core Data `wrappedID` must use a stable sentinel (not `UUID()`) when `id` is nil. Use distinct static sentinel UUIDs per entity type to prevent cross-entity `ForEach` identity collisions. Avoid the RFC 4122 nil UUID (`00000000-...0000`) as a sentinel — it can collide with corrupted records.
 - **2026-04-04**: `DateFormatter.dateFormat = "EEE"` produces locale-dependent day abbreviations — Thai devices output Thai-script ("จ.", "อ.") not English ("Mon", "Tue"). Pin `locale = Locale(identifier: "en_US_POSIX")` when labels must be English regardless of device locale.
 
 ## Authentication & DI

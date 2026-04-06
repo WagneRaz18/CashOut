@@ -456,21 +456,36 @@ final class InsightsViewModelTests: XCTestCase {
 
     // MARK: - selectCategory Tests (Story 3-2, AC #2)
 
-    func testSelectCategorySetsSelectedCategoryID() {
+    func testSelectCategorySetsSelectedDestination() async {
         let (viewModel, _, _, _) = makeSUT()
         let id = UUID()
 
+        // Load data first so currentPeriodInterval is set
+        await viewModel.loadData()
         viewModel.selectCategory(id)
 
-        XCTAssertEqual(viewModel.selectedCategoryID, id, "selectCategory should set selectedCategoryID")
+        XCTAssertNotNil(viewModel.selectedDestination, "selectCategory should set selectedDestination when interval is available")
+        XCTAssertEqual(viewModel.selectedDestination?.categoryID, id, "selectedDestination should contain the selected categoryID")
     }
 
-    func testSelectCategoryNilClearsSelection() {
+    func testSelectCategoryNilClearsSelection() async {
         let (viewModel, _, _, _) = makeSUT()
+
+        await viewModel.loadData()
         viewModel.selectCategory(UUID())
         viewModel.selectCategory(nil)
 
-        XCTAssertNil(viewModel.selectedCategoryID, "selectCategory(nil) should clear selectedCategoryID")
+        XCTAssertNil(viewModel.selectedDestination, "selectCategory(nil) should clear selectedDestination")
+    }
+
+    func testSelectCategoryWithoutIntervalDoesNotSetDestination() {
+        let (viewModel, _, _, _) = makeSUT()
+        let id = UUID()
+
+        // Without loading data, currentPeriodInterval is nil
+        viewModel.selectCategory(id)
+
+        XCTAssertNil(viewModel.selectedDestination, "selectCategory should not set destination when interval is nil")
     }
 
     // MARK: - currentPeriodInterval Tests (Story 3-2, AC #2)
@@ -481,8 +496,9 @@ final class InsightsViewModelTests: XCTestCase {
         await viewModel.loadData()
 
         XCTAssertNotNil(viewModel.currentPeriodInterval, "currentPeriodInterval should be set after loadData")
-        let thisWeek = Calendar.current.dateInterval(of: .weekOfYear, for: Date())!
-        XCTAssertEqual(viewModel.currentPeriodInterval?.start, thisWeek.start, "Should match current week start")
+        let gregorian = Calendar(identifier: .gregorian)
+        let thisWeek = gregorian.dateInterval(of: .weekOfYear, for: Date())
+        XCTAssertEqual(viewModel.currentPeriodInterval?.start, thisWeek?.start, "Should match current week start")
     }
 
     // MARK: - Date Interval Tests (AC #3)

@@ -70,11 +70,11 @@ struct InsightsView: View {
                     }
                 }
             }
-            .navigationDestination(item: Bindable(viewModel).selectedCategoryID) { categoryID in
+            .navigationDestination(item: Bindable(viewModel).selectedDestination) { destination in
                 FilteredFeedView(
-                    categoryID: categoryID,
-                    categoryName: viewModel.chartSlices.first { $0.categoryID == categoryID }?.categoryName ?? "Category",
-                    period: viewModel.currentPeriodInterval ?? DateInterval(),
+                    categoryID: destination.categoryID,
+                    categoryName: viewModel.chartSlices.first { $0.categoryID == destination.categoryID }?.categoryName ?? "Category",
+                    period: destination.interval,
                     categories: viewModel.fetchedCategories,
                     currentUserID: viewModel.currentUserID
                 )

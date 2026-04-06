@@ -8,6 +8,7 @@
 
 ## SwiftUI State & Observation
 - **2026-04-04**: `@State` on an `@Observable` class does NOT expose `$viewModel` for property bindings. Use `Bindable(viewModel).property` inline or declare `@Bindable private var viewModel` to get `Binding<T>` for modifiers like `.navigationDestination(item:)`.
+- **2026-04-06**: `.navigationDestination(item:)` destination closure must produce content unconditionally — `if let` inside produces `EmptyView` (blank screen). Pack all required data into the item type (e.g., `struct CategoryNavDestination: Hashable { let categoryID: UUID; let interval: DateInterval }`), gate in the ViewModel's setter, so the closure always has everything it needs.
 - .task re-fires on every tab appear in TabView — guard with loaded-state check (e.g., `guard items.isEmpty else { return }`).
 - Subscribe to NotificationCenter via async sequence in .task {} — auto-cancels on view disappear. Never use addObserver in ViewModels.
 

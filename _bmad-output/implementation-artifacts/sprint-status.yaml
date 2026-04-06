@@ -36,6 +36,7 @@
 
 generated: 2026-03-27
 last_updated: "2026-04-06"
+# Sprint planning refreshed — ALL EPICS COMPLETE (5/5 done, 19/19 stories done) 2026-04-06
 # Story 5-2 done (code review passed) 2026-04-06
 # Story 5-2 review 2026-04-05
 # Story 5-2 in-progress 2026-04-05
@@ -149,7 +150,7 @@ development_status:
   epic-4-retrospective: optional
 
   # Epic 5: Category Customization & Settings
-  epic-5: in-progress
+  epic-5: done
   5-1-settings-screen: done
   5-2-custom-category-creation-and-editing: done
   epic-5-retrospective: optional

@@ -1,4 +1,5 @@
 import Foundation
+import os.log
 
 @MainActor
 @Observable
@@ -65,6 +66,11 @@ final class InsightsViewModel {
         var id: String { label }
     }
 
+    struct CategoryNavDestination: Hashable {
+        let categoryID: UUID
+        let interval: DateInterval
+    }
+
     // MARK: - Observable Properties
 
     var selectedPeriod: TimePeriod = .weekly
@@ -73,7 +79,7 @@ final class InsightsViewModel {
     var categoryTotals: [CategoryTotal] = []
     var chartSlices: [ChartSlice] = []
     var barEntries: [BarEntry] = []
-    var selectedCategoryID: UUID?
+    var selectedDestination: CategoryNavDestination?
     private(set) var currentPeriodInterval: DateInterval?
     private(set) var fetchedCategories: [CategoryData] = []
     var errorMessage: String?
@@ -126,6 +132,10 @@ final class InsightsViewModel {
     @ObservationIgnored
     private var syncMonitorService: SyncMonitorServiceProtocol
 
+    // MARK: - Calendar
+
+    private static let calendar = Calendar(identifier: .gregorian)
+
     // MARK: - Guard State
 
     @ObservationIgnored
@@ -163,7 +173,11 @@ final class InsightsViewModel {
     }
 
     func selectCategory(_ categoryID: UUID?) {
-        selectedCategoryID = categoryID
+        guard let categoryID, let interval = currentPeriodInterval else {
+            selectedDestination = nil
+            return
+        }
+        selectedDestination = CategoryNavDestination(categoryID: categoryID, interval: interval)
     }
 
     func subscribeToRemoteChanges() async {
@@ -251,7 +265,7 @@ final class InsightsViewModel {
     }()
 
     private func computeBarEntries(from expenses: [ExpenseData], period: TimePeriod, interval: DateInterval) -> [BarEntry] {
-        let calendar = Calendar.current
+        let cal = Self.calendar
 
         switch period {
         case .daily:
@@ -263,21 +277,21 @@ final class InsightsViewModel {
             var date = interval.start
             while date < interval.end {
                 let dayTotal = expenses
-                    .filter { calendar.isDate($0.createdAt, inSameDayAs: date) }
+                    .filter { cal.isDate($0.createdAt, inSameDayAs: date) }
                     .reduce(Int64(0)) { $0 + $1.amount }
                 entries.append(BarEntry(label: Self.weekdayFormatter.string(from: date), total: dayTotal))
-                date = calendar.date(byAdding: .day, value: 1, to: date) ?? interval.end
+                date = cal.date(byAdding: .day, value: 1, to: date) ?? interval.end
             }
             return entries
 
         case .monthly:
-            guard let range = calendar.range(of: .weekOfMonth, in: .month, for: interval.start) else {
+            guard let range = cal.range(of: .weekOfMonth, in: .month, for: interval.start) else {
                 return []
             }
 
             var weeklyTotals: [Int: Int64] = [:]
             for expense in expenses {
-                let weekNum = calendar.component(.weekOfMonth, from: expense.createdAt)
+                let weekNum = cal.component(.weekOfMonth, from: expense.createdAt)
                 weeklyTotals[weekNum, default: 0] += expense.amount
             }
 
@@ -289,14 +303,22 @@ final class InsightsViewModel {
 
     // MARK: - Date Interval Helpers
 
-    // Safe: .day/.weekOfYear/.month always produce a valid interval for any Date
+    private static let insightsLogger = Logger(subsystem: "com.wagneraz.CashOut", category: "InsightsViewModel")
+
+    // Uses Gregorian calendar — should never return nil, but defends against it with logged fallback
     private func dateInterval(for period: TimePeriod, referenceDate: Date) -> DateInterval {
-        Calendar.current.dateInterval(of: period.calendarComponent, for: referenceDate)!
+        if let interval = Self.calendar.dateInterval(of: period.calendarComponent, for: referenceDate) {
+            return interval
+        }
+        Self.insightsLogger.fault("Gregorian dateInterval returned nil for \(period.rawValue)")
+        return DateInterval(start: referenceDate, duration: 86400)
     }
 
-    // Safe: calendar arithmetic on .day/.weekOfYear/.month never returns nil
     private func previousDateInterval(for period: TimePeriod, referenceDate: Date) -> DateInterval {
-        let previousDate = Calendar.current.date(byAdding: period.calendarComponent, value: -1, to: referenceDate)!
-        return dateInterval(for: period, referenceDate: previousDate)
+        if let previousDate = Self.calendar.date(byAdding: period.calendarComponent, value: -1, to: referenceDate) {
+            return dateInterval(for: period, referenceDate: previousDate)
+        }
+        Self.insightsLogger.fault("Gregorian date(byAdding:) returned nil for \(period.rawValue)")
+        return dateInterval(for: period, referenceDate: referenceDate.addingTimeInterval(-86400))
     }
 }

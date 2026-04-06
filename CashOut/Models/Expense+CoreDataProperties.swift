@@ -15,16 +15,18 @@ extension Expense {
 }
 
 extension Expense: Identifiable {
+    private static let nilSentinelID = UUID(uuidString: "00000000-0000-0000-0000-000000000002")!
+
     public var wrappedID: UUID {
-        id ?? UUID()
+        id ?? Self.nilSentinelID
     }
 
     public var wrappedCreatedAt: Date {
-        createdAt ?? Date()
+        createdAt ?? .distantPast
     }
 
     public var wrappedModifiedAt: Date {
-        modifiedAt ?? Date()
+        modifiedAt ?? .distantPast
     }
 
     public var wrappedCreatedByUserID: String {

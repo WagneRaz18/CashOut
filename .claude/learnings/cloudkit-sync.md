@@ -8,6 +8,7 @@
 - The shared zone is framework-managed via `NSPersistentCloudKitContainer.share(_:to: nil)` — do NOT create a raw `CKRecordZone("HouseholdZone")`. The framework names the zone internally.
 - Info.plist must contain `CKSharingSupported = true` or partner join callbacks silently fail.
 - Zone existence must be re-verified on every fresh launch — users can delete zones via iOS Settings → iCloud.
+- **2026-04-06**: Never `fatalError` in `loadPersistentStores` callback — use `logger.fault` + `storeLoadError` property so the app degrades to a non-functional but non-crashing state. Guard downstream operations (e.g., `purgeOldHistory`) on `storeLoadError == nil`.
 
 ## CKRecord Types & Schema
 - Run `initializeCloudKitSchema()` only in DEBUG builds to deploy schema to CloudKit container.

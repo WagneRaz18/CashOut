@@ -14,8 +14,10 @@ extension Category {
 }
 
 extension Category: Identifiable {
+    private static let nilSentinelID = UUID(uuidString: "00000000-0000-0000-0000-000000000001")!
+
     public var wrappedID: UUID {
-        id ?? UUID()
+        id ?? Self.nilSentinelID
     }
 
     public var wrappedName: String {
@@ -27,6 +29,6 @@ extension Category: Identifiable {
     }
 
     public var wrappedColorName: String {
-        colorName ?? "gray"
+        colorName ?? "CoolGray"
     }
 }

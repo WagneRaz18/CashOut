@@ -1,5 +1,8 @@
 @preconcurrency import CoreData
 import CloudKit
+import os.log
+
+private let logger = Logger(subsystem: "com.wagneraz.CashOut", category: "PersistenceController")
 
 final class PersistenceController: @unchecked Sendable {
     static let shared = PersistenceController()
@@ -9,6 +12,7 @@ final class PersistenceController: @unchecked Sendable {
     let container: NSPersistentCloudKitContainer
     private(set) var privatePersistentStore: NSPersistentStore?
     private(set) var sharedPersistentStore: NSPersistentStore?
+    private(set) var storeLoadError: Error?
 
     init(inMemory: Bool = false) {
         container = NSPersistentCloudKitContainer(name: "CashOut")
@@ -78,7 +82,11 @@ final class PersistenceController: @unchecked Sendable {
             .appendingPathComponent("CashOut-shared.sqlite")
 
         container.loadPersistentStores { [weak self] desc, error in
-            if let error { fatalError("Store load failed: \(error)") }
+            if let error {
+                logger.fault("Store load failed: \(error.localizedDescription)")
+                self?.storeLoadError = error
+                return
+            }
             guard !inMemory, let self, let storeURL = desc.url else { return }
             let store = self.container.persistentStoreCoordinator.persistentStore(for: storeURL)
             if storeURL == sharedStoreURLForMatching {
@@ -120,7 +128,9 @@ final class PersistenceController: @unchecked Sendable {
     }
 
     private func purgeOldHistory() {
-        let sevenDaysAgo = Calendar.current.date(byAdding: .day, value: -7, to: Date())!
+        guard storeLoadError == nil else { return }
+        let sevenDaysAgo = Calendar(identifier: .gregorian)
+            .date(byAdding: .day, value: -7, to: Date()) ?? Date()
         let purgeRequest = NSPersistentHistoryChangeRequest.deleteHistory(before: sevenDaysAgo)
 
         let context = container.newBackgroundContext()
@@ -128,7 +138,7 @@ final class PersistenceController: @unchecked Sendable {
             do {
                 try context.execute(purgeRequest)
             } catch {
-                print("History purge failed: \(error)")
+                logger.error("History purge failed: \(error.localizedDescription)")
             }
         }
     }
