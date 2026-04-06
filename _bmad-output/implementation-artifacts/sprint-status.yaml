@@ -36,6 +36,7 @@
 
 generated: 2026-03-27
 last_updated: "2026-04-06"
+# Epic 6 complete — all 5 tech debt stories done (21 deferred items resolved) 2026-04-06
 # Sprint planning refreshed — ALL EPICS COMPLETE (5/5 done, 19/19 stories done) 2026-04-06
 # Story 5-2 done (code review passed) 2026-04-06
 # Story 5-2 review 2026-04-05
@@ -154,3 +155,12 @@ development_status:
   5-1-settings-screen: done
   5-2-custom-category-creation-and-editing: done
   epic-5-retrospective: optional
+
+  # Epic 6: Technical Debt & Hardening
+  epic-6: done
+  6-1-critical-crash-and-data-integrity-fixes: done
+  6-2-repository-resilience-and-save-error-handling: done
+  6-3-cloudkit-sharing-robustness: done
+  6-4-viewmodel-and-view-polish: done
+  6-5-build-configuration-and-platform-cleanup: done
+  epic-6-retrospective: optional
