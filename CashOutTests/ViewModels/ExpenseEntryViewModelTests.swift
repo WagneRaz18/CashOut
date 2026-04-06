@@ -106,20 +106,6 @@ final class ExpenseEntryViewModelTests: XCTestCase {
         )
     }
 
-    // MARK: - appendDecimalPoint Tests
-
-    func testAppendDecimalPointIsNoOp() {
-        let viewModel = ExpenseEntryViewModel()
-        viewModel.amountInCents = 500
-
-        viewModel.appendDecimalPoint()
-
-        XCTAssertEqual(
-            viewModel.amountInCents, 500,
-            "appendDecimalPoint should be a no-op (amount unchanged)"
-        )
-    }
-
     // MARK: - Save Flow Tests (Story 1.6)
 
     private static let testSuiteName = "com.cashout.tests.ExpenseEntryViewModelTests"
@@ -335,14 +321,6 @@ final class ExpenseEntryViewModelTests: XCTestCase {
 
         XCTAssertEqual(hapticService.triggeredEvents.count, 1, "Should trigger exactly one haptic event")
         XCTAssertEqual(hapticService.lastEvent, .numpadKey, "Should trigger .numpadKey haptic")
-    }
-
-    func testAppendDecimalPointDoesNotTriggerHaptic() {
-        let (viewModel, _, _, _, _, hapticService) = makeSUT()
-
-        viewModel.appendDecimalPoint()
-
-        XCTAssertEqual(hapticService.triggeredEvents.count, 0, "No-op decimal point should not trigger haptic")
     }
 
     func testSelectCategoryTriggersCategorySelectHaptic() {

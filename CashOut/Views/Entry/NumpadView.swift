@@ -2,14 +2,13 @@ import SwiftUI
 
 struct NumpadView: View {
     let onDigit: (String) -> Void
-    let onDecimal: () -> Void
     let onBackspace: () -> Void
 
     private let rows: [[NumpadKey]] = [
         [.digit("1"), .digit("2"), .digit("3")],
         [.digit("4"), .digit("5"), .digit("6")],
         [.digit("7"), .digit("8"), .digit("9")],
-        [.decimal, .digit("0"), .backspace],
+        [.empty, .digit("0"), .backspace],
     ]
 
     var body: some View {
@@ -17,14 +16,20 @@ struct NumpadView: View {
             ForEach(rows.indices, id: \.self) { rowIndex in
                 HStack(spacing: Spacing.sm) {
                     ForEach(rows[rowIndex]) { key in
-                        Button {
-                            handleTap(key)
-                        } label: {
-                            keyLabel(key)
+                        if case .empty = key {
+                            Color.clear
                                 .frame(maxWidth: .infinity, maxHeight: .infinity)
+                                .accessibilityHidden(true)
+                        } else {
+                            Button {
+                                handleTap(key)
+                            } label: {
+                                keyLabel(key)
+                                    .frame(maxWidth: .infinity, maxHeight: .infinity)
+                            }
+                            .buttonStyle(.glass)
+                            .accessibilityLabel(accessibilityLabel(for: key))
                         }
-                        .buttonStyle(.glass)
-                        .accessibilityLabel(accessibilityLabel(for: key))
                     }
                 }
             }
@@ -40,10 +45,8 @@ struct NumpadView: View {
             Text(value)
                 .font(.title)
                 .minimumScaleFactor(0.8)
-        case .decimal:
-            Text(".")
-                .font(.title)
-                .minimumScaleFactor(0.8)
+        case .empty:
+            Color.clear
         case .backspace:
             Image(systemName: "delete.backward")
                 .font(.title2)
@@ -53,7 +56,7 @@ struct NumpadView: View {
     private func accessibilityLabel(for key: NumpadKey) -> Text {
         switch key {
         case .digit(let value): Text(value)
-        case .decimal: Text("Decimal point")
+        case .empty: Text("")
         case .backspace: Text("Delete")
         }
     }
@@ -62,8 +65,8 @@ struct NumpadView: View {
         switch key {
         case .digit(let value):
             onDigit(value)
-        case .decimal:
-            onDecimal()
+        case .empty:
+            break
         case .backspace:
             onBackspace()
         }
@@ -74,13 +77,13 @@ struct NumpadView: View {
 
 private enum NumpadKey: Identifiable {
     case digit(String)
-    case decimal
+    case empty
     case backspace
 
     var id: String {
         switch self {
         case .digit(let value): "digit-\(value)"
-        case .decimal: "decimal"
+        case .empty: "empty"
         case .backspace: "backspace"
         }
     }
@@ -89,7 +92,6 @@ private enum NumpadKey: Identifiable {
 #Preview {
     NumpadView(
         onDigit: { _ in },
-        onDecimal: {},
         onBackspace: {}
     )
     .padding()

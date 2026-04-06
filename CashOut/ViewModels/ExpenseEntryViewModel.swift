@@ -74,10 +74,6 @@ final class ExpenseEntryViewModel {
         amountInCents = amountInCents / 10
     }
 
-    func appendDecimalPoint() {
-        // No-op: decimal is implicit in fixed-point satang model.
-    }
-
     func resetAmount() {
         amountInCents = 0
     }

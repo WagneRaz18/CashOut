@@ -39,7 +39,6 @@ struct EditExpenseSheet: View {
 
             NumpadView(
                 onDigit: { viewModel.appendDigit($0) },
-                onDecimal: { viewModel.appendDecimalPoint() },
                 onBackspace: { viewModel.deleteLastDigit() }
             )
             .padding(.horizontal, Spacing.md)
