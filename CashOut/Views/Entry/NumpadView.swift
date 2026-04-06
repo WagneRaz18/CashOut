@@ -5,11 +5,6 @@ struct NumpadView: View {
     let onDecimal: () -> Void
     let onBackspace: () -> Void
 
-    private let columns = Array(
-        repeating: GridItem(.flexible(), spacing: Spacing.sm),
-        count: 3
-    )
-
     private let rows: [[NumpadKey]] = [
         [.digit("1"), .digit("2"), .digit("3")],
         [.digit("4"), .digit("5"), .digit("6")],
@@ -18,18 +13,15 @@ struct NumpadView: View {
     ]
 
     var body: some View {
-        GeometryReader { geo in
-            let keyHeight = max(0, (geo.size.height - Spacing.sm * 3) / 4)
-
-            VStack(spacing: 0) {
-                LazyVGrid(columns: columns, spacing: Spacing.sm) {
-                    ForEach(rows.flatMap { $0 }) { key in
+        VStack(spacing: Spacing.sm) {
+            ForEach(rows.indices, id: \.self) { rowIndex in
+                HStack(spacing: Spacing.sm) {
+                    ForEach(rows[rowIndex]) { key in
                         Button {
                             handleTap(key)
                         } label: {
                             keyLabel(key)
-                                .frame(maxWidth: .infinity)
-                                .frame(height: keyHeight)
+                                .frame(maxWidth: .infinity, maxHeight: .infinity)
                         }
                         .buttonStyle(.glass)
                         .accessibilityLabel(accessibilityLabel(for: key))
@@ -100,6 +92,5 @@ private enum NumpadKey: Identifiable {
         onDecimal: {},
         onBackspace: {}
     )
-    .frame(height: 300)
     .padding()
 }
