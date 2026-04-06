@@ -19,7 +19,7 @@ struct NumpadView: View {
 
     var body: some View {
         GeometryReader { geo in
-            let keyHeight = max(60, (geo.size.height - Spacing.sm * 3) / 4)
+            let keyHeight = max(0, (geo.size.height - Spacing.sm * 3) / 4)
 
             VStack(spacing: 0) {
                 LazyVGrid(columns: columns, spacing: Spacing.sm) {
