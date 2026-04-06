@@ -11,6 +11,8 @@ final class SettingsViewModel {
     var partnerDisplayName: String? { cloudSharingService.partnerName }
     var errorMessage: String?
     var categories: [CategoryData] = []
+    private(set) var isSavingCategory = false
+    var categorySaveError: String?
 
     var activeShare: CKShare?
     var activeContainer: CKContainer?
@@ -22,15 +24,19 @@ final class SettingsViewModel {
     private let persistenceController: PersistenceController
     @ObservationIgnored
     private let categoryRepository: CategoryRepositoryProtocol
+    @ObservationIgnored
+    private let hapticService: HapticServiceProtocol
 
     init(
         cloudSharingService: CloudSharingServiceProtocol = CloudSharingService.shared,
         persistenceController: PersistenceController = .shared,
-        categoryRepository: CategoryRepositoryProtocol = CategoryRepository()
+        categoryRepository: CategoryRepositoryProtocol = CategoryRepository(),
+        hapticService: HapticServiceProtocol = HapticService()
     ) {
         self.cloudSharingService = cloudSharingService
         self.persistenceController = persistenceController
         self.categoryRepository = categoryRepository
+        self.hapticService = hapticService
     }
 
     func invitePartner() async {
@@ -75,6 +81,41 @@ final class SettingsViewModel {
             // The entry screen has its own independent category loading path.
             os_log(.error, "SettingsViewModel: loadCategories failed: %{public}@", error.localizedDescription)
             categories = []
+        }
+    }
+
+    func saveCategory(name: String, iconName: String, colorName: String, existingID: UUID?) async {
+        let trimmedName = name.trimmingCharacters(in: .whitespaces)
+        guard !trimmedName.isEmpty else { return }
+
+        guard !isSavingCategory else { return }
+        isSavingCategory = true
+        defer { isSavingCategory = false }
+        categorySaveError = nil
+
+        let id = existingID ?? UUID()
+        let sortOrder: Int16 = existingID != nil
+            ? (categories.first { $0.id == existingID }?.sortOrder ?? Int16(categories.count))
+            : Int16(categories.count)
+
+        let data = CategoryData(
+            id: id,
+            name: trimmedName,
+            iconName: iconName,
+            colorName: colorName,
+            isDefault: false,
+            sortOrder: sortOrder
+        )
+
+        do {
+            try await categoryRepository.saveCategory(data)
+            guard !Task.isCancelled else { return }
+            hapticService.trigger(.saveTap)
+            await loadCategories()
+        } catch {
+            guard !Task.isCancelled else { return }
+            hapticService.trigger(.error)
+            categorySaveError = "Failed to save category. Please try again."
         }
     }
 

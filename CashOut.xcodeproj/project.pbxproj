@@ -17,6 +17,7 @@
 		58F63A265A39C74CC4892789 /* CloudSharingService.swift in Sources */ = {isa = PBXBuildFile; fileRef = B93CA7B942BC85758641FA13 /* CloudSharingService.swift */; };
 		7534A13FDB756C9740234BF7 /* CloudSharingSheet.swift in Sources */ = {isa = PBXBuildFile; fileRef = F87D1F8C128972F26A734955 /* CloudSharingSheet.swift */; };
 		Q1R2S3T4U5V60H01Q1R2S3T4 /* CategoryRowView.swift in Sources */ = {isa = PBXBuildFile; fileRef = R1S2T3U4V5W60I01R1S2T3U4 /* CategoryRowView.swift */; };
+		S2T3U4V5W6X70J01S2T3U4V5 /* CategoryManagementView.swift in Sources */ = {isa = PBXBuildFile; fileRef = T2U3V4W5X6Y70K01T2U3V4W5 /* CategoryManagementView.swift */; };
 		7DD905A08B1776BF9F570222 /* CashOut.xcdatamodeld in Sources */ = {isa = PBXBuildFile; fileRef = 1220D06E7CDAED7C785E2D19 /* CashOut.xcdatamodeld */; };
 		85E20F790EF30AB6FCFBCD36 /* ContentView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3E9EFA06CBD5754CC782E9DF /* ContentView.swift */; };
 		973CA059EE0ABF8FD8E660D2 /* AppDelegate.swift in Sources */ = {isa = PBXBuildFile; fileRef = E633E5716F4D140FB5FA20A7 /* AppDelegate.swift */; };
@@ -182,12 +183,14 @@
 		O1P2Q3R4S5T60F01O1P2Q3R4 /* ICloudBannerView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ICloudBannerView.swift; sourceTree = "<group>"; };
 		P1Q2R3S4T5U60G01P1Q2R3S4 /* SyncMonitorServiceTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SyncMonitorServiceTests.swift; sourceTree = "<group>"; };
 		R1S2T3U4V5W60I01R1S2T3U4 /* CategoryRowView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CategoryRowView.swift; sourceTree = "<group>"; };
+		T2U3V4W5X6Y70K01T2U3V4W5 /* CategoryManagementView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CategoryManagementView.swift; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXGroup section */
 		1149CC34C7542A8F65EF42B0 /* Settings */ = {
 			isa = PBXGroup;
 			children = (
+				T2U3V4W5X6Y70K01T2U3V4W5 /* CategoryManagementView.swift */,
 				R1S2T3U4V5W60I01R1S2T3U4 /* CategoryRowView.swift */,
 				F87D1F8C128972F26A734955 /* CloudSharingSheet.swift */,
 				DF6AF7D9C39F8651CC9B29D5 /* SettingsView.swift */,
@@ -650,6 +653,7 @@
 				N1O2P3Q4R5S60E11N1O2P3Q4 /* SyncStatusIndicator.swift in Sources */,
 				O1P2Q3R4S5T60F11O1P2Q3R4 /* ICloudBannerView.swift in Sources */,
 				Q1R2S3T4U5V60H01Q1R2S3T4 /* CategoryRowView.swift in Sources */,
+				S2T3U4V5W6X70J01S2T3U4V5 /* CategoryManagementView.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};

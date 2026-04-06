@@ -1,5 +1,5 @@
 # generated: 2026-03-27
-# last_updated: 2026-04-05
+# last_updated: "2026-04-05"
 # project: CashOut
 # project_key: NOKEY
 # tracking_system: file-system
@@ -36,6 +36,10 @@
 
 generated: 2026-03-27
 last_updated: "2026-04-05"
+# Story 5-2 review 2026-04-05
+# Story 5-2 in-progress 2026-04-05
+# Story 5-2 created 2026-04-05
+# Sprint planning refreshed — Epic 5 in-progress (5-1 done), next story: 5-2 2026-04-05
 # Story 5-1 done (code review passed) 2026-04-05
 # Story 5-1 review 2026-04-05
 # Story 5-1 in-progress 2026-04-05
@@ -146,5 +150,5 @@ development_status:
   # Epic 5: Category Customization & Settings
   epic-5: in-progress
   5-1-settings-screen: done
-  5-2-custom-category-creation-and-editing: backlog
+  5-2-custom-category-creation-and-editing: review
   epic-5-retrospective: optional

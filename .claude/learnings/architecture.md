@@ -12,6 +12,7 @@
 - **2026-04-04**: Boolean flag guards (`isInviting`, `isSaving`) must use `defer` for reset: `guard !isInviting else { return }; isInviting = true; defer { isInviting = false }`. Manual resets on each path are fragile.
 - **2026-04-04**: `.sheet(isPresented:onDismiss:)` — always provide `onDismiss` when bridging UIKit controllers. UIKit delegate methods may not fire on interactive dismiss (swipe-down), leaving stale state.
 - **2026-04-03**: `@ObservationIgnored` is only for `var` stored properties — `let` constants are never tracked by `@Observable`, so annotating them is redundant and semantically misleading. Only annotate `var` dependencies.
+- **2026-04-06**: Child views receiving an `@Observable` ViewModel should use `@Bindable var` (not plain `var`/`let`) when they read reactive state AND mutate ViewModel properties (e.g., clearing `categorySaveError` on appear). `@Bindable` enables both observation tracking and direct property assignment.
 
 ## Async & Task Lifecycle
 - Long-running async ViewModel methods must check Task.checkCancellation() at natural boundaries.
@@ -24,6 +25,7 @@
 - **2026-03-29**: After `try await repository.save()`, add `guard !Task.isCancelled else { return }` before post-save state mutations (UI reset, UserDefaults write) — the view that spawned the Task may be gone (tab switch/dismiss), making the mutations pointless or dangerously late.
 - **2026-04-03**: `guard !Task.isCancelled` must also appear in `catch` blocks of async ViewModel methods before setting `errorMessage` — the catch fires after an awaited call fails, and the view may be gone by then. Symmetric with the success-path guard.
 - **2026-03-29**: Boolean flag guards (`isSaving`) must be checked BEFORE the flag is set: `guard !isSaving else { return }; isSaving = true; defer { isSaving = false }`. Without the upfront guard, a second @MainActor Task can start between suspension points and bypass the flag — `isSaving = true` + `defer` alone is a lifecycle signal, not a concurrency lock.
+- **2026-04-06**: Unstructured `Task {}` in SwiftUI button actions must store the handle in `@State var task: Task<Void, Never>?` and cancel in `.onDisappear` — otherwise `dismiss()` runs against a dead `Environment` reference if the user navigates away mid-save.
 
 ## Data Layer
 - **2026-04-02**: `NSFetchedResultsController` must live in the Repository layer, not the ViewModel — FRC converts `NSManagedObject` to DTO structs via callback, preserving MVVM boundaries. Use nested `@MainActor private class FRCDelegate: NSObject` with `[weak self]` closure to avoid retain cycles and satisfy Swift 6 actor isolation.

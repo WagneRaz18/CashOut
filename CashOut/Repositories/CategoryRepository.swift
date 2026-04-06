@@ -3,9 +3,14 @@
 @MainActor
 final class CategoryRepository: CategoryRepositoryProtocol {
     private let persistence: PersistenceController
+    private let cloudSharingService: CloudSharingServiceProtocol?
 
-    init(persistence: PersistenceController = .shared) {
+    init(
+        persistence: PersistenceController = .shared,
+        cloudSharingService: CloudSharingServiceProtocol? = CloudSharingService.shared
+    ) {
         self.persistence = persistence
+        self.cloudSharingService = cloudSharingService
     }
 
     func fetchCategories() async throws -> [CategoryData] {
@@ -33,6 +38,7 @@ final class CategoryRepository: CategoryRepositoryProtocol {
         request.fetchLimit = 1
 
         let existing = try context.fetch(request).first
+        let isNewCustomCategory = existing == nil && !data.isDefault
         let category = existing ?? Category(context: context)
 
         category.id = data.id
@@ -42,7 +48,17 @@ final class CategoryRepository: CategoryRepositoryProtocol {
         category.isDefault = data.isDefault
         category.sortOrder = data.sortOrder
 
+        // Route new custom categories to shared zone for partner sync
+        if isNewCustomCategory {
+            cloudSharingService?.prepareObjectForSharedSave(category)
+        }
+
         try context.save()
+
+        if isNewCustomCategory {
+            guard !Task.isCancelled else { return }
+            try await cloudSharingService?.shareObjectsToHouseholdIfNeeded([category])
+        }
     }
 
     func seedDefaultCategoriesIfNeeded() async throws {

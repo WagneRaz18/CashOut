@@ -13,18 +13,22 @@ final class MockCategoryRepository: CategoryRepositoryProtocol {
     // MARK: - Call Tracking
 
     var fetchCategoriesCalled = false
+    var fetchCategoriesCallCount = 0
     var saveCategoryCalled = false
+    var savedCategory: CategoryData?
 
     // MARK: - Protocol Methods
 
     func fetchCategories() async throws -> [CategoryData] {
         fetchCategoriesCalled = true
+        fetchCategoriesCallCount += 1
         if shouldThrow { throw throwError }
         return categoriesToReturn
     }
 
     func saveCategory(_ data: CategoryData) async throws {
         saveCategoryCalled = true
+        savedCategory = data
         if shouldThrow { throw throwError }
     }
 }

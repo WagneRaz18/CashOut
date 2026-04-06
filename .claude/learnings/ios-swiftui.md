@@ -49,6 +49,7 @@
 
 ## Accessibility
 - **2026-04-05**: `HStack` rows with icon + text + spacer + badge create 4 separate VoiceOver focus stops — noisy and confusing. Add `.accessibilityElement(children: .combine)` to collapse into one element. Prefer `.imageScale(.medium)` over fixed `.frame(width:height:)` on SF Symbols so icons scale with Dynamic Type.
+- **2026-04-06**: SF Symbol names (e.g., `"cup.and.saucer.fill"`) are incomprehensible as VoiceOver labels — always map to human-readable strings via a `[String: String]` dictionary. Use `.accessibilityAddTraits(.isSelected)` on picker items so VoiceOver announces selection state.
 
 ## iOS Platform Patterns
 - For Liquid Glass buttons: use .buttonStyle(.glass) or .buttonStyle(.glassProminent) — never combine with .glassEffect() modifier on the same element.

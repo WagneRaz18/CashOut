@@ -3,12 +3,27 @@ import CloudKit
 
 struct SettingsView: View {
     @State private var viewModel = SettingsViewModel()
+    @State private var isShowingAddCategory = false
 
     var body: some View {
         Form {
             Section("Categories") {
                 ForEach(viewModel.categories, id: \.id) { category in
-                    CategoryRowView(category: category)
+                    if category.isDefault {
+                        CategoryRowView(category: category)
+                    } else {
+                        NavigationLink(destination: CategoryManagementView(
+                            category: category,
+                            viewModel: viewModel
+                        )) {
+                            CategoryRowView(category: category)
+                        }
+                    }
+                }
+                Button {
+                    isShowingAddCategory = true
+                } label: {
+                    Label("Add Category", systemImage: "plus.circle")
                 }
             }
 
@@ -22,6 +37,9 @@ struct SettingsView: View {
                     .font(.footnote)
                     .foregroundStyle(.secondary)
             }
+        }
+        .navigationDestination(isPresented: $isShowingAddCategory) {
+            CategoryManagementView(category: nil, viewModel: viewModel)
         }
         .navigationTitle("Settings")
         // Both calls re-fire on every NavigationStack appear — intentional.
