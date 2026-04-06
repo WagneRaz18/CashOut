@@ -1,6 +1,7 @@
 import Foundation
 @testable import CashOut
 
+@MainActor
 final class MockHapticService: HapticServiceProtocol {
     var triggeredEvents: [HapticEvent] = []
 
