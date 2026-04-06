@@ -70,6 +70,7 @@ struct SettingsView: View {
 
 private struct HouseholdSectionView: View {
     @Bindable var viewModel: SettingsViewModel
+    @State private var inviteTask: Task<Void, Never>?
 
     var body: some View {
         if viewModel.hasPartner {
@@ -85,9 +86,11 @@ private struct HouseholdSectionView: View {
             }
         } else {
             Button("Invite Partner") {
-                Task { await viewModel.invitePartner() }
+                inviteTask?.cancel()
+                inviteTask = Task { await viewModel.invitePartner() }
             }
             .disabled(viewModel.isInviting)
+            .onDisappear { inviteTask?.cancel() }
 
             if let error = viewModel.errorMessage {
                 Text(error)

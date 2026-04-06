@@ -54,9 +54,22 @@ final class CloudSharingService: CloudSharingServiceProtocol {
             )
         }
 
-        // Reuse existing share if one was already created (e.g., user dismissed without sending)
+        // Re-validate cached share before reuse (may have been revoked)
         if let existingShare = currentShare {
-            return (existingShare, CKContainer(identifier: Self.containerIdentifier))
+            if let privateStore = persistenceController.privatePersistentStore {
+                do {
+                    let freshShares = try persistenceController.container.fetchShares(in: privateStore)
+                    if freshShares.contains(where: { $0.recordID == existingShare.recordID }) {
+                        return (existingShare, CKContainer(identifier: Self.containerIdentifier))
+                    }
+                    // Share not found in store — revoked or deleted, create new
+                    currentShare = nil
+                } catch {
+                    // Transient error (network, etc.) — keep cached share to avoid duplicate creation
+                    os_log(.error, "fetchShares failed during share validation: %{public}@", error.localizedDescription)
+                    return (existingShare, CKContainer(identifier: Self.containerIdentifier))
+                }
+            }
         }
 
         let (_, share, _) = try await persistenceController.container.share(objects, to: nil)

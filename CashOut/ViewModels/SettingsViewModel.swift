@@ -6,6 +6,9 @@ import os
 @MainActor
 @Observable
 final class SettingsViewModel {
+    @ObservationIgnored
+    private var refreshTask: Task<Void, Never>?
+
     var isShowingShareSheet = false
     var hasPartner: Bool { cloudSharingService.isShared }
     var partnerDisplayName: String? { cloudSharingService.partnerName }
@@ -133,6 +136,7 @@ final class SettingsViewModel {
             cloudSharingService.persistUpdatedShare(share)
         }
         isShowingShareSheet = false
-        Task { await refreshSharingStatus() }
+        refreshTask?.cancel()
+        refreshTask = Task { await refreshSharingStatus() }
     }
 }

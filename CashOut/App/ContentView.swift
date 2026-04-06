@@ -41,8 +41,16 @@ struct ContentView: View {
             await CloudSharingService.shared.checkSharingStatus()
         }
         .task {
+            // Re-check sharing status on remote changes to detect new shares AND revocations
             for await _ in NotificationCenter.default.notifications(named: .NSPersistentStoreRemoteChange) {
-                guard !CloudSharingService.shared.isShared else { continue }
+                guard !Task.isCancelled else { break }
+                await CloudSharingService.shared.checkSharingStatus()
+            }
+        }
+        .task {
+            // React to iCloud account changes (sign-out, switch)
+            for await _ in NotificationCenter.default.notifications(named: PersistenceController.accountDidChange) {
+                guard !Task.isCancelled else { break }
                 await CloudSharingService.shared.checkSharingStatus()
             }
         }

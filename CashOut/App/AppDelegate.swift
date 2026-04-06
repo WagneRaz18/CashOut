@@ -25,9 +25,13 @@ class AppDelegate: NSObject, UIApplicationDelegate {
         _ application: UIApplication,
         userDidAcceptCloudKitShareWith cloudKitShareMetadata: CKShare.Metadata
     ) {
-        let container = PersistenceController.shared.container
-        guard let sharedStore = PersistenceController.shared.sharedPersistentStore else { return }
-        container.acceptShareInvitations(
+        let persistence = PersistenceController.shared
+        guard let sharedStore = persistence.sharedPersistentStore else {
+            Logger(subsystem: "com.wagneraz.CashOut", category: "AppDelegate")
+                .error("Share acceptance failed: shared store unavailable (iCloud may be signed out)")
+            return
+        }
+        persistence.container.acceptShareInvitations(
             from: [cloudKitShareMetadata],
             into: sharedStore
         ) { _, error in

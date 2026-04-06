@@ -122,9 +122,16 @@ final class PersistenceController: @unchecked Sendable {
         #endif
     }
 
+    static let accountDidChange = Notification.Name("PersistenceController.accountDidChange")
+
     @objc private func handleAccountChange() {
-        // NSPersistentCloudKitContainer handles re-sync automatically after account change.
-        // This observer ensures the container is aware of the transition.
+        // CKAccountChanged may fire on an arbitrary thread — dispatch to main for thread safety
+        DispatchQueue.main.async { [weak self] in
+            guard let self else { return }
+            logger.info("iCloud account changed — clearing shared store reference")
+            self.sharedPersistentStore = nil
+            NotificationCenter.default.post(name: Self.accountDidChange, object: self)
+        }
     }
 
     private func purgeOldHistory() {
