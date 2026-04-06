@@ -24,6 +24,7 @@ final class FeedViewModel {
     @ObservationIgnored
     private let authService: AuthenticationServiceProtocol
 
+    @ObservationIgnored
     private let cloudSharingService: CloudSharingServiceProtocol
 
     @ObservationIgnored

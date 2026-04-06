@@ -43,13 +43,13 @@ struct InsightsSummaryView: View {
                     angularInset: 1
                 )
                 .cornerRadius(3)
-                .foregroundStyle(by: .value("Category", slice.categoryName))
+                .foregroundStyle(by: .value("Category", "\(slice.categoryID)_\(slice.categoryName)"))
                 .accessibilityLabel(slice.categoryName)
                 .accessibilityValue(slice.total.displayAmount)
             }
         }
         .chartForegroundStyleScale(
-            domain: slices.map(\.categoryName),
+            domain: slices.map { "\($0.categoryID)_\($0.categoryName)" },
             range: slices.map { Color($0.colorName) }
         )
         .chartLegend(.hidden)

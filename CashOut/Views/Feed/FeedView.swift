@@ -6,6 +6,15 @@ struct FeedView: View {
 
     var body: some View {
         Group {
+            if let error = viewModel.errorMessage {
+                Text(error)
+                    .font(.caption)
+                    .foregroundStyle(.secondary)
+                    .frame(maxWidth: .infinity, alignment: .center)
+                    .padding(.horizontal, Spacing.md)
+                    .padding(.top, Spacing.sm)
+            }
+
             if viewModel.isEmpty {
                 Text("No entries yet")
                     .font(.body)

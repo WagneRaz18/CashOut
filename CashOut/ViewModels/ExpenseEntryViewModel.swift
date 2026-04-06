@@ -63,9 +63,9 @@ final class ExpenseEntryViewModel {
     // MARK: - Numpad Actions
 
     func appendDigit(_ digit: String) {
-        hapticService.trigger(.numpadKey)
         guard amountInCents < Self.maxBeforeAppend else { return }
         guard let value = Int64(digit) else { return }
+        hapticService.trigger(.numpadKey)
         amountInCents = amountInCents * 10 + value
     }
 
@@ -75,9 +75,7 @@ final class ExpenseEntryViewModel {
     }
 
     func appendDecimalPoint() {
-        hapticService.trigger(.numpadKey)
         // No-op: decimal is implicit in fixed-point satang model.
-        // Included for numpad grid visual completeness.
     }
 
     func resetAmount() {

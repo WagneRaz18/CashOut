@@ -62,7 +62,7 @@ struct CategoryPickerView: View {
             )
         }
         .buttonStyle(.plain)
-        .accessibilityLabel("\(category.name), \(isSelected ? "selected" : "not selected")")
+        .accessibilityLabel(category.name)
         .accessibilityAddTraits(isSelected ? [.isSelected] : [])
     }
 }

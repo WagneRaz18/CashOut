@@ -337,13 +337,12 @@ final class ExpenseEntryViewModelTests: XCTestCase {
         XCTAssertEqual(hapticService.lastEvent, .numpadKey, "Should trigger .numpadKey haptic")
     }
 
-    func testAppendDecimalPointTriggersNumpadKeyHaptic() {
+    func testAppendDecimalPointDoesNotTriggerHaptic() {
         let (viewModel, _, _, _, _, hapticService) = makeSUT()
 
         viewModel.appendDecimalPoint()
 
-        XCTAssertEqual(hapticService.triggeredEvents.count, 1, "Should trigger exactly one haptic event")
-        XCTAssertEqual(hapticService.lastEvent, .numpadKey, "Should trigger .numpadKey haptic")
+        XCTAssertEqual(hapticService.triggeredEvents.count, 0, "No-op decimal point should not trigger haptic")
     }
 
     func testSelectCategoryTriggersCategorySelectHaptic() {
@@ -386,14 +385,13 @@ final class ExpenseEntryViewModelTests: XCTestCase {
         XCTAssertNil(hapticService.lastEvent, "Should NOT trigger .saveTap when no category selected")
     }
 
-    func testAppendDigitAtMaxOverflowStillTriggersHaptic() {
+    func testAppendDigitAtMaxOverflowDoesNotTriggerHaptic() {
         let (viewModel, _, _, _, _, hapticService) = makeSUT()
         viewModel.amountInCents = 1_000_000
 
         viewModel.appendDigit("5")
 
         XCTAssertEqual(viewModel.amountInCents, 1_000_000, "Amount should not change at cap")
-        XCTAssertEqual(hapticService.triggeredEvents.count, 1, "Should still trigger haptic even when guard rejects input")
-        XCTAssertEqual(hapticService.lastEvent, .numpadKey, "Should trigger .numpadKey haptic")
+        XCTAssertEqual(hapticService.triggeredEvents.count, 0, "Rejected input should not trigger haptic")
     }
 }
