@@ -1,4 +1,7 @@
 import Foundation
+import os.log
+
+private let logger = Logger(subsystem: "com.wagneraz.CashOut", category: "FeedViewModel")
 
 @MainActor
 @Observable
@@ -57,22 +60,30 @@ final class FeedViewModel {
         self.hapticService = hapticService
 
         self.syncMonitorService.onSyncStatusChanged.append { [weak self] newStatus in
+            logger.info("Sync status changed: \(String(describing: newStatus))")
             self?.syncStatus = newStatus
         }
         self.syncStatus = syncMonitorService.syncStatus
+        logger.debug("FeedViewModel.init — syncStatus: \(String(describing: self.syncStatus))")
     }
 
     // MARK: - Observation
 
     func startObserving() {
-        guard !isObserving else { return }
+        guard !isObserving else {
+            logger.debug("startObserving: already observing — skipped")
+            return
+        }
+        logger.info("startObserving: setting up FRC observation")
         isObserving = true
 
         repository.onExpensesChanged = { [weak self] expenses in
+            logger.info("onExpensesChanged: received \(expenses.count) expenses")
             self?.expenses = expenses
             self?.reloadCategories()
         }
         repository.startObservingExpenses()
+        logger.info("startObserving: FRC observation started — \(self.expenses.count) initial expenses")
     }
 
     // MARK: - Category Lookup
@@ -109,30 +120,39 @@ final class FeedViewModel {
     // MARK: - Delete
 
     func deleteExpense(_ expense: ExpenseData) async {
+        logger.info("deleteExpense: deleting id=\(expense.id)")
         do {
             try await repository.deleteExpense(id: expense.id)
             guard !Task.isCancelled else { return }
+            logger.info("deleteExpense: success")
             hapticService.trigger(.deleteTap)
         } catch {
             guard !Task.isCancelled else { return }
+            logger.error("deleteExpense: failed — \(error.localizedDescription)")
             errorMessage = "Could not delete expense. Please try again."
-            #if DEBUG
-            print("Delete failed: \(error)")
-            #endif
         }
     }
 
     // MARK: - Private
 
     private func reloadCategories() {
+        logger.debug("reloadCategories: starting category fetch")
         categoryTask?.cancel()
         categoryTask = Task {
             do {
                 let fetched = try await categoryRepository.fetchCategories()
-                guard !Task.isCancelled else { return }
+                guard !Task.isCancelled else {
+                    logger.debug("reloadCategories: cancelled after fetch")
+                    return
+                }
+                logger.debug("reloadCategories: fetched \(fetched.count) categories")
                 categories = fetched
             } catch {
-                guard !Task.isCancelled else { return }
+                guard !Task.isCancelled else {
+                    logger.debug("reloadCategories: cancelled during error handling")
+                    return
+                }
+                logger.error("reloadCategories: failed — \(error.localizedDescription)")
                 errorMessage = error.localizedDescription
             }
         }

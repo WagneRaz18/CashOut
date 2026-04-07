@@ -1,5 +1,7 @@
 @preconcurrency import CoreData
-import os
+import os.log
+
+private let logger = Logger(subsystem: "com.wagneraz.CashOut", category: "ExpenseRepository")
 
 enum RepositoryError: Error {
     case missingRequiredField(entity: String, field: String)
@@ -22,10 +24,16 @@ final class ExpenseRepository: ExpenseRepositoryProtocol {
     ) {
         self.persistence = persistence
         self.cloudSharingService = cloudSharingService
+        logger.debug("ExpenseRepository.init")
     }
 
     func startObservingExpenses() {
-        guard feedFRC == nil else { return }
+        guard feedFRC == nil else {
+            logger.debug("startObservingExpenses: FRC already exists — skipped")
+            return
+        }
+
+        logger.info("startObservingExpenses: creating FRC")
 
         assert(
             persistence.container.viewContext.automaticallyMergesChangesFromParent,
@@ -45,6 +53,7 @@ final class ExpenseRepository: ExpenseRepositoryProtocol {
 
         let delegate = FRCDelegate()
         delegate.onChange = { [weak self] in
+            logger.debug("FRC controllerDidChangeContent fired")
             self?.handleFRCUpdate()
         }
         frc.delegate = delegate
@@ -52,16 +61,25 @@ final class ExpenseRepository: ExpenseRepositoryProtocol {
         self.feedFRC = frc
         self.frcDelegate = delegate
 
+        logger.info("startObservingExpenses: performing initial fetch")
+        let fetchStart = CFAbsoluteTimeGetCurrent()
         do {
             try frc.performFetch()
+            let elapsed = (CFAbsoluteTimeGetCurrent() - fetchStart) * 1000
+            let count = frc.fetchedObjects?.count ?? 0
+            logger.info("startObservingExpenses: performFetch completed in \(elapsed, format: .fixed(precision: 1))ms — \(count) objects")
         } catch {
-            os_log(.fault, "ExpenseRepository: FRC performFetch failed — %{public}@", error.localizedDescription)
+            let elapsed = (CFAbsoluteTimeGetCurrent() - fetchStart) * 1000
+            logger.fault("startObservingExpenses: performFetch FAILED in \(elapsed, format: .fixed(precision: 1))ms — \(error.localizedDescription)")
         }
         handleFRCUpdate()
     }
 
     private func handleFRCUpdate() {
-        guard let objects = feedFRC?.fetchedObjects else { return }
+        guard let objects = feedFRC?.fetchedObjects else {
+            logger.debug("handleFRCUpdate: no fetchedObjects (FRC not ready)")
+            return
+        }
         let data = objects.compactMap { expense -> ExpenseData? in
             guard let categoryID = expense.categoryID else { return nil }
             return ExpenseData(
@@ -74,6 +92,11 @@ final class ExpenseRepository: ExpenseRepositoryProtocol {
                 modifiedAt: expense.wrappedModifiedAt
             )
         }
+        let skipped = objects.count - data.count
+        if skipped > 0 {
+            logger.warning("handleFRCUpdate: \(skipped) expenses skipped (nil categoryID)")
+        }
+        logger.debug("handleFRCUpdate: publishing \(data.count) expenses to callback")
         onExpensesChanged?(data)
     }
 
@@ -91,6 +114,7 @@ final class ExpenseRepository: ExpenseRepositoryProtocol {
     }
 
     func fetchExpenses(for period: DateInterval) async throws -> [ExpenseData] {
+        logger.debug("fetchExpenses: \(period.start) — \(period.end)")
         let request: NSFetchRequest<Expense> = Expense.fetchRequest()
         request.predicate = NSPredicate(
             format: "createdAt >= %@ AND createdAt < %@",
@@ -100,6 +124,7 @@ final class ExpenseRepository: ExpenseRepositoryProtocol {
         request.sortDescriptors = [NSSortDescriptor(key: "createdAt", ascending: false)]
 
         let results = try persistence.container.viewContext.fetch(request)
+        logger.debug("fetchExpenses: found \(results.count) expenses in period")
         return try results.map { expense in
             guard let categoryID = expense.categoryID else {
                 throw RepositoryError.missingRequiredField(entity: "Expense", field: "categoryID")
@@ -117,6 +142,7 @@ final class ExpenseRepository: ExpenseRepositoryProtocol {
     }
 
     func saveExpense(_ data: ExpenseData) async throws {
+        logger.info("saveExpense: id=\(data.id), amount=\(data.amount) satang")
         let context = persistence.container.viewContext
 
         let request: NSFetchRequest<Expense> = Expense.fetchRequest()
@@ -126,6 +152,7 @@ final class ExpenseRepository: ExpenseRepositoryProtocol {
         let existing = try context.fetch(request).first
         let isNewObject = existing == nil
         let expense = existing ?? Expense(context: context)
+        logger.debug("saveExpense: \(isNewObject ? "new" : "update")")
 
         expense.id = data.id
         expense.amount = data.amount
@@ -142,29 +169,38 @@ final class ExpenseRepository: ExpenseRepositoryProtocol {
 
         do {
             try context.save()
+            logger.info("saveExpense: context.save() succeeded")
         } catch {
+            logger.error("saveExpense: context.save() FAILED — \(error.localizedDescription)")
             context.rollback()
             throw error
         }
 
         // POST-SAVE: Move to shared zone if owner (new objects only)
         if isNewObject {
+            logger.debug("saveExpense: sharing to household (new object)")
             try await cloudSharingService?.shareObjectsToHouseholdIfNeeded([expense])
         }
     }
 
     func deleteExpense(id: UUID) async throws {
+        logger.info("deleteExpense: id=\(id)")
         let context = persistence.container.viewContext
 
         let request: NSFetchRequest<Expense> = Expense.fetchRequest()
         request.predicate = NSPredicate(format: "id == %@", id as CVarArg)
         request.fetchLimit = 1
 
-        guard let expense = try context.fetch(request).first else { return }
+        guard let expense = try context.fetch(request).first else {
+            logger.warning("deleteExpense: not found in store — already deleted?")
+            return
+        }
         context.delete(expense)
         do {
             try context.save()
+            logger.info("deleteExpense: success")
         } catch {
+            logger.error("deleteExpense: context.save() FAILED — \(error.localizedDescription)")
             context.rollback()
             throw error
         }

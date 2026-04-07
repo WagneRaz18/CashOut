@@ -1,6 +1,8 @@
 import Foundation
 import os.log
 
+private let logger = Logger(subsystem: "com.wagneraz.CashOut", category: "EditExpenseViewModel")
+
 @MainActor
 @Observable
 final class EditExpenseViewModel {
@@ -59,6 +61,7 @@ final class EditExpenseViewModel {
         self.amountInBaht = expense.amount / 100
         self.selectedCategoryID = expense.categoryID
         self.noteText = expense.note ?? ""
+        logger.debug("EditExpenseViewModel.init — editing id=\(expense.id), amount=\(expense.amount) satang")
     }
 
     // MARK: - Numpad Actions
@@ -82,16 +85,21 @@ final class EditExpenseViewModel {
     // MARK: - Category Actions
 
     func loadCategories() async {
-        guard categories.isEmpty else { return }
+        guard categories.isEmpty else {
+            logger.debug("loadCategories: already loaded — skipped")
+            return
+        }
 
+        logger.info("loadCategories: fetching")
         do {
             let fetched = try await categoryRepository.fetchCategories()
             guard !Task.isCancelled else { return }
             categories = fetched
+            logger.info("loadCategories: loaded \(fetched.count) categories")
             // Do NOT set selectedCategoryID — already pre-filled from init
         } catch {
-            Logger(subsystem: "com.wagneraz.CashOut", category: "EditExpenseViewModel")
-                .error("loadCategories failed: \(error.localizedDescription)")
+            guard !Task.isCancelled else { return }
+            logger.error("loadCategories failed: \(error.localizedDescription)")
         }
     }
 
@@ -103,12 +111,23 @@ final class EditExpenseViewModel {
     // MARK: - Save Action
 
     func saveExpense() async throws {
-        guard !isSaving else { return }
+        guard !isSaving else {
+            logger.debug("saveExpense: already saving — skipped")
+            return
+        }
         isSaving = true
         defer { isSaving = false }
 
-        guard amountInBaht > 0 else { return }
-        guard let categoryID = selectedCategoryID else { return }
+        guard amountInBaht > 0 else {
+            logger.debug("saveExpense: amount is zero — skipped")
+            return
+        }
+        guard let categoryID = selectedCategoryID else {
+            logger.warning("saveExpense: no category selected — skipped")
+            return
+        }
+
+        logger.info("saveExpense: updating id=\(self.originalExpense.id), amount=\(self.amountInBaht) Baht")
 
         let updatedExpense = ExpenseData(
             id: originalExpense.id,
@@ -123,6 +142,7 @@ final class EditExpenseViewModel {
         try await expenseRepository.saveExpense(updatedExpense)
         guard !Task.isCancelled else { return }
 
+        logger.info("saveExpense: update saved successfully")
         hapticService.trigger(.saveTap)
         // No form reset, no MRU update — sheet dismisses after save
     }

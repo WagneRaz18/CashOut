@@ -1,6 +1,8 @@
 import Foundation
 import os.log
 
+private let logger = Logger(subsystem: "com.wagneraz.CashOut", category: "InsightsViewModel")
+
 @MainActor
 @Observable
 final class InsightsViewModel {
@@ -155,6 +157,7 @@ final class InsightsViewModel {
         self.syncMonitorService = syncMonitorService
 
         self.syncMonitorService.onSyncStatusChanged.append { [weak self] newStatus in
+            logger.info("Sync status changed: \(String(describing: newStatus))")
             self?.syncStatus = newStatus
         }
         self.syncStatus = syncMonitorService.syncStatus
@@ -163,11 +166,16 @@ final class InsightsViewModel {
     // MARK: - Data Loading
 
     func loadData() async {
-        guard loadedPeriod != selectedPeriod else { return }
+        guard loadedPeriod != selectedPeriod else {
+            logger.debug("loadData: period \(self.selectedPeriod.rawValue) already loaded — skipped")
+            return
+        }
+        logger.info("loadData: loading period \(self.selectedPeriod.rawValue)")
         await performLoad()
     }
 
     func invalidateAndReload() async {
+        logger.debug("invalidateAndReload: resetting for fresh load")
         loadedPeriod = nil
         await performLoad()
     }
@@ -177,15 +185,18 @@ final class InsightsViewModel {
             selectedDestination = nil
             return
         }
+        logger.debug("selectCategory: \(categoryID)")
         selectedDestination = CategoryNavDestination(categoryID: categoryID, interval: interval)
     }
 
     func subscribeToRemoteChanges() async {
+        logger.debug("subscribeToRemoteChanges: starting listener")
         // Catch-up fetch for notifications missed while tab was hidden
         await invalidateAndReload()
 
         for await _ in NotificationCenter.default.notifications(named: .NSPersistentStoreRemoteChange) {
             guard !Task.isCancelled else { break }
+            logger.info("Remote change received — reloading insights")
             await invalidateAndReload()
         }
     }
@@ -198,6 +209,8 @@ final class InsightsViewModel {
         let currentInterval = dateInterval(for: period, referenceDate: now)
         let previousInterval = previousDateInterval(for: period, referenceDate: now)
 
+        logger.debug("performLoad: period=\(period.rawValue), interval=\(currentInterval.start) — \(currentInterval.end)")
+
         do {
             let currentExpenses = try await repository.fetchExpenses(for: currentInterval)
             guard !Task.isCancelled else { return }
@@ -207,6 +220,8 @@ final class InsightsViewModel {
 
             let categories = try await categoryRepository.fetchCategories()
             guard !Task.isCancelled else { return }
+
+            logger.info("performLoad: \(currentExpenses.count) current, \(previousExpenses.count) previous, \(categories.count) categories")
 
             totalAmount = currentExpenses.reduce(Int64(0)) { $0 + $1.amount }
 
@@ -242,8 +257,10 @@ final class InsightsViewModel {
             currentPeriodInterval = currentInterval
             errorMessage = nil
             loadedPeriod = period
+            logger.info("performLoad: complete — total=\(self.totalAmount) satang, \(self.categoryTotals.count) categories")
         } catch {
             guard !Task.isCancelled else { return }
+            logger.error("performLoad: FAILED — \(error.localizedDescription)")
             totalAmount = 0
             categoryTotals = []
             chartSlices = []
@@ -303,14 +320,12 @@ final class InsightsViewModel {
 
     // MARK: - Date Interval Helpers
 
-    private static let insightsLogger = Logger(subsystem: "com.wagneraz.CashOut", category: "InsightsViewModel")
-
     // Uses Gregorian calendar — should never return nil, but defends against it with logged fallback
     private func dateInterval(for period: TimePeriod, referenceDate: Date) -> DateInterval {
         if let interval = Self.calendar.dateInterval(of: period.calendarComponent, for: referenceDate) {
             return interval
         }
-        Self.insightsLogger.fault("Gregorian dateInterval returned nil for \(period.rawValue)")
+        logger.fault("Gregorian dateInterval returned nil for \(period.rawValue)")
         return DateInterval(start: referenceDate, duration: 86400)
     }
 
@@ -318,7 +333,7 @@ final class InsightsViewModel {
         if let previousDate = Self.calendar.date(byAdding: period.calendarComponent, value: -1, to: referenceDate) {
             return dateInterval(for: period, referenceDate: previousDate)
         }
-        Self.insightsLogger.fault("Gregorian date(byAdding:) returned nil for \(period.rawValue)")
+        logger.fault("Gregorian date(byAdding:) returned nil for \(period.rawValue)")
         return dateInterval(for: period, referenceDate: referenceDate.addingTimeInterval(-86400))
     }
 }

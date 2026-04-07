@@ -1,4 +1,7 @@
 @preconcurrency import CoreData
+import os.log
+
+private let logger = Logger(subsystem: "com.wagneraz.CashOut", category: "CategoryRepository")
 
 @MainActor
 final class CategoryRepository: CategoryRepositoryProtocol {
@@ -18,6 +21,7 @@ final class CategoryRepository: CategoryRepositoryProtocol {
         request.sortDescriptors = [NSSortDescriptor(key: "sortOrder", ascending: true)]
 
         let results = try persistence.container.viewContext.fetch(request)
+        logger.debug("fetchCategories: found \(results.count) categories")
         return results.map { category in
             CategoryData(
                 id: category.wrappedID,
@@ -31,6 +35,7 @@ final class CategoryRepository: CategoryRepositoryProtocol {
     }
 
     func saveCategory(_ data: CategoryData) async throws {
+        logger.info("saveCategory: '\(data.name)' id=\(data.id)")
         let context = persistence.container.viewContext
 
         let request: NSFetchRequest<Category> = Category.fetchRequest()
@@ -40,6 +45,7 @@ final class CategoryRepository: CategoryRepositoryProtocol {
         let existing = try context.fetch(request).first
         let isNewCustomCategory = existing == nil && !data.isDefault
         let category = existing ?? Category(context: context)
+        logger.debug("saveCategory: \(existing != nil ? "updating" : "creating") \(isNewCustomCategory ? "(custom)" : "")")
 
         category.id = data.id
         category.name = data.name
@@ -53,10 +59,18 @@ final class CategoryRepository: CategoryRepositoryProtocol {
             cloudSharingService?.prepareObjectForSharedSave(category)
         }
 
-        try context.save()
+        do {
+            try context.save()
+            logger.info("saveCategory: saved successfully")
+        } catch {
+            logger.error("saveCategory: context.save() FAILED — \(error.localizedDescription)")
+            context.rollback()
+            throw error
+        }
 
         if isNewCustomCategory {
             guard !Task.isCancelled else { return }
+            logger.debug("saveCategory: sharing custom category to household")
             try await cloudSharingService?.shareObjectsToHouseholdIfNeeded([category])
         }
     }
@@ -67,8 +81,12 @@ final class CategoryRepository: CategoryRepositoryProtocol {
         let request: NSFetchRequest<Category> = Category.fetchRequest()
         let count = try context.count(for: request)
 
-        guard count == 0 else { return }
+        guard count == 0 else {
+            logger.debug("seedDefaultCategoriesIfNeeded: \(count) categories exist — skipped")
+            return
+        }
 
+        logger.info("seedDefaultCategoriesIfNeeded: seeding \(DefaultCategory.allCases.count) default categories")
         for defaultCategory in DefaultCategory.allCases {
             let category = Category(context: context)
             category.id = UUID()
@@ -80,5 +98,6 @@ final class CategoryRepository: CategoryRepositoryProtocol {
         }
 
         try context.save()
+        logger.info("seedDefaultCategoriesIfNeeded: seeding complete")
     }
 }

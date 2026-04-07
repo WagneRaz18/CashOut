@@ -1,6 +1,9 @@
 import Foundation
 import AuthenticationServices
 import CloudKit
+import os.log
+
+private let logger = Logger(subsystem: "com.wagneraz.CashOut", category: "AuthenticationService")
 
 // MARK: - Protocol
 
@@ -75,38 +78,47 @@ final class AuthenticationService: NSObject, AuthenticationServiceProtocol {
 
     override init() {
         super.init()
+        logger.debug("AuthenticationService.init — starting notification observers")
         startNotificationObservers()
     }
 
     // MARK: - Credential State Check (AC #4, #5, #6)
 
     func checkCredentialState() async -> Bool {
+        logger.info("checkCredentialState: loading userID from Keychain")
         guard let userID = loadFromKeychain() else {
+            logger.info("checkCredentialState: no userID in Keychain — not authenticated")
             currentUserID = nil
             return false
         }
 
+        logger.debug("checkCredentialState: found userID in Keychain, checking Apple ID state")
         do {
             let state = try await ASAuthorizationAppleIDProvider().credentialState(forUserID: userID)
             switch state {
             case .authorized:
+                logger.info("checkCredentialState: authorized")
                 currentUserID = userID
                 return true
             case .revoked:
                 // AC #5: Clear Keychain + profile, present sign-in
+                logger.info("checkCredentialState: revoked — clearing Keychain")
                 clearKeychain()
                 clearProfileKeychain()
                 currentUserID = nil
                 return false
             case .notFound, .transferred:
                 // AC #6: Present sign-in, no Keychain clearance
+                logger.info("checkCredentialState: \(String(describing: state)) — presenting sign-in")
                 currentUserID = nil
                 return false
             @unknown default:
+                logger.warning("checkCredentialState: unknown state — presenting sign-in")
                 currentUserID = nil
                 return false
             }
         } catch {
+            logger.error("checkCredentialState: Apple ID check failed — \(error.localizedDescription)")
             currentUserID = nil
             return false
         }
@@ -117,11 +129,14 @@ final class AuthenticationService: NSObject, AuthenticationServiceProtocol {
     /// Programmatic sign-in via ASAuthorizationController (used when not triggered by SignInWithAppleButton)
     func signIn() async throws {
         guard signInContinuation == nil else {
+            logger.warning("signIn: already in progress — rejecting duplicate call")
             throw AuthenticationError.signInFailed(
                 NSError(domain: "AuthenticationService", code: -1,
                         userInfo: [NSLocalizedDescriptionKey: "Sign-in already in progress"])
             )
         }
+
+        logger.info("signIn: presenting ASAuthorizationController")
 
         let provider = ASAuthorizationAppleIDProvider()
         let request = provider.createRequest()
@@ -136,6 +151,7 @@ final class AuthenticationService: NSObject, AuthenticationServiceProtocol {
             controller.performRequests()
         }
 
+        logger.info("signIn: credential received — saving")
         saveCredentials(
             userID: credential.user,
             fullName: credential.fullName,
@@ -145,6 +161,7 @@ final class AuthenticationService: NSObject, AuthenticationServiceProtocol {
 
     /// Save credentials from a completed authorization (used by SignInWithAppleButton flow)
     func saveCredentials(userID: String, fullName: PersonNameComponents?, email: String?) {
+        logger.info("saveCredentials: userID present")
         // AC #2: Cache userIdentifier in Keychain
         saveToKeychain(userIdentifier: userID)
         currentUserID = userID
@@ -156,6 +173,7 @@ final class AuthenticationService: NSObject, AuthenticationServiceProtocol {
             .nilIfEmpty
 
         saveProfileToKeychain(name: name, email: email)
+        logger.debug("saveCredentials: profile saved (hasName=\(name != nil), hasEmail=\(email != nil))")
 
         // Restart observers if they were cancelled by a prior signOut()
         restartObserversIfNeeded()
@@ -164,6 +182,7 @@ final class AuthenticationService: NSObject, AuthenticationServiceProtocol {
     // MARK: - Sign Out (AC #7)
 
     func signOut() {
+        logger.info("signOut: clearing credentials and cancelling observers")
         clearKeychain()
         clearProfileKeychain()
         currentUserID = nil
@@ -177,6 +196,7 @@ final class AuthenticationService: NSObject, AuthenticationServiceProtocol {
 
     private func restartObserversIfNeeded() {
         if revocationTask == nil || accountChangeTask == nil {
+            logger.debug("Restarting notification observers")
             startNotificationObservers()
         }
     }
@@ -189,6 +209,7 @@ final class AuthenticationService: NSObject, AuthenticationServiceProtocol {
             )
             for await _ in notifications {
                 guard !Task.isCancelled else { break }
+                logger.info("Credential revoked notification received — signing out")
                 self?.signOut()
                 self?.onSessionInvalidated?()
             }
@@ -201,6 +222,7 @@ final class AuthenticationService: NSObject, AuthenticationServiceProtocol {
             )
             for await _ in notifications {
                 guard !Task.isCancelled else { break }
+                logger.info("CKAccountChanged received — clearing credentials")
                 self?.clearKeychain()
                 self?.clearProfileKeychain()
                 self?.currentUserID = nil

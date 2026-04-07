@@ -1,7 +1,9 @@
 import Foundation
 import CloudKit
 @preconcurrency import CoreData
-import os
+import os.log
+
+private let logger = Logger(subsystem: "com.wagneraz.CashOut", category: "SettingsViewModel")
 
 @MainActor
 @Observable
@@ -40,10 +42,15 @@ final class SettingsViewModel {
         self.persistenceController = persistenceController
         self.categoryRepository = categoryRepository
         self.hapticService = hapticService
+        logger.debug("SettingsViewModel.init")
     }
 
     func invitePartner() async {
-        guard !isInviting else { return }
+        guard !isInviting else {
+            logger.debug("invitePartner: already inviting — skipped")
+            return
+        }
+        logger.info("invitePartner: starting share creation flow")
         isInviting = true
         defer { isInviting = false }
         errorMessage = nil
@@ -54,18 +61,22 @@ final class SettingsViewModel {
                 request.affectedStores = [privateStore]
             }
             let categories = try persistenceController.container.viewContext.fetch(request)
+            logger.info("invitePartner: found \(categories.count) categories to share")
 
             guard !categories.isEmpty else {
+                logger.error("invitePartner: no categories found — cannot create share")
                 errorMessage = "No categories found. Please restart the app."
                 return
             }
 
             let (share, container) = try await cloudSharingService.createShare(for: categories)
+            logger.info("invitePartner: share created successfully")
             activeShare = share
             activeContainer = container
             isShowingShareSheet = true
         } catch {
             guard !Task.isCancelled else { return }
+            logger.error("invitePartner: FAILED — \(error.localizedDescription)")
             errorMessage = error.localizedDescription
             activeShare = nil
             activeContainer = nil
@@ -73,16 +84,18 @@ final class SettingsViewModel {
     }
 
     func loadCategories() async {
+        logger.debug("loadCategories: fetching")
         do {
             let result = try await categoryRepository.fetchCategories()
             guard !Task.isCancelled else { return }
+            logger.info("loadCategories: loaded \(result.count) categories")
             categories = result
         } catch {
             guard !Task.isCancelled else { return }
             // Categories are seeded at startup — empty state is infrastructure failure.
             // No errorMessage set — category list in Settings is informational only.
             // The entry screen has its own independent category loading path.
-            os_log(.error, "SettingsViewModel: loadCategories failed: %{public}@", error.localizedDescription)
+            logger.error("loadCategories: FAILED — \(error.localizedDescription)")
             categories = []
         }
     }
@@ -93,6 +106,7 @@ final class SettingsViewModel {
 
         // Prevent accidental demotion of default categories
         if let existingID, categories.first(where: { $0.id == existingID })?.isDefault == true {
+            logger.warning("saveCategory: attempted to modify default category — blocked")
             return
         }
 
@@ -106,6 +120,8 @@ final class SettingsViewModel {
             ? (categories.first { $0.id == existingID }?.sortOrder ?? Int16(categories.count))
             : Int16(categories.count)
 
+        logger.info("saveCategory: \(existingID != nil ? "updating" : "creating") '\(trimmedName)' id=\(id)")
+
         let data = CategoryData(
             id: id,
             name: trimmedName,
@@ -118,20 +134,25 @@ final class SettingsViewModel {
         do {
             try await categoryRepository.saveCategory(data)
             guard !Task.isCancelled else { return }
+            logger.info("saveCategory: success")
             hapticService.trigger(.saveTap)
             await loadCategories()
         } catch {
             guard !Task.isCancelled else { return }
+            logger.error("saveCategory: FAILED — \(error.localizedDescription)")
             hapticService.trigger(.error)
             categorySaveError = "Failed to save category. Please try again."
         }
     }
 
     func refreshSharingStatus() async {
+        logger.debug("refreshSharingStatus: checking")
         await cloudSharingService.checkSharingStatus()
+        logger.debug("refreshSharingStatus: done — isShared=\(self.cloudSharingService.isShared)")
     }
 
     func handleShareDismiss(_ share: CKShare?) {
+        logger.info("handleShareDismiss: share=\(share != nil ? "present" : "nil")")
         if let share {
             cloudSharingService.persistUpdatedShare(share)
         }

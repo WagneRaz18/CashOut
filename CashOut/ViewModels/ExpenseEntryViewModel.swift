@@ -1,6 +1,8 @@
 import Foundation
 import os.log
 
+private let logger = Logger(subsystem: "com.wagneraz.CashOut", category: "ExpenseEntryViewModel")
+
 enum ExpenseEntryError: Error {
     case notAuthenticated
 }
@@ -63,6 +65,7 @@ final class ExpenseEntryViewModel {
         self.authService = authService
         self.userDefaults = userDefaults
         self.hapticService = hapticService
+        logger.debug("ExpenseEntryViewModel.init")
     }
 
     // MARK: - Numpad Actions
@@ -86,25 +89,32 @@ final class ExpenseEntryViewModel {
     // MARK: - Category Actions
 
     func loadCategories() async {
-        guard categories.isEmpty else { return }
+        guard categories.isEmpty else {
+            logger.debug("loadCategories: already loaded — skipped")
+            return
+        }
 
+        logger.info("loadCategories: fetching categories")
         do {
             let fetched = try await categoryRepository.fetchCategories()
             guard !Task.isCancelled else { return }
             categories = fetched
+            logger.info("loadCategories: loaded \(fetched.count) categories")
 
             // Restore MRU from UserDefaults
             if let mruString = userDefaults.string(forKey: Self.mruKey),
                let mruID = UUID(uuidString: mruString),
                fetched.contains(where: { $0.id == mruID }) {
                 selectedCategoryID = mruID
+                logger.debug("loadCategories: restored MRU category \(mruID)")
             } else {
                 // Default to first category (Food & Drink, sortOrder 0)
                 selectedCategoryID = fetched.first?.id
+                logger.debug("loadCategories: defaulting to first category")
             }
         } catch {
-            Logger(subsystem: "com.wagneraz.CashOut", category: "ExpenseEntryViewModel")
-                .error("loadCategories failed: \(error.localizedDescription)")
+            guard !Task.isCancelled else { return }
+            logger.error("loadCategories failed: \(error.localizedDescription)")
         }
     }
 
@@ -116,15 +126,27 @@ final class ExpenseEntryViewModel {
     // MARK: - Save Action
 
     func saveExpense() async throws {
-        guard !isSaving else { return }
+        guard !isSaving else {
+            logger.debug("saveExpense: already saving — skipped")
+            return
+        }
         isSaving = true
         defer { isSaving = false }
 
-        guard amountInBaht > 0 else { return }
-        guard let categoryID = selectedCategoryID else { return }
+        guard amountInBaht > 0 else {
+            logger.debug("saveExpense: amount is zero — skipped")
+            return
+        }
+        guard let categoryID = selectedCategoryID else {
+            logger.warning("saveExpense: no category selected — skipped")
+            return
+        }
         guard let userID = authService.currentUserID else {
+            logger.error("saveExpense: not authenticated")
             throw ExpenseEntryError.notAuthenticated
         }
+
+        logger.info("saveExpense: saving \(self.amountInBaht) Baht, category=\(categoryID)")
 
         let now = Date()
         let expense = ExpenseData(
@@ -140,6 +162,7 @@ final class ExpenseEntryViewModel {
         try await expenseRepository.saveExpense(expense)
         guard !Task.isCancelled else { return }
 
+        logger.info("saveExpense: saved successfully — id=\(expense.id)")
         hapticService.trigger(.saveTap)
 
         // Persist MRU

@@ -15,6 +15,7 @@ final class PersistenceController: @unchecked Sendable {
     private(set) var storeLoadError: Error?
 
     init(inMemory: Bool = false) {
+        logger.info("PersistenceController.init — inMemory=\(inMemory)")
         container = NSPersistentCloudKitContainer(name: "CashOut")
 
         guard let privateDesc = container.persistentStoreDescriptions.first else {
@@ -42,6 +43,7 @@ final class PersistenceController: @unchecked Sendable {
 
         if !inMemory {
             let iCloudAvailable = FileManager.default.ubiquityIdentityToken != nil
+            logger.info("iCloud available: \(iCloudAvailable)")
 
             // Explicitly set CloudKit container on private store
             if iCloudAvailable {
@@ -81,9 +83,11 @@ final class PersistenceController: @unchecked Sendable {
             .deletingLastPathComponent()
             .appendingPathComponent("CashOut-shared.sqlite")
 
+        let storeLoadStart = CFAbsoluteTimeGetCurrent()
         container.loadPersistentStores { [weak self] desc, error in
+            let elapsed = (CFAbsoluteTimeGetCurrent() - storeLoadStart) * 1000
             if let error {
-                logger.fault("Store load failed: \(error.localizedDescription)")
+                logger.fault("Store load FAILED in \(elapsed, format: .fixed(precision: 1))ms: \(error.localizedDescription)")
                 self?.storeLoadError = error
                 return
             }
@@ -91,8 +95,10 @@ final class PersistenceController: @unchecked Sendable {
             let store = self.container.persistentStoreCoordinator.persistentStore(for: storeURL)
             if storeURL == sharedStoreURLForMatching {
                 self.sharedPersistentStore = store
+                logger.info("Shared store loaded in \(elapsed, format: .fixed(precision: 1))ms")
             } else {
                 self.privatePersistentStore = store
+                logger.info("Private store loaded in \(elapsed, format: .fixed(precision: 1))ms")
             }
         }
 
@@ -116,7 +122,7 @@ final class PersistenceController: @unchecked Sendable {
             do {
                 try container.initializeCloudKitSchema(options: [])
             } catch {
-                print("CloudKit schema init failed: \(error)")
+                logger.error("CloudKit schema init failed: \(error.localizedDescription)")
             }
         }
         #endif

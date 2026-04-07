@@ -1,7 +1,9 @@
 import Foundation
 import CloudKit
 @preconcurrency import CoreData
-import os
+import os.log
+
+private let logger = Logger(subsystem: "com.wagneraz.CashOut", category: "CloudSharingService")
 
 @MainActor
 protocol CloudSharingServiceProtocol {
@@ -35,10 +37,13 @@ final class CloudSharingService: CloudSharingServiceProtocol {
 
     init(persistenceController: PersistenceController = .shared) {
         self.persistenceController = persistenceController
+        logger.debug("CloudSharingService.init")
     }
 
     func createShare(for objects: [NSManagedObject]) async throws -> (CKShare, CKContainer) {
+        logger.info("createShare: \(objects.count) objects")
         guard !objects.isEmpty else {
+            logger.error("createShare: no objects provided")
             throw NSError(
                 domain: "CloudSharingService",
                 code: 1,
@@ -47,6 +52,7 @@ final class CloudSharingService: CloudSharingServiceProtocol {
         }
 
         guard FileManager.default.ubiquityIdentityToken != nil else {
+            logger.error("createShare: no iCloud account")
             throw NSError(
                 domain: "CloudSharingService",
                 code: 2,
@@ -56,6 +62,7 @@ final class CloudSharingService: CloudSharingServiceProtocol {
 
         // Re-validate cached share before reuse (may have been revoked)
         if let existingShare = currentShare {
+            logger.debug("createShare: validating cached share")
             let validationStore = isShareOwner
                 ? persistenceController.privatePersistentStore
                 : persistenceController.sharedPersistentStore
@@ -63,67 +70,88 @@ final class CloudSharingService: CloudSharingServiceProtocol {
                 do {
                     let freshShares = try persistenceController.container.fetchShares(in: store)
                     if freshShares.contains(where: { $0.recordID == existingShare.recordID }) {
+                        logger.info("createShare: reusing existing valid share")
                         return (existingShare, CKContainer(identifier: Self.containerIdentifier))
                     }
                     // Share not found in store — revoked or deleted, create new
+                    logger.info("createShare: cached share no longer valid — creating new")
                     currentShare = nil
                 } catch {
                     // Transient error (network, etc.) — keep cached share to avoid duplicate creation
-                    os_log(.error, "fetchShares failed during share validation: %{public}@", error.localizedDescription)
+                    logger.error("createShare: fetchShares validation failed — \(error.localizedDescription), reusing cached")
                     return (existingShare, CKContainer(identifier: Self.containerIdentifier))
                 }
             }
         }
 
+        logger.info("createShare: creating new CloudKit share")
         let (_, share, _) = try await persistenceController.container.share(objects, to: nil)
         currentShare = share
         share[CKShare.SystemFieldKey.title] = "CashOut Household"
+        logger.info("createShare: new share created successfully")
         return (share, CKContainer(identifier: Self.containerIdentifier))
     }
 
     func checkSharingStatus() async {
+        logger.info("checkSharingStatus: checking stores for shares")
+        let checkStart = CFAbsoluteTimeGetCurrent()
+
         // 1. Check owner's private store for shares
         if let privateStore = persistenceController.privatePersistentStore {
             do {
                 let privateShares = try persistenceController.container.fetchShares(in: privateStore)
+                logger.debug("checkSharingStatus: \(privateShares.count) shares in private store")
                 if let share = privateShares.first {
                     isShared = true
                     currentShare = share
                     extractPartnerInfo(from: share)
+                    let elapsed = (CFAbsoluteTimeGetCurrent() - checkStart) * 1000
+                    logger.info("checkSharingStatus: found share in private store (owner) — \(elapsed, format: .fixed(precision: 1))ms")
                     return
                 }
             } catch {
-                os_log(.error, "Failed to fetch shares from private store: %{public}@", error.localizedDescription)
+                logger.error("checkSharingStatus: failed to fetch from private store — \(error.localizedDescription)")
             }
+        } else {
+            logger.debug("checkSharingStatus: private store is nil")
         }
 
         // 2. Check shared store for shares (partner perspective)
         if let sharedStore = persistenceController.sharedPersistentStore {
             do {
                 let sharedShares = try persistenceController.container.fetchShares(in: sharedStore)
+                logger.debug("checkSharingStatus: \(sharedShares.count) shares in shared store")
                 if let share = sharedShares.first {
                     isShared = true
                     currentShare = share
                     extractPartnerInfo(from: share)
+                    let elapsed = (CFAbsoluteTimeGetCurrent() - checkStart) * 1000
+                    logger.info("checkSharingStatus: found share in shared store (participant) — \(elapsed, format: .fixed(precision: 1))ms")
                     return
                 }
             } catch {
-                os_log(.error, "Failed to fetch shares from shared store: %{public}@", error.localizedDescription)
+                logger.error("checkSharingStatus: failed to fetch from shared store — \(error.localizedDescription)")
             }
+        } else {
+            logger.debug("checkSharingStatus: shared store is nil")
         }
 
         // 3. No shares found — solo mode (only reset if both stores are loaded)
         guard persistenceController.privatePersistentStore != nil ||
               persistenceController.sharedPersistentStore != nil else {
             // Store references nil (e.g., mid-account-change) — don't reset sharing state
+            logger.warning("checkSharingStatus: both stores nil — skipping state reset (mid-account-change?)")
             return
         }
+        let elapsed = (CFAbsoluteTimeGetCurrent() - checkStart) * 1000
+        logger.info("checkSharingStatus: no shares found — solo mode — \(elapsed, format: .fixed(precision: 1))ms")
         isShared = false
         partnerName = nil
         currentShare = nil
     }
 
     func persistUpdatedShare(_ share: CKShare) {
+        logger.debug("persistUpdatedShare: routing to \(self.isShareOwner ? "private" : "shared") store")
         // Route to the correct store based on role
         let targetStore: NSPersistentStore?
         if isShareOwner {
@@ -131,10 +159,15 @@ final class CloudSharingService: CloudSharingServiceProtocol {
         } else {
             targetStore = persistenceController.sharedPersistentStore
         }
-        guard let store = targetStore else { return }
+        guard let store = targetStore else {
+            logger.warning("persistUpdatedShare: target store is nil")
+            return
+        }
         persistenceController.container.persistUpdatedShare(share, in: store) { _, error in
             if let error {
-                os_log(.fault, "Failed to persist updated share: %{public}@", error.localizedDescription)
+                logger.fault("persistUpdatedShare: FAILED — \(error.localizedDescription)")
+            } else {
+                logger.debug("persistUpdatedShare: success")
             }
         }
     }
@@ -142,11 +175,15 @@ final class CloudSharingService: CloudSharingServiceProtocol {
     func prepareObjectForSharedSave(_ object: NSManagedObject) {
         guard isShared, !isShareOwner else { return }
         guard object.managedObjectContext != nil else {
-            os_log(.error, "prepareObjectForSharedSave called with nil managedObjectContext")
+            logger.error("prepareObjectForSharedSave: nil managedObjectContext")
             return
         }
         // Participant: assign to shared store so save goes to shared zone
-        guard let sharedStore = persistenceController.sharedPersistentStore else { return }
+        guard let sharedStore = persistenceController.sharedPersistentStore else {
+            logger.warning("prepareObjectForSharedSave: shared store is nil")
+            return
+        }
+        logger.debug("prepareObjectForSharedSave: assigning object to shared store")
         object.managedObjectContext?.assign(object, to: sharedStore)
     }
 
@@ -155,13 +192,15 @@ final class CloudSharingService: CloudSharingServiceProtocol {
         guard !objects.isEmpty else { return }
         // Guard: iCloud must be available
         guard FileManager.default.ubiquityIdentityToken != nil else {
-            os_log(.error, "iCloud unavailable — expense saved locally but not shared to household zone")
+            logger.error("shareObjectsToHouseholdIfNeeded: iCloud unavailable — saved locally only")
             return
         }
+        logger.info("shareObjectsToHouseholdIfNeeded: sharing \(objects.count) objects to household")
         do {
             _ = try await persistenceController.container.share(objects, to: share)
+            logger.info("shareObjectsToHouseholdIfNeeded: success")
         } catch {
-            os_log(.error, "Failed to share expense to household zone: %{public}@", error.localizedDescription)
+            logger.error("shareObjectsToHouseholdIfNeeded: FAILED — \(error.localizedDescription)")
         }
     }
 
@@ -171,6 +210,7 @@ final class CloudSharingService: CloudSharingServiceProtocol {
         // Filter out the CURRENT user to find the OTHER person
         guard let currentUserRecordID = share.currentUserParticipant?.userIdentity.userRecordID else {
             // Can't identify current user — can't determine who the partner is
+            logger.debug("extractPartnerInfo: no currentUserParticipant — can't determine partner")
             partnerName = nil
             return
         }
@@ -187,7 +227,9 @@ final class CloudSharingService: CloudSharingServiceProtocol {
             } else {
                 partnerName = "Partner"
             }
+            logger.info("extractPartnerInfo: partner resolved=\(self.partnerName != nil)")
         } else {
+            logger.debug("extractPartnerInfo: no accepted partner found (\(otherParticipants.count) other participants)")
             partnerName = nil
         }
     }
