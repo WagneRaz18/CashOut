@@ -182,7 +182,7 @@ final class AuthenticationViewModelTests: XCTestCase {
         XCTAssertTrue(viewModel.isAuthenticated, "Should be authenticated")
 
         // Simulate service-side session invalidation via callback
-        mock.onSessionInvalidated?()
+        mock.onSessionInvalidated.forEach { $0() }
 
         XCTAssertFalse(viewModel.isAuthenticated, "Should be unauthenticated after session invalidated")
         XCTAssertFalse(viewModel.isCheckingCredentials, "Should not be checking credentials")

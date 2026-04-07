@@ -15,6 +15,8 @@ protocol HapticServiceProtocol {
 
 @MainActor
 final class HapticService: HapticServiceProtocol {
+    static let shared = HapticService()
+
     private let impactGenerator = UIImpactFeedbackGenerator(style: .light)
     private let notificationGenerator = UINotificationFeedbackGenerator()
 

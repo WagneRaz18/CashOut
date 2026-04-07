@@ -7,7 +7,7 @@ final class MockAuthenticationService: AuthenticationServiceProtocol {
     // MARK: - Configurable Results
 
     var currentUserID: String?
-    var onSessionInvalidated: (() -> Void)?
+    var onSessionInvalidated: [@MainActor @Sendable () -> Void] = []
     var checkCredentialStateResult: Bool = false
     var signInShouldSucceed: Bool = true
     var signInError: Error = AuthenticationError.signInCancelled

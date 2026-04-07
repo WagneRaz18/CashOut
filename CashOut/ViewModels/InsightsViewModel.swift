@@ -146,9 +146,9 @@ final class InsightsViewModel {
     // MARK: - Init
 
     init(
-        repository: ExpenseRepositoryProtocol = ExpenseRepository(),
-        categoryRepository: CategoryRepositoryProtocol = CategoryRepository(),
-        authService: AuthenticationServiceProtocol = AuthenticationService(),
+        repository: ExpenseRepositoryProtocol = ExpenseRepository.shared,
+        categoryRepository: CategoryRepositoryProtocol = CategoryRepository.shared,
+        authService: AuthenticationServiceProtocol = AuthenticationService.shared,
         syncMonitorService: SyncMonitorServiceProtocol = SyncMonitorService.shared
     ) {
         self.repository = repository
@@ -156,10 +156,6 @@ final class InsightsViewModel {
         self.authService = authService
         self.syncMonitorService = syncMonitorService
 
-        self.syncMonitorService.onSyncStatusChanged.append { [weak self] newStatus in
-            logger.info("Sync status changed: \(String(describing: newStatus))")
-            self?.syncStatus = newStatus
-        }
         self.syncStatus = syncMonitorService.syncStatus
     }
 
@@ -191,6 +187,12 @@ final class InsightsViewModel {
 
     func subscribeToRemoteChanges() async {
         logger.debug("subscribeToRemoteChanges: starting listener")
+
+        syncMonitorService.onSyncStatusChanged.append { [weak self] newStatus in
+            logger.info("Sync status changed: \(String(describing: newStatus))")
+            self?.syncStatus = newStatus
+        }
+
         // Catch-up fetch for notifications missed while tab was hidden
         await invalidateAndReload()
 

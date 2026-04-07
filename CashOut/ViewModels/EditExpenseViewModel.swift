@@ -48,9 +48,9 @@ final class EditExpenseViewModel {
 
     init(
         expense: ExpenseData,
-        expenseRepository: ExpenseRepositoryProtocol = ExpenseRepository(),
-        categoryRepository: CategoryRepositoryProtocol = CategoryRepository(),
-        hapticService: HapticServiceProtocol = HapticService()
+        expenseRepository: ExpenseRepositoryProtocol = ExpenseRepository.shared,
+        categoryRepository: CategoryRepositoryProtocol = CategoryRepository.shared,
+        hapticService: HapticServiceProtocol = HapticService.shared
     ) {
         self.originalExpense = expense
         self.expenseRepository = expenseRepository

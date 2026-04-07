@@ -36,6 +36,7 @@ final class SyncMonitorService: SyncMonitorServiceProtocol {
             }
         }
     }
+    @ObservationIgnored
     var onSyncStatusChanged: [(@MainActor (SyncStatus) -> Void)] = []
 
     @ObservationIgnored private var consecutiveFailures: Int = 0

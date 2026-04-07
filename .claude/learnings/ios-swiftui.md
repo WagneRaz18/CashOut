@@ -10,6 +10,7 @@
 - **2026-04-04**: `@State` on an `@Observable` class does NOT expose `$viewModel` for property bindings. Use `Bindable(viewModel).property` inline or declare `@Bindable private var viewModel` to get `Binding<T>` for modifiers like `.navigationDestination(item:)`.
 - **2026-04-06**: `.navigationDestination(item:)` destination closure must produce content unconditionally — `if let` inside produces `EmptyView` (blank screen). Pack all required data into the item type (e.g., `struct CategoryNavDestination: Hashable { let categoryID: UUID; let interval: DateInterval }`), gate in the ViewModel's setter, so the closure always has everything it needs.
 - .task re-fires on every tab appear in TabView — guard with loaded-state check (e.g., `guard items.isEmpty else { return }`).
+- **2026-04-07**: `@State private var viewModel = FeedViewModel()` evaluates the init expression on EVERY View struct creation (even when @State returns the stored value). Default parameter values like `AuthenticationService()` run their constructors every time. If any default creates side effects (Tasks, notification observers, mutating shared @Observable properties), they leak or trigger infinite re-render loops. Fix: (1) use `.shared` singletons as default params, (2) mark callback-registration arrays as `@ObservationIgnored`, (3) move callback registration to lifecycle methods (`.onAppear`/`.task`) not init.
 - Subscribe to NotificationCenter via async sequence in .task {} — auto-cancels on view disappear. Never use addObserver in ViewModels.
 
 ## SwiftUI Performance

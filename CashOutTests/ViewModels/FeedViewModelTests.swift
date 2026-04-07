@@ -35,6 +35,11 @@ final class FeedViewModelTests: XCTestCase {
             hapticService: hapticService
         )
 
+        // Register sync status callback (normally done in startObserving)
+        syncMonitor.onSyncStatusChanged.append { [weak viewModel] newStatus in
+            viewModel?.syncStatus = newStatus
+        }
+
         return (viewModel, expenseRepo, categoryRepo, authService, hapticService, syncMonitor)
     }
 

@@ -7,7 +7,7 @@ final class ExpenseEntryViewModelTests: XCTestCase {
     // MARK: - appendDigit Tests (AC #3, #4)
 
     func testAppendDigitBuildsCorrectCentsValue() {
-        let viewModel = ExpenseEntryViewModel()
+        let viewModel = ExpenseEntryViewModel(authService: MockAuthenticationService())
 
         viewModel.appendDigit("1")
         viewModel.appendDigit("2")
@@ -23,7 +23,7 @@ final class ExpenseEntryViewModelTests: XCTestCase {
     // MARK: - deleteLastDigit Tests (AC #5)
 
     func testDeleteLastDigitRemovesRightmostDigit() {
-        let viewModel = ExpenseEntryViewModel()
+        let viewModel = ExpenseEntryViewModel(authService: MockAuthenticationService())
         viewModel.amountInBaht = 1250
 
         viewModel.deleteLastDigit()
@@ -35,7 +35,7 @@ final class ExpenseEntryViewModelTests: XCTestCase {
     }
 
     func testDeleteLastDigitFromZeroStaysZero() {
-        let viewModel = ExpenseEntryViewModel()
+        let viewModel = ExpenseEntryViewModel(authService: MockAuthenticationService())
 
         viewModel.deleteLastDigit()
 
@@ -48,7 +48,7 @@ final class ExpenseEntryViewModelTests: XCTestCase {
     // MARK: - Cap Tests
 
     func testAppendDigitEnforcesCap() {
-        let viewModel = ExpenseEntryViewModel()
+        let viewModel = ExpenseEntryViewModel(authService: MockAuthenticationService())
         viewModel.amountInBaht = 1_000_000
 
         viewModel.appendDigit("5")
@@ -60,7 +60,7 @@ final class ExpenseEntryViewModelTests: XCTestCase {
     }
 
     func testAppendDigitAllowsLastValueBeforeCap() {
-        let viewModel = ExpenseEntryViewModel()
+        let viewModel = ExpenseEntryViewModel(authService: MockAuthenticationService())
         viewModel.amountInBaht = 999_999
 
         viewModel.appendDigit("9")
@@ -74,7 +74,7 @@ final class ExpenseEntryViewModelTests: XCTestCase {
     // MARK: - resetAmount Tests
 
     func testResetAmountSetsToZero() {
-        let viewModel = ExpenseEntryViewModel()
+        let viewModel = ExpenseEntryViewModel(authService: MockAuthenticationService())
         viewModel.amountInBaht = 5000
 
         viewModel.resetAmount()
@@ -88,7 +88,7 @@ final class ExpenseEntryViewModelTests: XCTestCase {
     // MARK: - isAmountZero Tests
 
     func testIsAmountZeroWhenZero() {
-        let viewModel = ExpenseEntryViewModel()
+        let viewModel = ExpenseEntryViewModel(authService: MockAuthenticationService())
 
         XCTAssertTrue(
             viewModel.isAmountZero,
@@ -97,7 +97,7 @@ final class ExpenseEntryViewModelTests: XCTestCase {
     }
 
     func testIsAmountZeroWhenNonZero() {
-        let viewModel = ExpenseEntryViewModel()
+        let viewModel = ExpenseEntryViewModel(authService: MockAuthenticationService())
         viewModel.amountInBaht = 100
 
         XCTAssertFalse(

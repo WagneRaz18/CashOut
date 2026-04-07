@@ -54,11 +54,11 @@ final class ExpenseEntryViewModel {
     // MARK: - Init
 
     init(
-        expenseRepository: ExpenseRepositoryProtocol = ExpenseRepository(),
-        categoryRepository: CategoryRepositoryProtocol = CategoryRepository(),
-        authService: AuthenticationServiceProtocol = AuthenticationService(),
+        expenseRepository: ExpenseRepositoryProtocol = ExpenseRepository.shared,
+        categoryRepository: CategoryRepositoryProtocol = CategoryRepository.shared,
+        authService: AuthenticationServiceProtocol = AuthenticationService.shared,
         userDefaults: UserDefaults = .standard,
-        hapticService: HapticServiceProtocol = HapticService()
+        hapticService: HapticServiceProtocol = HapticService.shared
     ) {
         self.expenseRepository = expenseRepository
         self.categoryRepository = categoryRepository

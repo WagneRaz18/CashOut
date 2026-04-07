@@ -9,6 +9,8 @@ enum RepositoryError: Error {
 
 @MainActor
 final class ExpenseRepository: ExpenseRepositoryProtocol {
+    static let shared = ExpenseRepository()
+
     private let persistence: PersistenceController
     private let cloudSharingService: CloudSharingServiceProtocol?
 

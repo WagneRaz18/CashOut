@@ -45,12 +45,12 @@ final class FeedViewModel {
     // MARK: - Init
 
     init(
-        repository: ExpenseRepositoryProtocol = ExpenseRepository(),
-        categoryRepository: CategoryRepositoryProtocol = CategoryRepository(),
-        authService: AuthenticationServiceProtocol = AuthenticationService(),
+        repository: ExpenseRepositoryProtocol = ExpenseRepository.shared,
+        categoryRepository: CategoryRepositoryProtocol = CategoryRepository.shared,
+        authService: AuthenticationServiceProtocol = AuthenticationService.shared,
         cloudSharingService: CloudSharingServiceProtocol = CloudSharingService.shared,
         syncMonitorService: SyncMonitorServiceProtocol = SyncMonitorService.shared,
-        hapticService: HapticServiceProtocol = HapticService()
+        hapticService: HapticServiceProtocol = HapticService.shared
     ) {
         self.repository = repository
         self.categoryRepository = categoryRepository
@@ -59,10 +59,6 @@ final class FeedViewModel {
         self.syncMonitorService = syncMonitorService
         self.hapticService = hapticService
 
-        self.syncMonitorService.onSyncStatusChanged.append { [weak self] newStatus in
-            logger.info("Sync status changed: \(String(describing: newStatus))")
-            self?.syncStatus = newStatus
-        }
         self.syncStatus = syncMonitorService.syncStatus
         logger.debug("FeedViewModel.init — syncStatus: \(String(describing: self.syncStatus))")
     }
@@ -76,6 +72,11 @@ final class FeedViewModel {
         }
         logger.info("startObserving: setting up FRC observation")
         isObserving = true
+
+        syncMonitorService.onSyncStatusChanged.append { [weak self] newStatus in
+            logger.info("Sync status changed: \(String(describing: newStatus))")
+            self?.syncStatus = newStatus
+        }
 
         repository.onExpensesChanged = { [weak self] expenses in
             logger.info("onExpensesChanged: received \(expenses.count) expenses")

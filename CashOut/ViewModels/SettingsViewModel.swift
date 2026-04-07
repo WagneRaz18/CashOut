@@ -35,8 +35,8 @@ final class SettingsViewModel {
     init(
         cloudSharingService: CloudSharingServiceProtocol = CloudSharingService.shared,
         persistenceController: PersistenceController = .shared,
-        categoryRepository: CategoryRepositoryProtocol = CategoryRepository(),
-        hapticService: HapticServiceProtocol = HapticService()
+        categoryRepository: CategoryRepositoryProtocol = CategoryRepository.shared,
+        hapticService: HapticServiceProtocol = HapticService.shared
     ) {
         self.cloudSharingService = cloudSharingService
         self.persistenceController = persistenceController

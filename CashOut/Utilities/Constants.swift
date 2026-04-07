@@ -17,6 +17,19 @@ enum DefaultCategory: CaseIterable {
     case shopping
     case other
 
+    /// Deterministic UUID per category — both devices seed with the same ID,
+    /// allowing CloudKit to merge rather than duplicate.
+    var stableID: UUID {
+        switch self {
+        case .foodAndDrink:   UUID(uuidString: "A1B2C3D4-1111-1111-1111-000000000001")!
+        case .transport:      UUID(uuidString: "A1B2C3D4-1111-1111-1111-000000000002")!
+        case .entertainment:  UUID(uuidString: "A1B2C3D4-1111-1111-1111-000000000003")!
+        case .household:      UUID(uuidString: "A1B2C3D4-1111-1111-1111-000000000004")!
+        case .shopping:       UUID(uuidString: "A1B2C3D4-1111-1111-1111-000000000005")!
+        case .other:          UUID(uuidString: "A1B2C3D4-1111-1111-1111-000000000006")!
+        }
+    }
+
     var name: String {
         switch self {
         case .foodAndDrink: "Food & Drink"

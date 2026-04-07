@@ -31,6 +31,9 @@
 - **2026-04-04**: Owner and participant use different save paths for shared zone routing: Owner calls `container.share(objects, to: existingShare)` AFTER `context.save()` (post-save). Participant calls `context.assign(object, to: sharedStore)` BEFORE `context.save()` (pre-save). Both result in the expense in the shared zone. Edits/deletes need no sharing calls — `NSPersistentCloudKitContainer` handles them automatically.
 - **2026-04-04**: `persistUpdatedShare` must route to the correct store based on `isShareOwner` — owner's share is in `privatePersistentStore`, partner's share is in `sharedPersistentStore`. Hardcoding `privatePersistentStore` silently fails on the partner's device.
 
+- **2026-04-07**: Seeded reference data (default categories) must use deterministic stable UUIDs — not `UUID()` — per enum case. Two CloudKit-synced devices seeding independently with random UUIDs create non-mergeable duplicates that persist permanently. Define `var stableID: UUID` with hardcoded UUID literals. Pair with a unique constraint on `id` + `NSMergeByPropertyStoreTrumpMergePolicy` so Core Data auto-resolves duplicates during CloudKit import.
+- **2026-04-07**: Client-side dedup in repository fetch methods must scope to `isDefault` records only — deduplicating custom categories by name silently hides user-created records. Add secondary sort on `id` (deterministic tiebreaker within same `sortOrder`) to ensure consistent dedup winner across devices.
+
 ## Conflict Resolution (Last-Write-Wins)
 - NSPersistentCloudKitContainer uses CKRecord change tags for framework-level LWW — NOT any custom `modifiedAt` field.
 - Custom `modifiedAt` field is for display/sorting only — it does not participate in conflict arbitration.

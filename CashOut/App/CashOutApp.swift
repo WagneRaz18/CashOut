@@ -40,7 +40,7 @@ struct CashOutApp: App {
                 async let splash: Void = Task.sleep(nanoseconds: Self.splashDuration)
                 async let seeding: Void = {
                     do {
-                        try await CategoryRepository().seedDefaultCategoriesIfNeeded()
+                        try await CategoryRepository.shared.seedDefaultCategoriesIfNeeded()
                         logger.info("Category seeding completed")
                     } catch {
                         logger.error("Category seeding failed: \(error.localizedDescription)")

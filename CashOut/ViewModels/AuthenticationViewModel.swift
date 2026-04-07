@@ -31,9 +31,9 @@ final class AuthenticationViewModel {
 
     // MARK: - Init
 
-    init(authService: AuthenticationServiceProtocol = AuthenticationService()) {
+    init(authService: AuthenticationServiceProtocol = AuthenticationService.shared) {
         self.authService = authService
-        self.authService.onSessionInvalidated = { [weak self] in
+        self.authService.onSessionInvalidated.append { [weak self] in
             self?.handleSessionInvalidated()
         }
         logger.debug("AuthenticationViewModel.init")

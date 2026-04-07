@@ -86,7 +86,7 @@ final class AuthenticationServiceTests: XCTestCase {
     func testCKAccountChangedCallsSessionInvalidated() async throws {
         let service = AuthenticationService()
         var callbackCalled = false
-        service.onSessionInvalidated = { callbackCalled = true }
+        service.onSessionInvalidated.append { callbackCalled = true }
 
         // Yield to let observer Tasks start their async iteration
         await Task.yield()
@@ -101,7 +101,7 @@ final class AuthenticationServiceTests: XCTestCase {
     func testCredentialRevokedCallsSessionInvalidated() async throws {
         let service = AuthenticationService()
         var callbackCalled = false
-        service.onSessionInvalidated = { callbackCalled = true }
+        service.onSessionInvalidated.append { callbackCalled = true }
 
         // Yield to let observer Tasks start their async iteration
         await Task.yield()

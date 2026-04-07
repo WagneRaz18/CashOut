@@ -17,7 +17,7 @@ struct FilteredFeedView: View {
         period: DateInterval,
         categories: [CategoryData],
         currentUserID: String?,
-        repository: ExpenseRepositoryProtocol = ExpenseRepository()
+        repository: ExpenseRepositoryProtocol = ExpenseRepository.shared
     ) {
         self.categoryID = categoryID
         self.categoryName = categoryName

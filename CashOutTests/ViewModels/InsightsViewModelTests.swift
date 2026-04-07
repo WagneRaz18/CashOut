@@ -28,6 +28,11 @@ final class InsightsViewModelTests: XCTestCase {
             syncMonitorService: syncMonitor
         )
 
+        // Register sync status callback (normally done in subscribeToRemoteChanges)
+        syncMonitor.onSyncStatusChanged.append { [weak viewModel] newStatus in
+            viewModel?.syncStatus = newStatus
+        }
+
         return (viewModel, expenseRepo, categoryRepo, syncMonitor)
     }
 

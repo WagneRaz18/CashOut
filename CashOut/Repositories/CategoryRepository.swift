@@ -5,6 +5,8 @@ private let logger = Logger(subsystem: "com.wagneraz.CashOut", category: "Catego
 
 @MainActor
 final class CategoryRepository: CategoryRepositoryProtocol {
+    static let shared = CategoryRepository()
+
     private let persistence: PersistenceController
     private let cloudSharingService: CloudSharingServiceProtocol?
 
@@ -18,12 +20,24 @@ final class CategoryRepository: CategoryRepositoryProtocol {
 
     func fetchCategories() async throws -> [CategoryData] {
         let request: NSFetchRequest<Category> = Category.fetchRequest()
-        request.sortDescriptors = [NSSortDescriptor(key: "sortOrder", ascending: true)]
+        request.sortDescriptors = [
+            NSSortDescriptor(key: "sortOrder", ascending: true),
+            NSSortDescriptor(key: "id", ascending: true),
+        ]
 
         let results = try persistence.container.viewContext.fetch(request)
-        logger.debug("fetchCategories: found \(results.count) categories")
-        return results.map { category in
-            CategoryData(
+        logger.debug("fetchCategories: found \(results.count) categories (pre-dedup)")
+
+        // Deduplicate default categories by name — CloudKit sync across
+        // private/shared stores can create duplicates when both devices seed.
+        // Custom categories are never deduplicated (user may reuse names).
+        var seenDefaultNames = Set<String>()
+        let unique = results.compactMap { category -> CategoryData? in
+            if category.isDefault {
+                let name = category.wrappedName
+                guard seenDefaultNames.insert(name).inserted else { return nil }
+            }
+            return CategoryData(
                 id: category.wrappedID,
                 name: category.wrappedName,
                 iconName: category.wrappedIconName,
@@ -32,6 +46,8 @@ final class CategoryRepository: CategoryRepositoryProtocol {
                 sortOrder: category.sortOrder
             )
         }
+        logger.debug("fetchCategories: returning \(unique.count) categories (post-dedup)")
+        return unique
     }
 
     func saveCategory(_ data: CategoryData) async throws {
@@ -89,7 +105,7 @@ final class CategoryRepository: CategoryRepositoryProtocol {
         logger.info("seedDefaultCategoriesIfNeeded: seeding \(DefaultCategory.allCases.count) default categories")
         for defaultCategory in DefaultCategory.allCases {
             let category = Category(context: context)
-            category.id = UUID()
+            category.id = defaultCategory.stableID
             category.name = defaultCategory.name
             category.iconName = defaultCategory.iconName
             category.colorName = defaultCategory.colorName

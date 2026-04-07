@@ -13,7 +13,7 @@ private let logger = Logger(subsystem: "com.wagneraz.CashOut", category: "Authen
 @MainActor
 protocol AuthenticationServiceProtocol {
     var currentUserID: String? { get }
-    var onSessionInvalidated: (() -> Void)? { get set }
+    var onSessionInvalidated: [@MainActor @Sendable () -> Void] { get set }
     func checkCredentialState() async -> Bool
     func signIn() async throws
     func saveCredentials(userID: String, fullName: PersonNameComponents?, email: String?)
@@ -48,12 +48,14 @@ enum AuthenticationError: Error, LocalizedError {
 @Observable
 final class AuthenticationService: NSObject, AuthenticationServiceProtocol {
 
+    static let shared = AuthenticationService()
+
     // MARK: - Public State
 
     private(set) var currentUserID: String?
 
     @ObservationIgnored
-    var onSessionInvalidated: (() -> Void)?
+    var onSessionInvalidated: [@MainActor @Sendable () -> Void] = []
 
     // MARK: - Private State
 
@@ -211,7 +213,7 @@ final class AuthenticationService: NSObject, AuthenticationServiceProtocol {
                 guard !Task.isCancelled else { break }
                 logger.info("Credential revoked notification received — signing out")
                 self?.signOut()
-                self?.onSessionInvalidated?()
+                self?.onSessionInvalidated.forEach { $0() }
             }
         }
 
@@ -226,7 +228,7 @@ final class AuthenticationService: NSObject, AuthenticationServiceProtocol {
                 self?.clearKeychain()
                 self?.clearProfileKeychain()
                 self?.currentUserID = nil
-                self?.onSessionInvalidated?()
+                self?.onSessionInvalidated.forEach { $0() }
                 // NOTE: PersistenceController independently observes CKAccountChanged
                 // for persistence-side handling. No ordering guarantee between the two.
             }
