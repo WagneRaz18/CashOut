@@ -7,7 +7,7 @@ final class EditExpenseViewModel {
 
     // MARK: - Observable Properties
 
-    var amountInCents: Int64 = 0
+    var amountInBaht: Int64 = 0
     var categories: [CategoryData] = []
     var selectedCategoryID: UUID?
     var noteText: String = ""
@@ -15,7 +15,12 @@ final class EditExpenseViewModel {
     var saveError: String?
 
     var isAmountZero: Bool {
-        amountInCents == 0
+        amountInBaht == 0
+    }
+
+    /// Whole Baht converted to satang for display and persistence.
+    var amountInSatang: Int64 {
+        amountInBaht * 100
     }
 
     // MARK: - Dependencies
@@ -50,8 +55,8 @@ final class EditExpenseViewModel {
         self.categoryRepository = categoryRepository
         self.hapticService = hapticService
 
-        // Pre-fill from existing expense
-        self.amountInCents = expense.amount
+        // Pre-fill from existing expense (convert satang → whole Baht)
+        self.amountInBaht = expense.amount / 100
         self.selectedCategoryID = expense.categoryID
         self.noteText = expense.note ?? ""
     }
@@ -59,19 +64,19 @@ final class EditExpenseViewModel {
     // MARK: - Numpad Actions
 
     func appendDigit(_ digit: String) {
-        guard amountInCents < Self.maxBeforeAppend else { return }
+        guard amountInBaht < Self.maxBeforeAppend else { return }
         guard let value = Int64(digit) else { return }
         hapticService.trigger(.numpadKey)
-        amountInCents = amountInCents * 10 + value
+        amountInBaht = amountInBaht * 10 + value
     }
 
     func deleteLastDigit() {
         hapticService.trigger(.numpadKey)
-        amountInCents = amountInCents / 10
+        amountInBaht = amountInBaht / 10
     }
 
     func resetAmount() {
-        amountInCents = 0
+        amountInBaht = 0
     }
 
     // MARK: - Category Actions
@@ -102,12 +107,12 @@ final class EditExpenseViewModel {
         isSaving = true
         defer { isSaving = false }
 
-        guard amountInCents > 0 else { return }
+        guard amountInBaht > 0 else { return }
         guard let categoryID = selectedCategoryID else { return }
 
         let updatedExpense = ExpenseData(
             id: originalExpense.id,
-            amount: amountInCents,
+            amount: amountInSatang,
             note: { let t = noteText.trimmingCharacters(in: .whitespacesAndNewlines); return t.isEmpty ? nil : t }(),
             categoryID: categoryID,
             createdByUserID: originalExpense.createdByUserID,

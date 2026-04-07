@@ -15,8 +15,8 @@ final class ExpenseEntryViewModelTests: XCTestCase {
         viewModel.appendDigit("0")
 
         XCTAssertEqual(
-            viewModel.amountInCents, 1250,
-            "Typing '1250' should produce 1250 satang (฿12.50)"
+            viewModel.amountInBaht, 1250,
+            "Typing '1250' should produce 1250 Baht (฿1,250)"
         )
     }
 
@@ -24,13 +24,13 @@ final class ExpenseEntryViewModelTests: XCTestCase {
 
     func testDeleteLastDigitRemovesRightmostDigit() {
         let viewModel = ExpenseEntryViewModel()
-        viewModel.amountInCents = 1250
+        viewModel.amountInBaht = 1250
 
         viewModel.deleteLastDigit()
 
         XCTAssertEqual(
-            viewModel.amountInCents, 125,
-            "Deleting from 1250 should produce 125 satang (฿1.25)"
+            viewModel.amountInBaht, 125,
+            "Deleting from 1250 should produce 125 Baht (฿125)"
         )
     }
 
@@ -40,7 +40,7 @@ final class ExpenseEntryViewModelTests: XCTestCase {
         viewModel.deleteLastDigit()
 
         XCTAssertEqual(
-            viewModel.amountInCents, 0,
+            viewModel.amountInBaht, 0,
             "Deleting from 0 should remain 0 (no crash)"
         )
     }
@@ -49,25 +49,25 @@ final class ExpenseEntryViewModelTests: XCTestCase {
 
     func testAppendDigitEnforcesCap() {
         let viewModel = ExpenseEntryViewModel()
-        viewModel.amountInCents = 1_000_000
+        viewModel.amountInBaht = 1_000_000
 
         viewModel.appendDigit("5")
 
         XCTAssertEqual(
-            viewModel.amountInCents, 1_000_000,
-            "Should not append when amountInCents >= 1_000_000 (cap at ฿99,999.99)"
+            viewModel.amountInBaht, 1_000_000,
+            "Should not append when amountInBaht >= 1_000_000 (cap at ฿999,999)"
         )
     }
 
     func testAppendDigitAllowsLastValueBeforeCap() {
         let viewModel = ExpenseEntryViewModel()
-        viewModel.amountInCents = 999_999
+        viewModel.amountInBaht = 999_999
 
         viewModel.appendDigit("9")
 
         XCTAssertEqual(
-            viewModel.amountInCents, 9_999_999,
-            "999_999 is the last value that allows append; 999_999 * 10 + 9 = 9_999_999 (฿99,999.99)"
+            viewModel.amountInBaht, 9_999_999,
+            "999_999 is the last value that allows append; 999_999 * 10 + 9 = 9_999_999 (฿9,999,999)"
         )
     }
 
@@ -75,13 +75,13 @@ final class ExpenseEntryViewModelTests: XCTestCase {
 
     func testResetAmountSetsToZero() {
         let viewModel = ExpenseEntryViewModel()
-        viewModel.amountInCents = 5000
+        viewModel.amountInBaht = 5000
 
         viewModel.resetAmount()
 
         XCTAssertEqual(
-            viewModel.amountInCents, 0,
-            "Reset should set amountInCents to 0"
+            viewModel.amountInBaht, 0,
+            "Reset should set amount to 0"
         )
     }
 
@@ -92,17 +92,17 @@ final class ExpenseEntryViewModelTests: XCTestCase {
 
         XCTAssertTrue(
             viewModel.isAmountZero,
-            "isAmountZero should be true when amountInCents is 0"
+            "isAmountZero should be true when amount is 0"
         )
     }
 
     func testIsAmountZeroWhenNonZero() {
         let viewModel = ExpenseEntryViewModel()
-        viewModel.amountInCents = 100
+        viewModel.amountInBaht = 100
 
         XCTAssertFalse(
             viewModel.isAmountZero,
-            "isAmountZero should be false when amountInCents > 0"
+            "isAmountZero should be false when amount > 0"
         )
     }
 
@@ -148,7 +148,7 @@ final class ExpenseEntryViewModelTests: XCTestCase {
 
     func testSaveExpenseCallsRepositoryWithCorrectData() async throws {
         let (viewModel, expenseRepo, _, _, _, _) = makeSUT()
-        viewModel.amountInCents = 1250
+        viewModel.amountInBaht = 1250
         viewModel.selectedCategoryID = UUID()
         viewModel.noteText = "Lunch"
 
@@ -156,7 +156,7 @@ final class ExpenseEntryViewModelTests: XCTestCase {
 
         XCTAssertTrue(expenseRepo.saveExpenseCalled, "Should call repository saveExpense")
         let saved = try XCTUnwrap(expenseRepo.lastSavedExpense)
-        XCTAssertEqual(saved.amount, 1250, "Amount should be 1250 satang")
+        XCTAssertEqual(saved.amount, 125_000, "Amount should be 1250 Baht = 125,000 satang")
         XCTAssertEqual(saved.categoryID, viewModel.selectedCategoryID)
         XCTAssertEqual(saved.createdByUserID, "test-user")
         XCTAssertEqual(saved.note, "Lunch")
@@ -164,17 +164,17 @@ final class ExpenseEntryViewModelTests: XCTestCase {
 
     func testSaveExpenseResetsAmountToZero() async throws {
         let (viewModel, _, _, _, _, _) = makeSUT()
-        viewModel.amountInCents = 5000
+        viewModel.amountInBaht = 5000
         viewModel.selectedCategoryID = UUID()
 
         try await viewModel.saveExpense()
 
-        XCTAssertEqual(viewModel.amountInCents, 0, "Amount should reset to 0 after save")
+        XCTAssertEqual(viewModel.amountInBaht, 0, "Amount should reset to 0 after save")
     }
 
     func testSaveExpenseClearsNoteText() async throws {
         let (viewModel, _, _, _, _, _) = makeSUT()
-        viewModel.amountInCents = 1000
+        viewModel.amountInBaht = 1000
         viewModel.selectedCategoryID = UUID()
         viewModel.noteText = "Test note"
 
@@ -185,7 +185,7 @@ final class ExpenseEntryViewModelTests: XCTestCase {
 
     func testSaveExpenseDoesNotSaveWhenAmountIsZero() async throws {
         let (viewModel, expenseRepo, _, _, _, _) = makeSUT()
-        viewModel.amountInCents = 0
+        viewModel.amountInBaht = 0
         viewModel.selectedCategoryID = UUID()
 
         try await viewModel.saveExpense()
@@ -195,7 +195,7 @@ final class ExpenseEntryViewModelTests: XCTestCase {
 
     func testSaveExpenseDoesNotSaveWhenCategoryIsNil() async throws {
         let (viewModel, expenseRepo, _, _, _, _) = makeSUT()
-        viewModel.amountInCents = 1000
+        viewModel.amountInBaht = 1000
         viewModel.selectedCategoryID = nil
 
         try await viewModel.saveExpense()
@@ -236,7 +236,7 @@ final class ExpenseEntryViewModelTests: XCTestCase {
     func testSaveExpensePersistsMRUToUserDefaults() async throws {
         let categoryID = UUID()
         let (viewModel, _, _, _, defaults, _) = makeSUT()
-        viewModel.amountInCents = 1000
+        viewModel.amountInBaht = 1000
         viewModel.selectedCategoryID = categoryID
 
         try await viewModel.saveExpense()
@@ -260,7 +260,7 @@ final class ExpenseEntryViewModelTests: XCTestCase {
 
     func testDoubleTapGuardPreventsSecondSave() async throws {
         let (viewModel, expenseRepo, _, _, _, _) = makeSUT()
-        viewModel.amountInCents = 1000
+        viewModel.amountInBaht = 1000
         viewModel.selectedCategoryID = UUID()
         viewModel.isSaving = true
 
@@ -274,7 +274,7 @@ final class ExpenseEntryViewModelTests: XCTestCase {
 
     func testSaveExpenseResetsIsSavingOnThrow() async {
         let (viewModel, _, _, _, _, hapticService) = makeSUT(expenseRepoShouldThrow: true)
-        viewModel.amountInCents = 1000
+        viewModel.amountInBaht = 1000
         viewModel.selectedCategoryID = UUID()
 
         do {
@@ -290,7 +290,7 @@ final class ExpenseEntryViewModelTests: XCTestCase {
 
     func testSaveExpenseThrowsWhenNotAuthenticated() async {
         let (viewModel, expenseRepo, _, _, _, _) = makeSUT(currentUserID: nil)
-        viewModel.amountInCents = 1000
+        viewModel.amountInBaht = 1000
         viewModel.selectedCategoryID = UUID()
 
         do {
@@ -334,7 +334,7 @@ final class ExpenseEntryViewModelTests: XCTestCase {
 
     func testSaveExpenseTriggersSaveTapHaptic() async throws {
         let (viewModel, _, _, _, _, hapticService) = makeSUT()
-        viewModel.amountInCents = 1250
+        viewModel.amountInBaht = 1250
         viewModel.selectedCategoryID = UUID()
 
         try await viewModel.saveExpense()
@@ -345,7 +345,7 @@ final class ExpenseEntryViewModelTests: XCTestCase {
 
     func testSaveExpenseWithZeroAmountDoesNotTriggerSaveTapHaptic() async throws {
         let (viewModel, _, _, _, _, hapticService) = makeSUT()
-        viewModel.amountInCents = 0
+        viewModel.amountInBaht = 0
         viewModel.selectedCategoryID = UUID()
 
         try await viewModel.saveExpense()
@@ -355,7 +355,7 @@ final class ExpenseEntryViewModelTests: XCTestCase {
 
     func testSaveExpenseWithNilCategoryDoesNotTriggerSaveTapHaptic() async throws {
         let (viewModel, _, _, _, _, hapticService) = makeSUT()
-        viewModel.amountInCents = 1000
+        viewModel.amountInBaht = 1000
         viewModel.selectedCategoryID = nil
 
         try await viewModel.saveExpense()
@@ -365,11 +365,11 @@ final class ExpenseEntryViewModelTests: XCTestCase {
 
     func testAppendDigitAtMaxOverflowDoesNotTriggerHaptic() {
         let (viewModel, _, _, _, _, hapticService) = makeSUT()
-        viewModel.amountInCents = 1_000_000
+        viewModel.amountInBaht = 1_000_000
 
         viewModel.appendDigit("5")
 
-        XCTAssertEqual(viewModel.amountInCents, 1_000_000, "Amount should not change at cap")
+        XCTAssertEqual(viewModel.amountInBaht, 1_000_000, "Amount should not change at cap")
         XCTAssertEqual(hapticService.triggeredEvents.count, 0, "Rejected input should not trigger haptic")
     }
 }

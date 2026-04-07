@@ -13,7 +13,7 @@ struct CashOutApp: App {
                     // Invisible placeholder while checking cached credentials.
                     // getCredentialState is a local Keychain + Apple ID cache check (not network),
                     // so this is near-instant — no loading spinner needed (NFR1).
-                    Color.clear
+                    Surface.base.ignoresSafeArea()
                 } else if authViewModel.isAuthenticated {
                     ContentView()
                 } else {

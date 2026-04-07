@@ -22,10 +22,14 @@ struct ContentView: View {
             }
         }
         .tabBarMinimizeBehavior(.onScrollDown)
-        .tabViewBottomAccessory {
+        .overlay {
             if selectedTab != 0 {
-                FloatingAddButton {
-                    showingAddExpenseSheet = true
+                VStack {
+                    Spacer()
+                    FloatingAddButton {
+                        showingAddExpenseSheet = true
+                    }
+                    .padding(.bottom, Spacing.lg)
                 }
             }
         }

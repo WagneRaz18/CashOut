@@ -59,7 +59,7 @@ final class EditExpenseViewModelTests: XCTestCase {
         let expense = Self.makeExpense(amount: 45600)
         let (viewModel, _, _, _) = makeSUT(expense: expense)
 
-        XCTAssertEqual(viewModel.amountInCents, 45600, "Should pre-fill amountInCents from expense")
+        XCTAssertEqual(viewModel.amountInBaht, 456, "Should pre-fill amountInBaht from expense (45600 satang = 456 Baht)")
     }
 
     func testInitPrefillsSelectedCategoryIDFromExpense() {
@@ -135,12 +135,12 @@ final class EditExpenseViewModelTests: XCTestCase {
     func testSaveExpenseUsesCurrentAmount() async throws {
         let expense = Self.makeExpense(amount: 10000)
         let (viewModel, expenseRepo, _, _) = makeSUT(expense: expense)
-        viewModel.amountInCents = 25000
+        viewModel.amountInBaht = 250
 
         try await viewModel.saveExpense()
 
         let saved = try XCTUnwrap(expenseRepo.lastSavedExpense)
-        XCTAssertEqual(saved.amount, 25000, "Should use current amountInCents, not original")
+        XCTAssertEqual(saved.amount, 25000, "Should convert 250 Baht to 25000 satang on save")
     }
 
     func testSaveExpenseUsesCurrentCategoryID() async throws {
@@ -195,7 +195,7 @@ final class EditExpenseViewModelTests: XCTestCase {
     func testSaveExpenseReturnsSilentlyWhenAmountIsZero() async throws {
         let expense = Self.makeExpense(amount: 0)
         let (viewModel, expenseRepo, _, _) = makeSUT(expense: expense)
-        viewModel.amountInCents = 0
+        viewModel.amountInBaht = 0
 
         try await viewModel.saveExpense()
 
@@ -229,7 +229,7 @@ final class EditExpenseViewModelTests: XCTestCase {
 
         viewModel.appendDigit("5")
 
-        XCTAssertEqual(viewModel.amountInCents, 123005, "Appending '5' to 12300 should produce 123005")
+        XCTAssertEqual(viewModel.amountInBaht, 1235, "Appending '5' to 123 Baht should produce 1235 Baht")
     }
 
     func testResetAmountClearsToZero() {
@@ -238,7 +238,7 @@ final class EditExpenseViewModelTests: XCTestCase {
 
         viewModel.resetAmount()
 
-        XCTAssertEqual(viewModel.amountInCents, 0, "resetAmount should set to zero")
+        XCTAssertEqual(viewModel.amountInBaht, 0, "resetAmount should set amount to zero")
     }
 
     // MARK: - loadCategories Tests

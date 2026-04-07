@@ -18,7 +18,7 @@ struct EntryView: View {
 
             Spacer(minLength: 0)
 
-            AmountDisplayView(amount: viewModel.amountInCents)
+            AmountDisplayView(amount: viewModel.amountInSatang)
                 .padding(.horizontal, Spacing.md)
 
             Button {
@@ -72,7 +72,7 @@ struct EntryView: View {
             .padding(.horizontal, Spacing.md)
             .padding(.bottom, Spacing.md)
         }
-        .background(Surface.base)
+        .background(Surface.base.ignoresSafeArea())
         .task {
             await viewModel.loadCategories()
         }

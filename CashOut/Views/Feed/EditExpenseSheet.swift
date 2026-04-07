@@ -26,7 +26,7 @@ struct EditExpenseSheet: View {
                     .padding(.top, Spacing.xs)
             }
 
-            AmountDisplayView(amount: viewModel.amountInCents)
+            AmountDisplayView(amount: viewModel.amountInSatang)
                 .padding(.top, Spacing.lg)
                 .padding(.horizontal, Spacing.md)
 

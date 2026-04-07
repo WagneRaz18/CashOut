@@ -4,42 +4,42 @@ import XCTest
 @MainActor
 final class Int64CurrencyTests: XCTestCase {
     func testDisplayAmountFormatsTypicalValue() {
-        let amount: Int64 = 1250
+        let amount: Int64 = 5000
         XCTAssertTrue(
-            amount.displayAmount.contains("12.50"),
-            "Expected '12.50' in '\(amount.displayAmount)'"
+            amount.displayAmount.contains("50"),
+            "Expected '50' in '\(amount.displayAmount)' (5000 satang = 50 Baht)"
         )
     }
 
     func testDisplayAmountFormatsZero() {
         let amount: Int64 = 0
         XCTAssertTrue(
-            amount.displayAmount.contains("0.00"),
-            "Expected '0.00' in '\(amount.displayAmount)'"
+            amount.displayAmount.contains("0"),
+            "Expected '0' in '\(amount.displayAmount)'"
         )
     }
 
-    func testDisplayAmountFormatsSatangOnly() {
-        let amount: Int64 = 99
-        XCTAssertTrue(
-            amount.displayAmount.contains("0.99"),
-            "Expected '0.99' in '\(amount.displayAmount)'"
+    func testDisplayAmountOmitsDecimalPlaces() {
+        let amount: Int64 = 1250
+        XCTAssertFalse(
+            amount.displayAmount.contains("."),
+            "displayAmount should not contain decimal point, got '\(amount.displayAmount)'"
         )
     }
 
     func testDisplayAmountFormatsLargeValue() {
-        let amount: Int64 = 100000
+        let amount: Int64 = 100_000
         XCTAssertTrue(
-            amount.displayAmount.contains("1,000.00") || amount.displayAmount.contains("1 000.00"),
-            "Expected thousands-formatted '1000.00' in '\(amount.displayAmount)'"
+            amount.displayAmount.contains("1,000") || amount.displayAmount.contains("1 000"),
+            "Expected thousands-formatted '1,000' in '\(amount.displayAmount)' (100000 satang = 1000 Baht)"
         )
     }
 
-    func testDisplayAmountFormatsSingleSatang() {
-        let amount: Int64 = 1
+    func testDisplayAmountRoundsSubBahtToZero() {
+        let amount: Int64 = 49
         XCTAssertTrue(
-            amount.displayAmount.contains("0.01"),
-            "Expected '0.01' in '\(amount.displayAmount)'"
+            amount.displayAmount.contains("0"),
+            "Expected '0' in '\(amount.displayAmount)' (49 satang < 1 Baht)"
         )
     }
 
