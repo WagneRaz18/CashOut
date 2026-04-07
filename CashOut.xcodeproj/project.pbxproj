@@ -23,6 +23,7 @@
 		A1B2C3D4E5F60718A1B2C3D4 /* AuthenticationService.swift in Sources */ = {isa = PBXBuildFile; fileRef = A1B2C3D4E5F60718A1B2C3D5 /* AuthenticationService.swift */; };
 		A1B2C3D4E5F60718A1B2C3D6 /* AuthenticationViewModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = A1B2C3D4E5F60718A1B2C3D7 /* AuthenticationViewModel.swift */; };
 		A1B2C3D4E5F60718A1B2C3D8 /* SignInView.swift in Sources */ = {isa = PBXBuildFile; fileRef = A1B2C3D4E5F60718A1B2C3D9 /* SignInView.swift */; };
+		SP1A2S3H4V5I60002SP1A2S /* SplashView.swift in Sources */ = {isa = PBXBuildFile; fileRef = SP1A2S3H4V5I60001SP1A2S /* SplashView.swift */; };
 		A1B2C3D4E5F60718A1B2C3DA /* MockAuthenticationService.swift in Sources */ = {isa = PBXBuildFile; fileRef = A1B2C3D4E5F60718A1B2C3DB /* MockAuthenticationService.swift */; };
 		A1B2C3D4E5F60718A1B2C3DC /* AuthenticationServiceTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = A1B2C3D4E5F60718A1B2C3DD /* AuthenticationServiceTests.swift */; };
 		A1B2C3D4E5F60718A1B2C3DE /* AuthenticationViewModelTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = A1B2C3D4E5F60718A1B2C3DF /* AuthenticationViewModelTests.swift */; };
@@ -84,6 +85,7 @@
 		Q1R2S3T4U5V60H01Q1R2S3T4 /* CategoryRowView.swift in Sources */ = {isa = PBXBuildFile; fileRef = R1S2T3U4V5W60I01R1S2T3U4 /* CategoryRowView.swift */; };
 		S2T3U4V5W6X70J01S2T3U4V5 /* CategoryManagementView.swift in Sources */ = {isa = PBXBuildFile; fileRef = T2U3V4W5X6Y70K01T2U3V4W5 /* CategoryManagementView.swift */; };
 		U3V4W5X6Y7Z80K01U3V4W5X6 /* DesignTokens.swift in Sources */ = {isa = PBXBuildFile; fileRef = U3V4W5X6Y7Z80K02U3V4W5X6 /* DesignTokens.swift */; };
+		V4W5X6Y7Z8A90L11V4W5X6Y7 /* SplashView.swift in Sources */ = {isa = PBXBuildFile; fileRef = V4W5X6Y7Z8A90L01V4W5X6Y7 /* SplashView.swift */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXContainerItemProxy section */
@@ -123,6 +125,7 @@
 		A1B2C3D4E5F60718A1B2C3D5 /* AuthenticationService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AuthenticationService.swift; sourceTree = "<group>"; };
 		A1B2C3D4E5F60718A1B2C3D7 /* AuthenticationViewModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AuthenticationViewModel.swift; sourceTree = "<group>"; };
 		A1B2C3D4E5F60718A1B2C3D9 /* SignInView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SignInView.swift; sourceTree = "<group>"; };
+		SP1A2S3H4V5I60001SP1A2S /* SplashView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SplashView.swift; sourceTree = "<group>"; };
 		A1B2C3D4E5F60718A1B2C3DB /* MockAuthenticationService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MockAuthenticationService.swift; sourceTree = "<group>"; };
 		A1B2C3D4E5F60718A1B2C3DD /* AuthenticationServiceTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AuthenticationServiceTests.swift; sourceTree = "<group>"; };
 		A1B2C3D4E5F60718A1B2C3DF /* AuthenticationViewModelTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AuthenticationViewModelTests.swift; sourceTree = "<group>"; };
@@ -186,6 +189,7 @@
 		P1Q2R3S4T5U60G01P1Q2R3S4 /* SyncMonitorServiceTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SyncMonitorServiceTests.swift; sourceTree = "<group>"; };
 		R1S2T3U4V5W60I01R1S2T3U4 /* CategoryRowView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CategoryRowView.swift; sourceTree = "<group>"; };
 		T2U3V4W5X6Y70K01T2U3V4W5 /* CategoryManagementView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CategoryManagementView.swift; sourceTree = "<group>"; };
+		V4W5X6Y7Z8A90L01V4W5X6Y7 /* SplashView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SplashView.swift; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXGroup section */
@@ -283,6 +287,14 @@
 				A1B2C3D4E5F60718A1B2C3D9 /* SignInView.swift */,
 			);
 			path = Auth;
+			sourceTree = "<group>";
+		};
+		SP1A2S3H4V5I60003SP1A2S /* Splash */ = {
+			isa = PBXGroup;
+			children = (
+				SP1A2S3H4V5I60001SP1A2S /* SplashView.swift */,
+			);
+			path = Splash;
 			sourceTree = "<group>";
 		};
 		A1B2C3D4E5F60718A1B2C3E2 /* Services */ = {
@@ -438,6 +450,8 @@
 				B1C2D3E4F5061829B1C2D3E8 /* Feed */,
 				B1C2D3E4F5061829B1C2D3E9 /* Insights */,
 				1149CC34C7542A8F65EF42B0 /* Settings */,
+				SP1A2S3H4V5I60003SP1A2S /* Splash */,
+				V4W5X6Y7Z8A90L21V4W5X6Y7 /* Splash */,
 			);
 			path = Views;
 			sourceTree = "<group>";
@@ -459,6 +473,14 @@
 				N1O2P3Q4R5S60E01N1O2P3Q4 /* SyncStatusIndicator.swift */,
 			);
 			path = Components;
+			sourceTree = "<group>";
+		};
+		V4W5X6Y7Z8A90L21V4W5X6Y7 /* Splash */ = {
+			isa = PBXGroup;
+			children = (
+				V4W5X6Y7Z8A90L01V4W5X6Y7 /* SplashView.swift */,
+			);
+			path = Splash;
 			sourceTree = "<group>";
 		};
 /* End PBXGroup section */
@@ -618,6 +640,7 @@
 				B1C2D3E4F5061829B1C2D3E6 /* InsightsView.swift in Sources */,
 				308A95AE3C8416E2C787B499 /* PersistenceController.swift in Sources */,
 				A1B2C3D4E5F60718A1B2C3D8 /* SignInView.swift in Sources */,
+				SP1A2S3H4V5I60002SP1A2S /* SplashView.swift in Sources */,
 				C1D2E3F4A5B60011C1D2E3F4 /* CategoryData.swift in Sources */,
 				C1D2E3F4A5B60012C1D2E3F4 /* ExpenseData.swift in Sources */,
 				C1D2E3F4A5B60013C1D2E3F4 /* Color+CategoryTokens.swift in Sources */,
@@ -656,6 +679,7 @@
 				O1P2Q3R4S5T60F11O1P2Q3R4 /* ICloudBannerView.swift in Sources */,
 				Q1R2S3T4U5V60H01Q1R2S3T4 /* CategoryRowView.swift in Sources */,
 				S2T3U4V5W6X70J01S2T3U4V5 /* CategoryManagementView.swift in Sources */,
+				V4W5X6Y7Z8A90L11V4W5X6Y7 /* SplashView.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
