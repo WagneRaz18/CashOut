@@ -113,7 +113,12 @@ final class CategoryRepository: CategoryRepositoryProtocol {
             category.sortOrder = defaultCategory.sortOrder
         }
 
-        try context.save()
+        do {
+            try context.save()
+        } catch {
+            context.rollback()
+            throw error
+        }
         logger.info("seedDefaultCategoriesIfNeeded: seeding complete")
     }
 }

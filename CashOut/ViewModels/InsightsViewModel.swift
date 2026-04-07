@@ -143,6 +143,9 @@ final class InsightsViewModel {
     @ObservationIgnored
     private var loadedPeriod: TimePeriod?
 
+    @ObservationIgnored
+    private var isSubscribed = false
+
     // MARK: - Init
 
     init(
@@ -186,6 +189,11 @@ final class InsightsViewModel {
     }
 
     func subscribeToRemoteChanges() async {
+        guard !isSubscribed else {
+            logger.debug("subscribeToRemoteChanges: already subscribed — skipped")
+            return
+        }
+        isSubscribed = true
         logger.debug("subscribeToRemoteChanges: starting listener")
 
         syncMonitorService.onSyncStatusChanged.append { [weak self] newStatus in

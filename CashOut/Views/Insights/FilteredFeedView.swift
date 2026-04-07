@@ -52,7 +52,7 @@ struct FilteredFeedView: View {
             }
         }
         .navigationTitle(categoryName)
-        .task {
+        .task(id: categoryID) {
             do {
                 let all = try await repository.fetchExpenses(for: period)
                 guard !Task.isCancelled else { return }
