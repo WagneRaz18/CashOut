@@ -18,14 +18,14 @@ struct NumpadView: View {
                     ForEach(rows[rowIndex]) { key in
                         if case .empty = key {
                             Color.clear
-                                .frame(maxWidth: .infinity, maxHeight: .infinity)
+                                .frame(maxWidth: .infinity, minHeight: 56)
                                 .accessibilityHidden(true)
                         } else {
                             Button {
                                 handleTap(key)
                             } label: {
                                 keyLabel(key)
-                                    .frame(maxWidth: .infinity, maxHeight: .infinity)
+                                    .frame(maxWidth: .infinity, minHeight: 56)
                             }
                             .buttonStyle(.glass)
                             .accessibilityLabel(accessibilityLabel(for: key))

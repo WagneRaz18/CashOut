@@ -24,6 +24,7 @@
 - **2026-04-04**: `EmptyView()` inside a `ToolbarItem` can still reserve phantom leading/trailing inset (8-16pt) — UIKit's underlying `UIBarButtonItem` occupies a slot even with zero-size content. Conditionally emit the entire `ToolbarItem` based on state (e.g., `if status == .failure { ToolbarItem { ... } }`) rather than returning `EmptyView()` from the content.
 - **2026-03-29**: Never have `LazyVGrid` as the direct child of `GeometryReader` — causes circular layout negotiation. Interpose `VStack(spacing: 0) { LazyVGrid(...) }` inside the GeometryReader closure to break the cycle. Also add `.frame(height:)` in `#Preview` for GeometryReader-based views so previews reflect realistic layout.
 - **2026-04-06**: `.buttonStyle(.glass)` adds internal chrome (padding/background) OUTSIDE `.frame(height:)` applied to the label — manual GeometryReader height math can't account for it. For button grids, replace GeometryReader + LazyVGrid with `VStack { ForEach(rows) { HStack { ForEach(row) { Button.frame(maxWidth: .infinity, maxHeight: .infinity) } } } }` — the layout system distributes space including all style decorations with no manual math.
+- **2026-04-07**: `maxHeight: .infinity` on buttons in a VStack with Spacers creates layout competition — buttons greedily expand, consuming space intended for Spacers and pushing siblings offscreen. Use `minHeight: <fixed>` for elements with known size in flexible layouts; reserve `maxHeight: .infinity` only when the element should truly fill all remaining space.
 
 ## Sign in with Apple
 - Email/name data only available on FIRST sign-in — cache to CloudKit UserProfile record immediately.
@@ -67,6 +68,7 @@
 - **2026-03-29**: Custom-styled buttons (manual background/border) must use `.buttonStyle(.plain)` explicitly — `.buttonBorderShape(.capsule)` only works with `.bordered`/`.borderedProminent` styles and has no effect on plain `Button`. Without explicit `.buttonStyle(.plain)`, iOS 26 Liquid Glass may override custom visuals.
 - **2026-03-29**: Icon-only buttons (e.g., note pencil icon) need `.frame(width: 44, height: 44)` on the label — SF Symbol intrinsic size is ~22pt, below the 44pt accessibility minimum tap target.
 - **2026-03-29**: Use `.task(id: selectedID)` not `.onAppear` for `ScrollViewReader.scrollTo()` — synchronous `.onAppear` fires before SwiftUI completes layout, so `scrollTo` silently does nothing. `.task(id:)` defers to next run loop tick AND re-fires on selection change.
+- **2026-04-07**: SwiftUI-only apps still need `UILaunchScreen` (empty `<dict/>`) in Info.plist — without it, iOS renders the app in compatibility mode with black letterboxing on devices with Dynamic Island/notch. No launch storyboard needed, just the key.
 
 ## Testing Async Notification Handlers
 - **2026-03-28**: `Task { }` on `@MainActor` doesn't start until the caller yields. `NotificationCenter.notifications(named:)` only receives notifications posted AFTER `for await` begins iteration. In tests: `await Task.yield()` before posting notifications so observer Tasks register their async sequence listeners first. Without this, tests pass as false positives (asserting on already-default-nil state).

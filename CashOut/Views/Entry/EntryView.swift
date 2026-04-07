@@ -16,8 +16,6 @@ struct EntryView: View {
                     .padding(.top, Spacing.xs)
             }
 
-            Spacer(minLength: 0)
-
             AmountDisplayView(amount: viewModel.amountInSatang)
                 .padding(.horizontal, Spacing.md)
 
@@ -37,14 +35,14 @@ struct EntryView: View {
             .padding(.bottom, Spacing.sm)
             .accessibilityLabel(viewModel.noteText.isEmpty ? "Add note" : "Edit note")
 
+            Spacer(minLength: 0)
+
             CategoryPickerView(
                 categories: viewModel.categories,
                 selectedCategoryID: viewModel.selectedCategoryID,
                 onSelect: { viewModel.selectCategory($0) }
             )
             .padding(.vertical, Spacing.sm)
-
-            Spacer(minLength: 0)
 
             NumpadView(
                 onDigit: { viewModel.appendDigit($0) },
