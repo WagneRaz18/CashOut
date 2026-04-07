@@ -10,6 +10,8 @@
 - Zone existence must be re-verified on every fresh launch — users can delete zones via iOS Settings → iCloud.
 - **2026-04-06**: Never `fatalError` in `loadPersistentStores` callback — use `logger.fault` + `storeLoadError` property so the app degrades to a non-functional but non-crashing state. Guard downstream operations (e.g., `purgeOldHistory`) on `storeLoadError == nil`.
 - **2026-04-06**: `CKAccountChanged` may fire on an arbitrary thread — always dispatch store reference mutations to `DispatchQueue.main.async` to avoid TOCTOU races with `@MainActor`-isolated callers.
+- **2026-04-07**: Never call `loadPersistentStores` twice on the same `NSPersistentCloudKitContainer` — the coordinator retains partially-initialized state from the failed attempt. Use a static factory (`configuredContainer()`) and create a fresh container instance for the retry path.
+- **2026-04-07**: When destroying Core Data store files for DEBUG recovery, delete `-ckAssets` directory alongside `-wal`/`-shm` — stale CloudKit metadata from a destroyed store triggers `changeTokenExpired` on next sync.
 - **2026-04-06**: When re-validating a cached `CKShare` via `fetchShares(in:)`, keep the cached share on transient fetch errors (network, etc.) — discarding it creates a duplicate share zone via `container.share(objects, to: nil)`. Only clear when the fetch succeeds and the share is confirmed missing.
 
 ## CKRecord Types & Schema
