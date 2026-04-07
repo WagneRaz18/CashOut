@@ -33,9 +33,6 @@ final class AuthenticationViewModel {
 
     init(authService: AuthenticationServiceProtocol = AuthenticationService.shared) {
         self.authService = authService
-        self.authService.onSessionInvalidated.append { [weak self] in
-            self?.handleSessionInvalidated()
-        }
         logger.debug("AuthenticationViewModel.init")
     }
 
@@ -59,6 +56,10 @@ final class AuthenticationViewModel {
         }
         hasCheckedAuth = true
         isCheckingCredentials = true
+
+        authService.onSessionInvalidated.append { [weak self] in
+            self?.handleSessionInvalidated()
+        }
 
         logger.info("checkAuth: checking cached credential state")
         let authorized = await authService.checkCredentialState()

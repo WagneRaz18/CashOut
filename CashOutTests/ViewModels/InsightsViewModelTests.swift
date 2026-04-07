@@ -28,11 +28,6 @@ final class InsightsViewModelTests: XCTestCase {
             syncMonitorService: syncMonitor
         )
 
-        // Register sync status callback (normally done in subscribeToRemoteChanges)
-        syncMonitor.onSyncStatusChanged.append { [weak viewModel] newStatus in
-            viewModel?.syncStatus = newStatus
-        }
-
         return (viewModel, expenseRepo, categoryRepo, syncMonitor)
     }
 
@@ -714,8 +709,11 @@ final class InsightsViewModelTests: XCTestCase {
         )
     }
 
-    func testSyncStatusUpdatesOnCallbackSyncFailure() {
-        let (viewModel, _, _, syncMonitor) = makeSUT()
+    func testSyncStatusUpdatesOnCallbackSyncFailure() async {
+        let (viewModel, expenseRepo, _, syncMonitor) = makeSUT()
+        expenseRepo.stubbedFetchResult = []
+        let task = Task { await viewModel.subscribeToRemoteChanges() }
+        await Task.yield()
 
         syncMonitor.syncStatus = .syncFailure
         for handler in syncMonitor.onSyncStatusChanged { handler(.syncFailure) }
@@ -724,10 +722,14 @@ final class InsightsViewModelTests: XCTestCase {
             viewModel.syncStatus, .syncFailure,
             "syncStatus should update to .syncFailure when callback fires"
         )
+        task.cancel()
     }
 
-    func testSyncStatusUpdatesOnCallbackNoICloudAccount() {
-        let (viewModel, _, _, syncMonitor) = makeSUT()
+    func testSyncStatusUpdatesOnCallbackNoICloudAccount() async {
+        let (viewModel, expenseRepo, _, syncMonitor) = makeSUT()
+        expenseRepo.stubbedFetchResult = []
+        let task = Task { await viewModel.subscribeToRemoteChanges() }
+        await Task.yield()
 
         syncMonitor.syncStatus = .noICloudAccount
         for handler in syncMonitor.onSyncStatusChanged { handler(.noICloudAccount) }
@@ -736,10 +738,14 @@ final class InsightsViewModelTests: XCTestCase {
             viewModel.syncStatus, .noICloudAccount,
             "syncStatus should update to .noICloudAccount when callback fires"
         )
+        task.cancel()
     }
 
-    func testSyncStatusResetsToHealthyAfterFailure() {
-        let (viewModel, _, _, syncMonitor) = makeSUT()
+    func testSyncStatusResetsToHealthyAfterFailure() async {
+        let (viewModel, expenseRepo, _, syncMonitor) = makeSUT()
+        expenseRepo.stubbedFetchResult = []
+        let task = Task { await viewModel.subscribeToRemoteChanges() }
+        await Task.yield()
 
         syncMonitor.syncStatus = .syncFailure
         for handler in syncMonitor.onSyncStatusChanged { handler(.syncFailure) }
@@ -752,6 +758,7 @@ final class InsightsViewModelTests: XCTestCase {
             viewModel.syncStatus, .healthy,
             "syncStatus should reset to .healthy when callback fires after failure"
         )
+        task.cancel()
     }
 
     // MARK: - Initial Non-Healthy Status Snapshot (F7)

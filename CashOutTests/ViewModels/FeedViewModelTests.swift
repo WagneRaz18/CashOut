@@ -35,11 +35,6 @@ final class FeedViewModelTests: XCTestCase {
             hapticService: hapticService
         )
 
-        // Register sync status callback (normally done in startObserving)
-        syncMonitor.onSyncStatusChanged.append { [weak viewModel] newStatus in
-            viewModel?.syncStatus = newStatus
-        }
-
         return (viewModel, expenseRepo, categoryRepo, authService, hapticService, syncMonitor)
     }
 
@@ -352,6 +347,7 @@ final class FeedViewModelTests: XCTestCase {
 
     func testSyncStatusUpdatesOnCallbackSyncFailure() {
         let (viewModel, _, _, _, _, syncMonitor) = makeSUT()
+        viewModel.startObserving()
 
         syncMonitor.syncStatus = .syncFailure
         for handler in syncMonitor.onSyncStatusChanged { handler(.syncFailure) }
@@ -364,6 +360,7 @@ final class FeedViewModelTests: XCTestCase {
 
     func testSyncStatusUpdatesOnCallbackNoICloudAccount() {
         let (viewModel, _, _, _, _, syncMonitor) = makeSUT()
+        viewModel.startObserving()
 
         syncMonitor.syncStatus = .noICloudAccount
         for handler in syncMonitor.onSyncStatusChanged { handler(.noICloudAccount) }
@@ -376,6 +373,7 @@ final class FeedViewModelTests: XCTestCase {
 
     func testSyncStatusResetsToHealthyAfterFailure() {
         let (viewModel, _, _, _, _, syncMonitor) = makeSUT()
+        viewModel.startObserving()
 
         syncMonitor.syncStatus = .syncFailure
         for handler in syncMonitor.onSyncStatusChanged { handler(.syncFailure) }
