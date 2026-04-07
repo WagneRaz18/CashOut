@@ -3,39 +3,25 @@ import SwiftUI
 struct SaveButtonView: View {
     let isDisabled: Bool
     let onSave: () -> Void
-    let onNoteTap: () -> Void
 
     var body: some View {
-        HStack(spacing: Spacing.sm) {
-            Button {
-                onNoteTap()
-            } label: {
-                Image(systemName: "square.and.pencil")
-                    .font(.title3)
-                    .frame(width: 44, height: 44)
-            }
-            .buttonStyle(.plain)
-            .foregroundStyle(SemanticColor.onSurfaceVariant)
-            .accessibilityLabel("Add note")
-
-            Button {
-                onSave()
-            } label: {
-                Text("Save")
-                    .font(.headline)
-                    .frame(maxWidth: .infinity)
-            }
-            .buttonStyle(.glassProminent)
-            .disabled(isDisabled)
-            .accessibilityLabel("Save expense")
+        Button {
+            onSave()
+        } label: {
+            Label("Save Transaction", systemImage: "square.and.arrow.down")
+                .font(.headline)
+                .frame(maxWidth: .infinity)
         }
+        .buttonStyle(.glassProminent)
+        .disabled(isDisabled)
+        .accessibilityLabel("Save expense")
     }
 }
 
 #Preview {
     VStack(spacing: 20) {
-        SaveButtonView(isDisabled: false, onSave: {}, onNoteTap: {})
-        SaveButtonView(isDisabled: true, onSave: {}, onNoteTap: {})
+        SaveButtonView(isDisabled: false, onSave: {})
+        SaveButtonView(isDisabled: true, onSave: {})
     }
     .padding()
 }

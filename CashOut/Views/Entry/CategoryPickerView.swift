@@ -37,9 +37,8 @@ struct CategoryPickerView: View {
             onSelect(category.id)
         } label: {
             HStack(spacing: Spacing.xs) {
-                Circle()
-                    .fill(categoryColor)
-                    .frame(width: 8, height: 8)
+                Image(systemName: category.iconName)
+                    .font(.footnote)
 
                 Text(category.name)
                     .font(.subheadline)
@@ -53,6 +52,13 @@ struct CategoryPickerView: View {
             )
             .foregroundStyle(isSelected ? categoryColor : SemanticColor.onSurfaceVariant)
             .clipShape(RoundedRectangle(cornerRadius: 12))
+            .overlay(
+                RoundedRectangle(cornerRadius: 12)
+                    .strokeBorder(
+                        isSelected ? categoryColor.opacity(0.5) : SemanticColor.outlineVariant,
+                        lineWidth: 1
+                    )
+            )
         }
         .buttonStyle(.plain)
         .accessibilityLabel(category.name)

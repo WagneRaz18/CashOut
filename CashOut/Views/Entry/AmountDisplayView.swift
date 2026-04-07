@@ -4,15 +4,23 @@ struct AmountDisplayView: View {
     let amount: Int64
 
     var body: some View {
-        Text(amount.displayAmount)
-            .font(.system(size: 56, weight: .medium, design: .rounded))
-            .foregroundStyle(amount == 0 ? SemanticColor.onSurfaceVariant : SemanticColor.onSurface)
-            .lineLimit(1)
-            .minimumScaleFactor(0.5)
-            .frame(maxWidth: .infinity)
-            .padding(.vertical, Spacing.lg)
-            .accessibilityLabel("Amount: \(amount.displayAmount)")
-            .accessibilityAddTraits(.updatesFrequently)
+        VStack(spacing: Spacing.xs) {
+            Text("AMOUNT")
+                .font(.caption)
+                .fontWeight(.semibold)
+                .foregroundStyle(SemanticColor.onSurfaceVariant)
+                .tracking(1.2)
+
+            Text(amount.displayAmount)
+                .font(.system(size: 56, weight: .medium, design: .rounded))
+                .foregroundStyle(amount == 0 ? SemanticColor.onSurfaceVariant : SemanticColor.onSurface)
+                .lineLimit(1)
+                .minimumScaleFactor(0.5)
+                .frame(maxWidth: .infinity)
+        }
+        .padding(.vertical, Spacing.lg)
+        .accessibilityLabel("Amount: \(amount.displayAmount)")
+        .accessibilityAddTraits(.updatesFrequently)
     }
 }
 

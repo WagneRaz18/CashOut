@@ -21,6 +21,22 @@ struct EntryView: View {
             AmountDisplayView(amount: viewModel.amountInCents)
                 .padding(.horizontal, Spacing.md)
 
+            Button {
+                showingNoteSheet = true
+            } label: {
+                HStack(spacing: Spacing.xs) {
+                    Image(systemName: viewModel.noteText.isEmpty ? "square.and.pencil" : "note.text")
+                        .font(.subheadline)
+                    Text(viewModel.noteText.isEmpty ? "Add note" : viewModel.noteText)
+                        .font(.subheadline)
+                        .lineLimit(1)
+                }
+                .foregroundStyle(SemanticColor.onSurfaceVariant)
+            }
+            .buttonStyle(.plain)
+            .padding(.bottom, Spacing.sm)
+            .accessibilityLabel(viewModel.noteText.isEmpty ? "Add note" : "Edit note")
+
             CategoryPickerView(
                 categories: viewModel.categories,
                 selectedCategoryID: viewModel.selectedCategoryID,
@@ -51,8 +67,7 @@ struct EntryView: View {
                             viewModel.saveError = "Could not save entry. Please try again."
                         }
                     }
-                },
-                onNoteTap: { showingNoteSheet = true }
+                }
             )
             .padding(.horizontal, Spacing.md)
             .padding(.bottom, Spacing.md)
