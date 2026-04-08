@@ -89,6 +89,7 @@ struct EditExpenseSheet: View {
             .padding(.bottom, Spacing.md)
         }
         .task {
+            logger.debug("EditExpenseSheet.task: loading categories for edit")
             await viewModel.loadCategories()
         }
         .sheet(isPresented: $showingNoteSheet) {

@@ -33,6 +33,7 @@ struct FeedView: View {
                         .listRowSeparator(.hidden)
                         .swipeActions(edge: .leading, allowsFullSwipe: false) {
                             Button(role: .destructive) {
+                                logger.info("Delete swiped for expense id=\(expense.id)")
                                 Task {
                                     await viewModel.deleteExpense(expense)
                                 }
@@ -93,6 +94,7 @@ struct FeedView: View {
             }
         }
         .navigationDestination(isPresented: $showSettings) {
+            logger.debug("Navigating to Settings from Feed")
             SettingsView()
         }
         .onAppear {

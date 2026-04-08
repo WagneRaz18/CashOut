@@ -239,7 +239,10 @@ final class PersistenceController: @unchecked Sendable {
     // MARK: - History Management
 
     private func purgeOldHistory() {
-        guard storeLoadError == nil else { return }
+        guard storeLoadError == nil else {
+            logger.debug("purgeOldHistory: skipped — store load error present")
+            return
+        }
         let sevenDaysAgo = Calendar(identifier: .gregorian)
             .date(byAdding: .day, value: -7, to: Date()) ?? Date()
         let purgeRequest = NSPersistentHistoryChangeRequest.deleteHistory(before: sevenDaysAgo)
@@ -248,6 +251,7 @@ final class PersistenceController: @unchecked Sendable {
         context.performAndWait {
             do {
                 try context.execute(purgeRequest)
+                logger.debug("purgeOldHistory: purged history older than 7 days")
             } catch {
                 logger.error("History purge failed: \(error.localizedDescription)")
             }

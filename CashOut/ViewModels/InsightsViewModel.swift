@@ -190,10 +190,11 @@ final class InsightsViewModel {
 
     func selectCategory(_ categoryID: UUID?) {
         guard let categoryID, let interval = currentPeriodInterval else {
+            logger.debug("selectCategory: cleared (categoryID=\(categoryID?.uuidString ?? "nil"), interval=\(self.currentPeriodInterval != nil))")
             selectedDestination = nil
             return
         }
-        logger.debug("selectCategory: \(categoryID)")
+        logger.debug("selectCategory: navigating to \(categoryID)")
         selectedDestination = CategoryNavDestination(categoryID: categoryID, interval: interval)
     }
 
@@ -203,7 +204,10 @@ final class InsightsViewModel {
             return
         }
         isSubscribed = true
-        defer { isSubscribed = false }
+        defer {
+            isSubscribed = false
+            logger.debug("subscribeToRemoteChanges: listener ended")
+        }
         logger.debug("subscribeToRemoteChanges: starting listener")
 
         if !hasRegisteredSyncCallback {

@@ -132,6 +132,7 @@ final class ExpenseEntryViewModel {
     }
 
     func retryLoadCategories() async {
+        logger.info("retryLoadCategories: resetting state and retrying")
         categories = []
         selectedCategoryID = nil
         categoryLoadFailed = false
@@ -206,6 +207,7 @@ final class ExpenseEntryViewModel {
 
     /// Resets the entry form for the next expense. Called by the View after the save animation completes.
     func resetForm() {
+        logger.debug("resetForm: clearing amount and note (category preserved via MRU)")
         resetAmount()
         noteText = ""
         // selectedCategoryID stays — MRU principle
