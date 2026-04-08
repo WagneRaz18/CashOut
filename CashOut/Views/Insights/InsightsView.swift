@@ -2,10 +2,11 @@ import SwiftUI
 
 struct InsightsView: View {
     @State private var viewModel = InsightsViewModel()
+    @State private var showSettings = false
 
     var body: some View {
         VStack(spacing: 0) {
-            Picker("Period", selection: $viewModel.selectedPeriod) {
+            Picker("Period", selection: Bindable(viewModel).selectedPeriod) {
                 ForEach(InsightsViewModel.TimePeriod.allCases, id: \.self) { period in
                     Text(period.rawValue).tag(period)
                 }
@@ -70,18 +71,18 @@ struct InsightsView: View {
                     }
                 }
             }
-            .navigationDestination(item: Bindable(viewModel).selectedDestination) { destination in
-                FilteredFeedView(
-                    categoryID: destination.categoryID,
-                    categoryName: viewModel.chartSlices.first { $0.categoryID == destination.categoryID }?.categoryName ?? "Category",
-                    period: destination.interval,
-                    categories: viewModel.fetchedCategories,
-                    currentUserID: viewModel.currentUserID
-                )
-            }
         }
         .background(Surface.base)
         .navigationTitle("Insights")
+        .navigationDestination(item: Bindable(viewModel).selectedDestination) { destination in
+            FilteredFeedView(
+                categoryID: destination.categoryID,
+                categoryName: viewModel.chartSlices.first { $0.categoryID == destination.categoryID }?.categoryName ?? "Category",
+                period: destination.interval,
+                categories: viewModel.fetchedCategories,
+                currentUserID: viewModel.currentUserID
+            )
+        }
         .toolbar {
             if viewModel.syncStatus == .syncFailure {
                 ToolbarItem(placement: .topBarLeading) {
@@ -89,10 +90,15 @@ struct InsightsView: View {
                 }
             }
             ToolbarItem(placement: .topBarTrailing) {
-                NavigationLink(destination: SettingsView()) {
+                Button {
+                    showSettings = true
+                } label: {
                     Image(systemName: "gearshape")
                 }
             }
+        }
+        .navigationDestination(isPresented: $showSettings) {
+            SettingsView()
         }
         .task(id: viewModel.selectedPeriod) {
             await viewModel.loadData()

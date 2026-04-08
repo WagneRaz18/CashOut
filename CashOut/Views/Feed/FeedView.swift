@@ -3,6 +3,7 @@ import SwiftUI
 struct FeedView: View {
     @State private var viewModel = FeedViewModel()
     @State private var expenseToEdit: ExpenseData?
+    @State private var showSettings = false
 
     var body: some View {
         Group {
@@ -79,10 +80,15 @@ struct FeedView: View {
                 }
             }
             ToolbarItem(placement: .topBarTrailing) {
-                NavigationLink(destination: SettingsView()) {
+                Button {
+                    showSettings = true
+                } label: {
                     Image(systemName: "gearshape")
                 }
             }
+        }
+        .navigationDestination(isPresented: $showSettings) {
+            SettingsView()
         }
         .onAppear {
             viewModel.startObserving()

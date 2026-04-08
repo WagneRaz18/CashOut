@@ -146,6 +146,12 @@ final class InsightsViewModel {
     @ObservationIgnored
     private var isSubscribed = false
 
+    @ObservationIgnored
+    private var hasRegisteredSyncCallback = false
+
+    @ObservationIgnored
+    private var loadTask: Task<Void, Never>?
+
     // MARK: - Init
 
     init(
@@ -176,7 +182,10 @@ final class InsightsViewModel {
     func invalidateAndReload() async {
         logger.debug("invalidateAndReload: resetting for fresh load")
         loadedPeriod = nil
-        await performLoad()
+        loadTask?.cancel()
+        let task = Task { await performLoad() }
+        loadTask = task
+        await task.value
     }
 
     func selectCategory(_ categoryID: UUID?) {
@@ -194,20 +203,34 @@ final class InsightsViewModel {
             return
         }
         isSubscribed = true
+        defer { isSubscribed = false }
         logger.debug("subscribeToRemoteChanges: starting listener")
 
-        syncMonitorService.onSyncStatusChanged.append { [weak self] newStatus in
-            logger.info("Sync status changed: \(String(describing: newStatus))")
-            self?.syncStatus = newStatus
+        if !hasRegisteredSyncCallback {
+            hasRegisteredSyncCallback = true
+            syncMonitorService.onSyncStatusChanged.append { [weak self] newStatus in
+                logger.info("Sync status changed: \(String(describing: newStatus))")
+                self?.syncStatus = newStatus
+            }
         }
 
         // Catch-up fetch for notifications missed while tab was hidden
         await invalidateAndReload()
 
+        // Debounce: coalesce rapid notifications into a single reload.
+        var debounceTask: Task<Void, Never>?
+        defer { debounceTask?.cancel() }
         for await _ in NotificationCenter.default.notifications(named: .NSPersistentStoreRemoteChange) {
             guard !Task.isCancelled else { break }
-            logger.info("Remote change received — reloading insights")
-            await invalidateAndReload()
+            debounceTask?.cancel()
+            debounceTask = Task { @MainActor in
+                do {
+                    try await Task.sleep(nanoseconds: 500_000_000)
+                } catch is CancellationError { return } catch { return }
+                guard !Task.isCancelled else { return }
+                logger.info("Remote change (debounced) — reloading insights")
+                await self.invalidateAndReload()
+            }
         }
     }
 

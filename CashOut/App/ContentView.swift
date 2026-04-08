@@ -41,11 +41,14 @@ struct ContentView: View {
             // Debounce: coalesce rapid notifications into a single sharing check.
             // CloudKit sync fires multiple NSPersistentStoreRemoteChange per operation.
             var debounceTask: Task<Void, Never>?
+            defer { debounceTask?.cancel() }
             for await _ in NotificationCenter.default.notifications(named: .NSPersistentStoreRemoteChange) {
                 guard !Task.isCancelled else { break }
                 debounceTask?.cancel()
-                debounceTask = Task {
-                    try? await Task.sleep(nanoseconds: 500_000_000)
+                debounceTask = Task { @MainActor in
+                    do {
+                        try await Task.sleep(nanoseconds: 500_000_000)
+                    } catch is CancellationError { return } catch { return }
                     guard !Task.isCancelled else { return }
                     logger.info("Remote store change (debounced) — re-checking sharing status")
                     await CloudSharingService.shared.checkSharingStatus()
