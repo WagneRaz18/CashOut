@@ -89,6 +89,8 @@ final class ExpenseEntryViewModel {
 
     // MARK: - Category Actions
 
+    private static let autoRetryDelay: UInt64 = 500_000_000 // 500ms
+
     func loadCategories() async {
         guard categories.isEmpty else {
             logger.debug("loadCategories: already loaded — skipped")
@@ -98,30 +100,31 @@ final class ExpenseEntryViewModel {
         categoryLoadFailed = false
         logger.info("loadCategories: fetching categories")
         do {
-            let fetched = try await categoryRepository.fetchCategories()
+            var fetched = try await categoryRepository.fetchCategories()
             guard !Task.isCancelled else { return }
+
+            // Auto-retry once if empty — seeding may still be completing
+            if fetched.isEmpty {
+                logger.info("loadCategories: empty result — retrying after delay")
+                try await Task.sleep(nanoseconds: Self.autoRetryDelay)
+                guard !Task.isCancelled else { return }
+                fetched = try await categoryRepository.fetchCategories()
+                guard !Task.isCancelled else { return }
+            }
+
             categories = fetched
             logger.info("loadCategories: loaded \(fetched.count) categories")
 
             if fetched.isEmpty {
-                logger.warning("loadCategories: no categories found in store")
+                logger.warning("loadCategories: no categories after retry")
                 categoryLoadFailed = true
                 return
             }
 
-            // Restore MRU from UserDefaults
-            if let mruString = userDefaults.string(forKey: Self.mruKey),
-               let mruID = UUID(uuidString: mruString),
-               fetched.contains(where: { $0.id == mruID }) {
-                selectedCategoryID = mruID
-                logger.debug("loadCategories: restored MRU category \(mruID)")
-            } else {
-                // Default to first category (Food & Drink, sortOrder 0)
-                selectedCategoryID = fetched.first?.id
-                logger.debug("loadCategories: defaulting to first category")
-            }
+            restoreMRUSelection(from: fetched)
+        } catch is CancellationError {
+            return
         } catch {
-            guard !Task.isCancelled else { return }
             logger.error("loadCategories failed: \(error.localizedDescription)")
             categoryLoadFailed = true
         }
@@ -132,6 +135,18 @@ final class ExpenseEntryViewModel {
         selectedCategoryID = nil
         categoryLoadFailed = false
         await loadCategories()
+    }
+
+    private func restoreMRUSelection(from fetched: [CategoryData]) {
+        if let mruString = userDefaults.string(forKey: Self.mruKey),
+           let mruID = UUID(uuidString: mruString),
+           fetched.contains(where: { $0.id == mruID }) {
+            selectedCategoryID = mruID
+            logger.debug("loadCategories: restored MRU category \(mruID)")
+        } else {
+            selectedCategoryID = fetched.first?.id
+            logger.debug("loadCategories: defaulting to first category")
+        }
     }
 
     func selectCategory(_ id: UUID) {

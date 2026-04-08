@@ -44,6 +44,7 @@ struct EntryView: View {
                     Label("Categories unavailable — tap to retry", systemImage: "arrow.clockwise")
                         .font(.subheadline)
                         .foregroundStyle(SemanticColor.error)
+                        .frame(minHeight: 44)
                 }
                 .buttonStyle(.plain)
                 .accessibilityLabel("Retry loading categories")

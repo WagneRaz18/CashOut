@@ -13,6 +13,15 @@ struct CashOutApp: App {
     /// Minimum splash duration so the branding animation completes.
     private static let splashDuration: UInt64 = 2_000_000_000 // 2 seconds in nanoseconds
 
+    private static func seedCategories() async {
+        do {
+            try await CategoryRepository.shared.seedDefaultCategoriesIfNeeded()
+            logger.info("Category seeding completed")
+        } catch {
+            logger.error("Category seeding failed: \(error.localizedDescription)")
+        }
+    }
+
     var body: some Scene {
         WindowGroup {
             Group {
@@ -38,18 +47,7 @@ struct CashOutApp: App {
                 // Run splash timer, category seeding, and auth check concurrently.
                 // Splash stays visible until all three complete.
                 async let splash: Void = Task.sleep(nanoseconds: Self.splashDuration)
-                async let seeding: Void = {
-                    guard persistenceController.privatePersistentStore != nil else {
-                        logger.error("Skipping category seeding — private store failed to load")
-                        return
-                    }
-                    do {
-                        try await CategoryRepository.shared.seedDefaultCategoriesIfNeeded()
-                        logger.info("Category seeding completed")
-                    } catch {
-                        logger.error("Category seeding failed: \(error.localizedDescription)")
-                    }
-                }()
+                async let seeding: Void = Self.seedCategories()
                 async let auth: Void = authViewModel.checkAuth()
                 _ = try? await (splash, seeding, auth)
 

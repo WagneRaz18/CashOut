@@ -94,6 +94,14 @@ final class CategoryRepository: CategoryRepositoryProtocol {
     func seedDefaultCategoriesIfNeeded() async throws {
         let context = persistence.container.viewContext
 
+        // Guard: context.save() throws NSInternalInconsistencyException (ObjC exception,
+        // not caught by Swift do/catch) when the coordinator has zero stores.
+        guard let coordinator = context.persistentStoreCoordinator,
+              !coordinator.persistentStores.isEmpty else {
+            logger.error("seedDefaultCategoriesIfNeeded: no persistent stores — skipping")
+            return
+        }
+
         let request: NSFetchRequest<Category> = Category.fetchRequest()
         let count = try context.count(for: request)
 
