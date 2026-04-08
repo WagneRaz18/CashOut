@@ -44,7 +44,11 @@ struct ContentView: View {
             defer { debounceTask?.cancel() }
             for await _ in NotificationCenter.default.notifications(named: .NSPersistentStoreRemoteChange) {
                 guard !Task.isCancelled else { break }
+                let wasCoalesced = debounceTask != nil
                 debounceTask?.cancel()
+                if wasCoalesced {
+                    logger.debug("Remote change notification coalesced (prior debounce cancelled)")
+                }
                 debounceTask = Task { @MainActor in
                     do {
                         try await Task.sleep(nanoseconds: 500_000_000)
