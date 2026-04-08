@@ -86,7 +86,7 @@ struct EntryView: View {
                 saveCount: viewModel.saveCount,
                 showCheckmark: showCheckmark,
                 onSave: {
-                    logger.info("Save button tapped — amount=\(viewModel.amountInBaht) Baht")
+                    logger.info("Save button tapped — amount=\(viewModel.amountInBaht, privacy: .private) Baht")
                     saveTask?.cancel()
                     saveTask = Task {
                         do {

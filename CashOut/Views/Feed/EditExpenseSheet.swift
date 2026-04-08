@@ -69,7 +69,7 @@ struct EditExpenseSheet: View {
                 saveCount: 0,
                 showCheckmark: false,
                 onSave: {
-                    logger.info("Edit save tapped — amount=\(viewModel.amountInBaht) Baht")
+                    logger.info("Edit save tapped — amount=\(viewModel.amountInBaht, privacy: .private) Baht")
                     Task {
                         do {
                             viewModel.saveError = nil

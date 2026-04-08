@@ -56,15 +56,15 @@ struct FilteredFeedView: View {
         }
         .navigationTitle(categoryName)
         .task(id: categoryID) {
-            logger.info("FilteredFeedView.task: fetching expenses for category \(categoryID) (\(categoryName))")
+            logger.info("FilteredFeedView.task: fetching expenses for category \(categoryID, privacy: .private) (\(categoryName, privacy: .private))")
             do {
                 let all = try await repository.fetchExpenses(for: period)
                 guard !Task.isCancelled else { return }
                 expenses = all.filter { $0.categoryID == categoryID }
-                logger.info("FilteredFeedView: showing \(expenses.count) of \(all.count) expenses for \(categoryName)")
+                logger.info("FilteredFeedView: showing \(expenses.count) of \(all.count) expenses for category")
             } catch {
                 guard !Task.isCancelled else { return }
-                logger.error("FilteredFeedView: fetch failed — \(error.localizedDescription)")
+                logger.error("FilteredFeedView: fetch failed — \(error.localizedDescription, privacy: .public)")
                 errorMessage = error.localizedDescription
             }
         }

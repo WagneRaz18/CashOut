@@ -64,6 +64,11 @@
 
 - **2026-04-06**: NavigationLink wrapping tappable rows for edit navigation should include `.accessibilityHint("Double tap to edit")` — VoiceOver announces the chevron as "button" but does not describe the action. The hint distinguishes editable rows from read-only ones for screen reader users.
 
+## os.log in SwiftUI Views
+- **2026-04-08**: `logger.info(...)` returns `Void` — placing it directly inside `@ViewBuilder` closures (`.sheet`, `.navigationDestination`, `.overlay` content) causes "type '()' cannot conform to 'View'". Move logger calls to `.onAppear { }`, button action closures, or `.task { }` instead.
+- **2026-04-08**: Always use explicit `privacy:` annotations on `os.log` string interpolations for user data — `\(amount, privacy: .private)` for financial figures, `\(uuid, privacy: .private)` for record identifiers. Swift `Logger` default privacy is type-dependent (`Int` = `.public`, `String` = `.private`) and varies across iOS versions. Explicit annotations prevent log regression.
+- **2026-04-08**: Use `\(error.localizedDescription, privacy: .public)` in `.error`/`.fault` log levels — without annotation, error descriptions are redacted as `<private>` in Console.app on-device, making error logs useless for remote debugging.
+
 ## iOS Platform Patterns
 - **2026-04-06**: Dark-only apps using hardcoded hex color tokens must add `.preferredColorScheme(.dark)` at the app root — without it, system adaptive colors (`Color.secondary`, `.primary`) resolve to light-mode values when the device OS is in light mode, breaking the custom dark palette.
 - **2026-04-06**: `SignInWithAppleButton` style must be hardcoded `.white` on dark-surface apps — `colorScheme == .dark ? .white : .black` renders black-on-dark when device is in light mode system-wide, making the button invisible.

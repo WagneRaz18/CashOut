@@ -144,7 +144,7 @@ final class ExpenseEntryViewModel {
            let mruID = UUID(uuidString: mruString),
            fetched.contains(where: { $0.id == mruID }) {
             selectedCategoryID = mruID
-            logger.debug("loadCategories: restored MRU category \(mruID)")
+            logger.debug("loadCategories: restored MRU category \(mruID, privacy: .private)")
         } else {
             selectedCategoryID = fetched.first?.id
             logger.debug("loadCategories: defaulting to first category")
@@ -179,7 +179,7 @@ final class ExpenseEntryViewModel {
             throw ExpenseEntryError.notAuthenticated
         }
 
-        logger.info("saveExpense: saving \(self.amountInBaht) Baht, category=\(categoryID)")
+        logger.info("saveExpense: saving \(self.amountInBaht, privacy: .private) Baht, category=\(categoryID, privacy: .private)")
 
         let now = Date()
         let expense = ExpenseData(
@@ -195,7 +195,7 @@ final class ExpenseEntryViewModel {
         try await expenseRepository.saveExpense(expense)
         guard !Task.isCancelled else { return }
 
-        logger.info("saveExpense: saved successfully — id=\(expense.id)")
+        logger.debug("saveExpense: saved successfully — id=\(expense.id, privacy: .private)")
         hapticService.trigger(.saveTap)
 
         // Persist MRU

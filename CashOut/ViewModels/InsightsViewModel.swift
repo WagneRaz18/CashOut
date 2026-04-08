@@ -190,11 +190,11 @@ final class InsightsViewModel {
 
     func selectCategory(_ categoryID: UUID?) {
         guard let categoryID, let interval = currentPeriodInterval else {
-            logger.debug("selectCategory: cleared (categoryID=\(categoryID?.uuidString ?? "nil"), interval=\(self.currentPeriodInterval != nil))")
+            logger.debug("selectCategory: cleared (hasCategory=\(categoryID != nil), hasInterval=\(self.currentPeriodInterval != nil))")
             selectedDestination = nil
             return
         }
-        logger.debug("selectCategory: navigating to \(categoryID)")
+        logger.debug("selectCategory: navigating to \(categoryID, privacy: .private)")
         selectedDestination = CategoryNavDestination(categoryID: categoryID, interval: interval)
     }
 
@@ -213,8 +213,9 @@ final class InsightsViewModel {
         if !hasRegisteredSyncCallback {
             hasRegisteredSyncCallback = true
             syncMonitorService.onSyncStatusChanged.append { [weak self] newStatus in
+                guard let self else { return }
                 logger.info("Sync status changed: \(String(describing: newStatus))")
-                self?.syncStatus = newStatus
+                self.syncStatus = newStatus
             }
         }
 
@@ -294,7 +295,7 @@ final class InsightsViewModel {
             currentPeriodInterval = currentInterval
             errorMessage = nil
             loadedPeriod = period
-            logger.info("performLoad: complete — total=\(self.totalAmount) satang, \(self.categoryTotals.count) categories")
+            logger.info("performLoad: complete — total=\(self.totalAmount, privacy: .private) satang, \(self.categoryTotals.count) categories")
         } catch {
             guard !Task.isCancelled else { return }
             logger.error("performLoad: FAILED — \(error.localizedDescription)")

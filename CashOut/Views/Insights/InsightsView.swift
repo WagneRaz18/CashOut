@@ -101,8 +101,8 @@ struct InsightsView: View {
             }
         }
         .navigationDestination(isPresented: $showSettings) {
-            logger.debug("Navigating to Settings from Insights")
             SettingsView()
+                .onAppear { logger.debug("Navigating to Settings from Insights") }
         }
         .task(id: viewModel.selectedPeriod) {
             logger.info("InsightsView.task: loading data for period \(viewModel.selectedPeriod.rawValue)")

@@ -101,6 +101,7 @@
 - **2026-04-07**: Never log PII (names, emails, user IDs) in os.Logger — use presence booleans (`hasName=true`) or `privacy: .private`. Even `.prefix(8)` of a stable Apple userIdentifier is a persistent correlatable identifier.
 - **2026-04-07**: `context.save()` in all repositories must be wrapped in `do/catch` with `context.rollback()` before rethrowing + `logger.error()` — bare `try context.save()` leaves dirty context on failure and no log trace.
 - **2026-04-07**: Always log `event.error?.localizedDescription` on `NSPersistentCloudKitContainer.Event` failures — event type alone is insufficient to distinguish network errors from quota exceeded from zone-not-found.
+- **2026-04-08**: `[weak self]` callback closures registered on services (e.g., `onSyncStatusChanged.append`) must `guard let self else { return }` BEFORE any file-scope `logger` call — the logger is captured independently of `self`, so it fires even after the ViewModel deallocates, producing ghost log entries with misleading category attribution.
 
 ## Navigation Coordination
 - For simple apps (3 tabs + sheets): TabView selection is @State in ContentView, sheet presentation is @State on presenting View. Full Coordinator pattern is unnecessary.

@@ -33,7 +33,7 @@ struct FeedView: View {
                         .listRowSeparator(.hidden)
                         .swipeActions(edge: .leading, allowsFullSwipe: false) {
                             Button(role: .destructive) {
-                                logger.info("Delete swiped for expense id=\(expense.id)")
+                                logger.info("Delete swiped for expense id=\(expense.id, privacy: .private)")
                                 Task {
                                     await viewModel.deleteExpense(expense)
                                 }
@@ -56,12 +56,12 @@ struct FeedView: View {
             }
         }
         .sheet(item: $expenseToEdit) { expense in
-            logger.info("Edit sheet presented for expense id=\(expense.id)")
             EditExpenseSheet(expense: expense, onSaveComplete: {
                 logger.info("Edit sheet dismissed after save")
                 expenseToEdit = nil
             })
             .presentationDetents([.large])
+            .onAppear { logger.info("Edit sheet presented for expense id=\(expense.id, privacy: .private)") }
         }
         .safeAreaInset(edge: .top) {
             VStack(spacing: 0) {
@@ -94,8 +94,8 @@ struct FeedView: View {
             }
         }
         .navigationDestination(isPresented: $showSettings) {
-            logger.debug("Navigating to Settings from Feed")
             SettingsView()
+                .onAppear { logger.debug("Navigating to Settings from Feed") }
         }
         .onAppear {
             logger.debug("FeedView.onAppear — starting observation")
