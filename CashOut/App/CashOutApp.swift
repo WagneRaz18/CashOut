@@ -39,8 +39,8 @@ struct CashOutApp: App {
                 // Splash stays visible until all three complete.
                 async let splash: Void = Task.sleep(nanoseconds: Self.splashDuration)
                 async let seeding: Void = {
-                    guard persistenceController.storeLoadError == nil else {
-                        logger.error("Skipping category seeding — store failed to load")
+                    guard persistenceController.privatePersistentStore != nil else {
+                        logger.error("Skipping category seeding — private store failed to load")
                         return
                     }
                     do {

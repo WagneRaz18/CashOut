@@ -37,12 +37,26 @@ struct EntryView: View {
 
             Spacer(minLength: 0)
 
-            CategoryPickerView(
-                categories: viewModel.categories,
-                selectedCategoryID: viewModel.selectedCategoryID,
-                onSelect: { viewModel.selectCategory($0) }
-            )
-            .padding(.vertical, Spacing.sm)
+            if viewModel.categoryLoadFailed {
+                Button {
+                    Task { await viewModel.retryLoadCategories() }
+                } label: {
+                    Label("Categories unavailable — tap to retry", systemImage: "arrow.clockwise")
+                        .font(.subheadline)
+                        .foregroundStyle(SemanticColor.error)
+                }
+                .buttonStyle(.plain)
+                .accessibilityLabel("Retry loading categories")
+                .accessibilityHint("Loads the category list again")
+                .padding(.vertical, Spacing.sm)
+            } else {
+                CategoryPickerView(
+                    categories: viewModel.categories,
+                    selectedCategoryID: viewModel.selectedCategoryID,
+                    onSelect: { viewModel.selectCategory($0) }
+                )
+                .padding(.vertical, Spacing.sm)
+            }
 
             NumpadView(
                 onDigit: { viewModel.appendDigit($0) },

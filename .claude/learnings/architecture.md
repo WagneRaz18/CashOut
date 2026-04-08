@@ -67,6 +67,7 @@
 - **2026-03-29**: Button `isDisabled` must mirror ALL silent-return guards in the ViewModel action — if `saveExpense()` returns silently on `selectedCategoryID == nil` (e.g., categories failed to load), the Save button must include `selectedCategoryID == nil` in its disabled condition. Otherwise the user sees an enabled button that does nothing on tap.
 
 ## State Modeling
+- **2026-04-08**: Retry methods that reset a collection (`categories = []`) must also reset dependent selection state (`selectedCategoryID = nil`) — a stale selection ID from a prior successful load re-enables downstream actions (Save button) with a dangling reference that no longer maps to any loaded item.
 - Use independent data + errorMessage properties, never a combined enum ViewState.
 - On error, preserve stale data and set errorMessage — view shows both simultaneously. **Exception**: aggregation screens (Insights) should clear state on error — stale totals from a different time period are misleading. Clear `totalAmount`, `categoryTotals`, `previousPeriodTotal` before setting `errorMessage`.
 - **2026-04-03**: When a method computes multiple related date intervals (current + previous period), capture `Date()` once and pass to all helpers — two independent `Date()` calls can straddle midnight, producing inconsistent intervals (e.g., both pointing to the same month).

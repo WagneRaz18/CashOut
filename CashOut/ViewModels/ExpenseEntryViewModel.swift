@@ -19,6 +19,7 @@ final class ExpenseEntryViewModel {
     var noteText: String = ""
     var isSaving: Bool = false
     var saveError: String?
+    var categoryLoadFailed: Bool = false
 
     var isAmountZero: Bool {
         amountInBaht == 0
@@ -94,12 +95,19 @@ final class ExpenseEntryViewModel {
             return
         }
 
+        categoryLoadFailed = false
         logger.info("loadCategories: fetching categories")
         do {
             let fetched = try await categoryRepository.fetchCategories()
             guard !Task.isCancelled else { return }
             categories = fetched
             logger.info("loadCategories: loaded \(fetched.count) categories")
+
+            if fetched.isEmpty {
+                logger.warning("loadCategories: no categories found in store")
+                categoryLoadFailed = true
+                return
+            }
 
             // Restore MRU from UserDefaults
             if let mruString = userDefaults.string(forKey: Self.mruKey),
@@ -115,7 +123,15 @@ final class ExpenseEntryViewModel {
         } catch {
             guard !Task.isCancelled else { return }
             logger.error("loadCategories failed: \(error.localizedDescription)")
+            categoryLoadFailed = true
         }
+    }
+
+    func retryLoadCategories() async {
+        categories = []
+        selectedCategoryID = nil
+        categoryLoadFailed = false
+        await loadCategories()
     }
 
     func selectCategory(_ id: UUID) {
