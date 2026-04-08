@@ -43,6 +43,9 @@ class AppDelegate: NSObject, UIApplicationDelegate {
                 logger.error("Error accepting share: \(error.localizedDescription)")
             } else {
                 logger.info("Share invitation accepted successfully")
+                Task { @MainActor in
+                    await CloudSharingService.shared.checkSharingStatus()
+                }
             }
         }
     }

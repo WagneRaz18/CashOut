@@ -206,10 +206,6 @@ final class CloudSharingService: CloudSharingServiceProtocol {
     }
 
     func resetState() {
-        guard persistenceController.privatePersistentStore != nil else {
-            logger.debug("resetState: stores not ready — skipping")
-            return
-        }
         logger.info("resetState: clearing cached sharing state")
         isShared = false
         isShareOwner = false

@@ -44,6 +44,7 @@ struct CashOutApp: App {
                 }
             }
             .animation(.easeInOut(duration: 0.35), value: showSplash)
+            .environment(authViewModel)
             .preferredColorScheme(.dark)
             .environment(
                 \.managedObjectContext,

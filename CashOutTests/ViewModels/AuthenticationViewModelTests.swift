@@ -190,6 +190,79 @@ final class AuthenticationViewModelTests: XCTestCase {
         XCTAssertNil(viewModel.errorMessage, "Should have no error message after session invalidated")
     }
 
+    // MARK: - signOut Tests
+
+    @MainActor
+    func testSignOutCallsServiceSignOut() async {
+        let mockAuth = MockAuthenticationService()
+        mockAuth.checkCredentialStateResult = true
+        let viewModel = AuthenticationViewModel(authService: mockAuth)
+
+        await viewModel.checkAuth()
+        viewModel.signOut()
+
+        XCTAssertTrue(mockAuth.signOutCalled, "Should call signOut on auth service")
+    }
+
+    @MainActor
+    func testSignOutStopsSyncMonitoring() {
+        let mockSync = MockSyncMonitorService()
+        let viewModel = AuthenticationViewModel(
+            authService: MockAuthenticationService(),
+            syncMonitorService: mockSync
+        )
+
+        viewModel.signOut()
+
+        XCTAssertTrue(mockSync.stopMonitoringCalled, "Should stop sync monitoring on sign-out")
+    }
+
+    @MainActor
+    func testSignOutResetsCloudSharingState() {
+        let mockSharing = MockCloudSharingService()
+        mockSharing.isShared = true
+        mockSharing.partnerName = "Partner"
+        let viewModel = AuthenticationViewModel(
+            authService: MockAuthenticationService(),
+            cloudSharingService: mockSharing
+        )
+
+        viewModel.signOut()
+
+        XCTAssertTrue(mockSharing.resetStateCalled, "Should reset cloud sharing state on sign-out")
+        XCTAssertFalse(mockSharing.isShared, "Sharing state should be cleared")
+        XCTAssertFalse(mockSharing.isShareOwner, "Share owner state should be cleared")
+        XCTAssertNil(mockSharing.partnerName, "Partner name should be cleared")
+    }
+
+    @MainActor
+    func testSignOutSetsIsAuthenticatedFalse() async {
+        let mockAuth = MockAuthenticationService()
+        mockAuth.checkCredentialStateResult = true
+        let viewModel = AuthenticationViewModel(authService: mockAuth)
+
+        await viewModel.checkAuth()
+        XCTAssertTrue(viewModel.isAuthenticated, "Should be authenticated before sign-out")
+
+        viewModel.signOut()
+
+        XCTAssertFalse(viewModel.isAuthenticated, "Should not be authenticated after sign-out")
+        XCTAssertTrue(viewModel.showSignIn, "Should show sign-in after sign-out")
+    }
+
+    @MainActor
+    func testSignOutClearsErrorMessage() {
+        let viewModel = AuthenticationViewModel(
+            authService: MockAuthenticationService()
+        )
+        viewModel.failSignIn(cancelled: false, message: "Some error")
+        XCTAssertNotNil(viewModel.errorMessage, "Should have error before sign-out")
+
+        viewModel.signOut()
+
+        XCTAssertNil(viewModel.errorMessage, "Should clear error message on sign-out")
+    }
+
     // MARK: - Initial State
 
     @MainActor

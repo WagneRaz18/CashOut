@@ -12,7 +12,8 @@ final class SettingsViewModel {
     private var refreshTask: Task<Void, Never>?
 
     var isShowingShareSheet = false
-    var hasPartner: Bool { cloudSharingService.isShared }
+    var hasPartner: Bool { cloudSharingService.isShared && cloudSharingService.partnerName != nil }
+    var isPendingInvitation: Bool { cloudSharingService.isShared && cloudSharingService.partnerName == nil }
     var partnerDisplayName: String? { cloudSharingService.partnerName }
     var errorMessage: String?
     var categories: [CategoryData] = []

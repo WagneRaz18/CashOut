@@ -19,6 +19,7 @@ final class MockCloudSharingService: CloudSharingServiceProtocol {
     var persistUpdatedShareCalled = false
     var prepareObjectForSharedSaveCalled = false
     var shareObjectsToHouseholdCalled = false
+    var resetStateCalled = false
     var lastPersistedShare: CKShare?
 
     // MARK: - Configurable Results
@@ -50,5 +51,12 @@ final class MockCloudSharingService: CloudSharingServiceProtocol {
 
     func shareObjectsToHouseholdIfNeeded(_ objects: [NSManagedObject]) async throws {
         shareObjectsToHouseholdCalled = true
+    }
+
+    func resetState() {
+        resetStateCalled = true
+        isShared = false
+        isShareOwner = false
+        partnerName = nil
     }
 }

@@ -24,6 +24,12 @@ final class AuthenticationViewModel {
     @ObservationIgnored
     private var authService: AuthenticationServiceProtocol
 
+    @ObservationIgnored
+    private var syncMonitorService: SyncMonitorServiceProtocol
+
+    @ObservationIgnored
+    private var cloudSharingService: CloudSharingServiceProtocol
+
     // MARK: - Guards
 
     @ObservationIgnored
@@ -31,8 +37,14 @@ final class AuthenticationViewModel {
 
     // MARK: - Init
 
-    init(authService: AuthenticationServiceProtocol = AuthenticationService.shared) {
+    init(
+        authService: AuthenticationServiceProtocol = AuthenticationService.shared,
+        syncMonitorService: SyncMonitorServiceProtocol = SyncMonitorService.shared,
+        cloudSharingService: CloudSharingServiceProtocol = CloudSharingService.shared
+    ) {
         self.authService = authService
+        self.syncMonitorService = syncMonitorService
+        self.cloudSharingService = cloudSharingService
         logger.debug("AuthenticationViewModel.init")
     }
 
@@ -111,5 +123,17 @@ final class AuthenticationViewModel {
         } else {
             errorMessage = message
         }
+    }
+
+    /// User-initiated sign out — clears credentials and resets all session state
+    func signOut() {
+        logger.info("signOut: user-initiated sign out")
+        syncMonitorService.stopMonitoring()
+        cloudSharingService.resetState()
+        authService.signOut()
+        isAuthenticated = false
+        isCheckingCredentials = false
+        errorMessage = nil
+        logger.info("signOut: complete — showing sign-in")
     }
 }

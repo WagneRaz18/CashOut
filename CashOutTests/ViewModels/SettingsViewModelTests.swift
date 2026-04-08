@@ -67,11 +67,33 @@ final class SettingsViewModelTests: XCTestCase {
         XCTAssertNil(viewModel.partnerDisplayName)
     }
 
+    func testSoloModeIsPendingInvitationIsFalse() {
+        let (viewModel, _, _, _) = makeSUT(isShared: false)
+        XCTAssertFalse(viewModel.isPendingInvitation)
+    }
+
+    // MARK: - Pending Invitation Tests
+
+    func testPendingInvitationWhenSharedButNoPartnerName() {
+        let (viewModel, _, _, _) = makeSUT(isShared: true, partnerName: nil)
+        XCTAssertTrue(viewModel.isPendingInvitation)
+    }
+
+    func testPendingInvitationHasPartnerIsFalse() {
+        let (viewModel, _, _, _) = makeSUT(isShared: true, partnerName: nil)
+        XCTAssertFalse(viewModel.hasPartner)
+    }
+
     // MARK: - Partner Connected Tests
 
     func testPartnerConnectedHasPartnerIsTrue() {
         let (viewModel, _, _, _) = makeSUT(isShared: true, partnerName: "Jane")
         XCTAssertTrue(viewModel.hasPartner)
+    }
+
+    func testPartnerConnectedIsPendingInvitationIsFalse() {
+        let (viewModel, _, _, _) = makeSUT(isShared: true, partnerName: "Jane")
+        XCTAssertFalse(viewModel.isPendingInvitation)
     }
 
     func testPartnerConnectedDisplaysPartnerName() {

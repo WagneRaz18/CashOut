@@ -43,6 +43,7 @@
 
 - **2026-04-08**: `isShareOwner` must be a stored `var` set explicitly during `checkSharingStatus()` — a computed property reading `currentUserParticipant?.role` is unreliable because `currentUserParticipant` can be nil on locally-cached `CKShare` objects. Set `true` in the private-store path, `false` in the shared-store path, and `false` in the no-shares fallthrough.
 - **2026-04-08**: Repository post-save sharing (`shareObjectsToHouseholdIfNeeded`) must be fire-and-forget (`Task {}` with stored handle + cancel-before-replace) — `await`-ing CloudKit network calls inside `saveExpense`/`saveCategory` blocks UI on save and causes flaky tests. Error handling moves into the fire-and-forget Task body (`do/catch` + `logger.error`).
+- **2026-04-08**: `resetState()` for session cleanup must be unconditional — no store-readiness guards. Unlike `checkSharingStatus()` which guards against mid-account-change resets, a deliberate sign-out must always clear cached sharing state (`isShared`, `isShareOwner`, `partnerName`, `currentShare`) regardless of `privatePersistentStore` availability.
 
 ## Conflict Resolution (Last-Write-Wins)
 - NSPersistentCloudKitContainer uses CKRecord change tags for framework-level LWW — NOT any custom `modifiedAt` field.

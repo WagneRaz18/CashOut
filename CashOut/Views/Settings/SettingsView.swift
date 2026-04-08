@@ -2,8 +2,10 @@ import SwiftUI
 import CloudKit
 
 struct SettingsView: View {
+    @Environment(AuthenticationViewModel.self) private var authViewModel
     @State private var viewModel = SettingsViewModel()
     @State private var isShowingAddCategory = false
+    @State private var isShowingSignOutAlert = false
 
     var body: some View {
         Form {
@@ -32,6 +34,14 @@ struct SettingsView: View {
                 HouseholdSectionView(viewModel: viewModel)
             }
 
+            Section("Account") {
+                Button(role: .destructive) {
+                    isShowingSignOutAlert = true
+                } label: {
+                    Label("Sign Out", systemImage: "rectangle.portrait.and.arrow.right")
+                }
+            }
+
             Section("About") {
                 LabeledContent("Version", value: Bundle.main.appVersion)
                 Text("Your data stays on your devices and iCloud. No analytics, no third-party access.")
@@ -49,6 +59,14 @@ struct SettingsView: View {
         .task {
             await viewModel.refreshSharingStatus()
             await viewModel.loadCategories()
+        }
+        .alert("Sign Out", isPresented: $isShowingSignOutAlert) {
+            Button("Sign Out", role: .destructive) {
+                authViewModel.signOut()
+            }
+            Button("Cancel", role: .cancel) { }
+        } message: {
+            Text("You will need to sign in again with your Apple ID to sync expenses.")
         }
         .sheet(isPresented: Bindable(viewModel).isShowingShareSheet, onDismiss: {
             // Catches interactive dismiss (swipe-down) when no delegate method fires
@@ -81,6 +99,18 @@ private struct HouseholdSectionView: View {
                         Text(viewModel.partnerDisplayName ?? "Partner")
                             .font(.body)
                         Text("Connected")
+                            .font(.caption)
+                            .foregroundStyle(.secondary)
+                    }
+                }
+            } else if viewModel.isPendingInvitation {
+                HStack {
+                    Image(systemName: "clock")
+                        .foregroundStyle(.secondary)
+                    VStack(alignment: .leading) {
+                        Text("Invitation Pending")
+                            .font(.body)
+                        Text("Waiting for partner to accept")
                             .font(.caption)
                             .foregroundStyle(.secondary)
                     }
@@ -125,4 +155,5 @@ private struct HouseholdSectionView: View {
     NavigationStack {
         SettingsView()
     }
+    .environment(AuthenticationViewModel())
 }
