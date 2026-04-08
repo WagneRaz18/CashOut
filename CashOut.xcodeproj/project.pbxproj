@@ -67,7 +67,7 @@
 		H1I2J3K4L5M60812H1I2J3K4 /* FeedViewModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = H1I2J3K4L5M60802H1I2J3K4 /* FeedViewModel.swift */; };
 		H1I2J3K4L5M60813H1I2J3K4 /* FeedRowView.swift in Sources */ = {isa = PBXBuildFile; fileRef = H1I2J3K4L5M60803H1I2J3K4 /* FeedRowView.swift */; };
 		H1I2J3K4L5M60814H1I2J3K4 /* FeedViewModelTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = H1I2J3K4L5M60804H1I2J3K4 /* FeedViewModelTests.swift */; };
-		I1J2K3L4M5N60911I1J2K3L4 /* FloatingAddButton.swift in Sources */ = {isa = PBXBuildFile; fileRef = I1J2K3L4M5N60901I1J2K3L4 /* FloatingAddButton.swift */; };
+
 		J1K2L3M4N5O60A11 /* EditExpenseViewModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = J1K2L3M4N5O60A01 /* EditExpenseViewModel.swift */; };
 		J1K2L3M4N5O60A12 /* EditExpenseSheet.swift in Sources */ = {isa = PBXBuildFile; fileRef = J1K2L3M4N5O60A02 /* EditExpenseSheet.swift */; };
 		J1K2L3M4N5O60A13 /* EditExpenseViewModelTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = J1K2L3M4N5O60A03 /* EditExpenseViewModelTests.swift */; };
@@ -172,7 +172,7 @@
 		H1I2J3K4L5M60802H1I2J3K4 /* FeedViewModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FeedViewModel.swift; sourceTree = "<group>"; };
 		H1I2J3K4L5M60803H1I2J3K4 /* FeedRowView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FeedRowView.swift; sourceTree = "<group>"; };
 		H1I2J3K4L5M60804H1I2J3K4 /* FeedViewModelTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FeedViewModelTests.swift; sourceTree = "<group>"; };
-		I1J2K3L4M5N60901I1J2K3L4 /* FloatingAddButton.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FloatingAddButton.swift; sourceTree = "<group>"; };
+
 		J1K2L3M4N5O60A01 /* EditExpenseViewModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = EditExpenseViewModel.swift; sourceTree = "<group>"; };
 		J1K2L3M4N5O60A02 /* EditExpenseSheet.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = EditExpenseSheet.swift; sourceTree = "<group>"; };
 		J1K2L3M4N5O60A03 /* EditExpenseViewModelTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = EditExpenseViewModelTests.swift; sourceTree = "<group>"; };
@@ -343,7 +343,6 @@
 				J1K2L3M4N5O60A02 /* EditExpenseSheet.swift */,
 				H1I2J3K4L5M60803H1I2J3K4 /* FeedRowView.swift */,
 				B1C2D3E4F5061829B1C2D3E3 /* FeedView.swift */,
-				I1J2K3L4M5N60901I1J2K3L4 /* FloatingAddButton.swift */,
 			);
 			path = Feed;
 			sourceTree = "<group>";
@@ -661,7 +660,6 @@
 				H1I2J3K4L5M60811H1I2J3K4 /* Date+Formatting.swift in Sources */,
 				H1I2J3K4L5M60812H1I2J3K4 /* FeedViewModel.swift in Sources */,
 				H1I2J3K4L5M60813H1I2J3K4 /* FeedRowView.swift in Sources */,
-				I1J2K3L4M5N60911I1J2K3L4 /* FloatingAddButton.swift in Sources */,
 				J1K2L3M4N5O60A11 /* EditExpenseViewModel.swift in Sources */,
 				J1K2L3M4N5O60A12 /* EditExpenseSheet.swift in Sources */,
 				K1L2M3N4O5P60B11 /* InsightsViewModel.swift in Sources */,

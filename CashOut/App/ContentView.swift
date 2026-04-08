@@ -6,7 +6,6 @@ private let logger = Logger(subsystem: "com.wagneraz.CashOut", category: "Conten
 
 struct ContentView: View {
     @State private var selectedTab = 0
-    @State private var showingAddExpenseSheet = false
 
     var body: some View {
         TabView(selection: $selectedTab) {
@@ -27,23 +26,6 @@ struct ContentView: View {
         .tabBarMinimizeBehavior(.onScrollDown)
         .onChange(of: selectedTab) { oldTab, newTab in
             logger.info("Tab switched: \(oldTab) → \(newTab)")
-        }
-        .overlay {
-            if selectedTab != 0 {
-                VStack {
-                    Spacer()
-                    FloatingAddButton {
-                        showingAddExpenseSheet = true
-                    }
-                    .padding(.bottom, Spacing.lg)
-                }
-            }
-        }
-        .sheet(isPresented: $showingAddExpenseSheet) {
-            EntryView(onSaveComplete: {
-                showingAddExpenseSheet = false
-            })
-            .presentationDetents([.large])
         }
         .task {
             logger.info("ContentView.task: starting sync monitor + sharing check")
