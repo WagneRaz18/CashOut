@@ -103,6 +103,7 @@ private struct HouseholdSectionView: View {
                             .foregroundStyle(.secondary)
                     }
                 }
+                .accessibilityElement(children: .combine)
             } else if viewModel.isPendingInvitation {
                 HStack {
                     Image(systemName: "clock")

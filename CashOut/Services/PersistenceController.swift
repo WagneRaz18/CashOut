@@ -172,7 +172,13 @@ final class PersistenceController: @unchecked Sendable {
                 }
                 return
             }
-            guard !inMemory, let self, let storeURL = desc.url else { return }
+            guard let self else { return }
+            if inMemory {
+                // Single in-memory store acts as private store for seeding/tests
+                self.privatePersistentStore = self.container.persistentStoreCoordinator.persistentStores.first
+                return
+            }
+            guard let storeURL = desc.url else { return }
             let store = self.container.persistentStoreCoordinator.persistentStore(for: storeURL)
             if storeURL == sharedStoreURL {
                 self.sharedPersistentStore = store

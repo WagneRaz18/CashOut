@@ -13,7 +13,6 @@ final class ExpenseRepository: ExpenseRepositoryProtocol {
 
     private let persistence: PersistenceController
     private let cloudSharingService: CloudSharingServiceProtocol?
-    private var shareTask: Task<Void, Never>?
 
     // MARK: - FRC Observation (Story 2-1)
 
@@ -180,14 +179,17 @@ final class ExpenseRepository: ExpenseRepositoryProtocol {
         }
 
         // POST-SAVE: Move to shared zone if owner (new objects only)
-        // Fire-and-forget: don't block UI on CloudKit network call
+        // Fire-and-forget: each share is independent — do NOT cancel previous shares,
+        // as each targets a different object and must complete for partner visibility.
         if isNewObject {
             let sharingService = cloudSharingService
-            shareTask?.cancel()
-            shareTask = Task {
+            let objectID = expense.objectID
+            Task { @MainActor in
                 do {
+                    let object = context.object(with: objectID)
                     logger.debug("saveExpense: sharing to household (background, new object)")
-                    try await sharingService?.shareObjectsToHouseholdIfNeeded([expense])
+                    try await sharingService?.shareObjectsToHouseholdIfNeeded([object])
+                    guard !Task.isCancelled else { return }
                 } catch {
                     logger.error("saveExpense: sharing FAILED — \(error.localizedDescription)")
                 }

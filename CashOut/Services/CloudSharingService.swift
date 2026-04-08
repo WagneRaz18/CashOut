@@ -38,8 +38,14 @@ final class CloudSharingService: CloudSharingServiceProtocol {
         logger.debug("CloudSharingService.init")
     }
 
+    /// Creates or reuses a CKShare for the given managed objects.
+    /// - Important: Callers must pass deduplicated objects — `container.share()` sends
+    ///   all objects to CloudKit. Display-layer dedup (e.g., `fetchCategories`) does NOT
+    ///   protect this path; duplicate managed objects will create redundant CKRecords.
     func createShare(for objects: [NSManagedObject]) async throws -> (CKShare, CKContainer) {
         logger.info("createShare: \(objects.count) objects")
+        assert(Set(objects.map(\.objectID)).count == objects.count,
+               "createShare: duplicate objectIDs passed — caller must deduplicate")
         guard !objects.isEmpty else {
             logger.error("createShare: no objects provided")
             throw NSError(

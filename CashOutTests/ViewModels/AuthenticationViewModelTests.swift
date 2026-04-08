@@ -1,11 +1,11 @@
 import XCTest
 @testable import CashOut
 
+@MainActor
 final class AuthenticationViewModelTests: XCTestCase {
 
     // MARK: - checkAuth Tests
 
-    @MainActor
     func testCheckAuthDelegatesToService() async {
         let mock = MockAuthenticationService()
         let viewModel = AuthenticationViewModel(authService: mock)
@@ -15,7 +15,6 @@ final class AuthenticationViewModelTests: XCTestCase {
         XCTAssertTrue(mock.checkCredentialStateCalled, "Should delegate to service")
     }
 
-    @MainActor
     func testCheckAuthWithValidCredentialSetsAuthenticated() async {
         let mock = MockAuthenticationService()
         mock.checkCredentialStateResult = true
@@ -28,7 +27,6 @@ final class AuthenticationViewModelTests: XCTestCase {
         XCTAssertFalse(viewModel.showSignIn, "Should not show sign-in")
     }
 
-    @MainActor
     func testCheckAuthWithNoCredentialShowsSignIn() async {
         let mock = MockAuthenticationService()
         mock.checkCredentialStateResult = false
@@ -41,7 +39,6 @@ final class AuthenticationViewModelTests: XCTestCase {
         XCTAssertTrue(viewModel.showSignIn, "Should show sign-in")
     }
 
-    @MainActor
     func testCheckAuthDoesNotRefire() async {
         let mock = MockAuthenticationService()
         mock.checkCredentialStateResult = true
@@ -60,7 +57,6 @@ final class AuthenticationViewModelTests: XCTestCase {
 
     // MARK: - performSignIn Tests
 
-    @MainActor
     func testPerformSignInSuccessUpdatesState() async {
         let mock = MockAuthenticationService()
         mock.signInShouldSucceed = true
@@ -73,7 +69,6 @@ final class AuthenticationViewModelTests: XCTestCase {
         XCTAssertNil(viewModel.errorMessage, "Should have no error message")
     }
 
-    @MainActor
     func testPerformSignInFailurePreservesUnauthenticated() async {
         let mock = MockAuthenticationService()
         mock.signInShouldSucceed = false
@@ -89,7 +84,6 @@ final class AuthenticationViewModelTests: XCTestCase {
         XCTAssertNotNil(viewModel.errorMessage, "Should have error message")
     }
 
-    @MainActor
     func testPerformSignInCancelledShowsExplanation() async {
         let mock = MockAuthenticationService()
         mock.signInShouldSucceed = false
@@ -108,7 +102,6 @@ final class AuthenticationViewModelTests: XCTestCase {
 
     // MARK: - currentUserID forwarding
 
-    @MainActor
     func testCurrentUserIDForwardsFromService() async {
         let mock = MockAuthenticationService()
         mock.signInUserID = "test-user-123"
@@ -126,7 +119,6 @@ final class AuthenticationViewModelTests: XCTestCase {
 
     // MARK: - completeSignIn Tests (SignInWithAppleButton flow)
 
-    @MainActor
     func testCompleteSignInSavesCredentialsAndSetsAuthenticated() {
         let mock = MockAuthenticationService()
         let viewModel = AuthenticationViewModel(authService: mock)
@@ -141,7 +133,6 @@ final class AuthenticationViewModelTests: XCTestCase {
 
     // MARK: - failSignIn Tests
 
-    @MainActor
     func testFailSignInCancelledShowsExplanation() {
         let viewModel = AuthenticationViewModel(
             authService: MockAuthenticationService()
@@ -157,7 +148,6 @@ final class AuthenticationViewModelTests: XCTestCase {
         )
     }
 
-    @MainActor
     func testFailSignInErrorShowsMessage() {
         let viewModel = AuthenticationViewModel(
             authService: MockAuthenticationService()
@@ -171,7 +161,6 @@ final class AuthenticationViewModelTests: XCTestCase {
 
     // MARK: - Session Invalidation Tests (AC #7, #8)
 
-    @MainActor
     func testSessionInvalidatedResetsAuthState() async {
         let mock = MockAuthenticationService()
         mock.checkCredentialStateResult = true
@@ -192,7 +181,6 @@ final class AuthenticationViewModelTests: XCTestCase {
 
     // MARK: - signOut Tests
 
-    @MainActor
     func testSignOutCallsServiceSignOut() async {
         let mockAuth = MockAuthenticationService()
         mockAuth.checkCredentialStateResult = true
@@ -204,7 +192,6 @@ final class AuthenticationViewModelTests: XCTestCase {
         XCTAssertTrue(mockAuth.signOutCalled, "Should call signOut on auth service")
     }
 
-    @MainActor
     func testSignOutStopsSyncMonitoring() {
         let mockSync = MockSyncMonitorService()
         let viewModel = AuthenticationViewModel(
@@ -217,7 +204,6 @@ final class AuthenticationViewModelTests: XCTestCase {
         XCTAssertTrue(mockSync.stopMonitoringCalled, "Should stop sync monitoring on sign-out")
     }
 
-    @MainActor
     func testSignOutResetsCloudSharingState() {
         let mockSharing = MockCloudSharingService()
         mockSharing.isShared = true
@@ -236,7 +222,6 @@ final class AuthenticationViewModelTests: XCTestCase {
         XCTAssertNil(mockSharing.partnerName, "Partner name should be cleared")
     }
 
-    @MainActor
     func testSignOutSetsIsAuthenticatedFalse() async {
         let mockAuth = MockAuthenticationService()
         mockAuth.checkCredentialStateResult = true
@@ -251,7 +236,6 @@ final class AuthenticationViewModelTests: XCTestCase {
         XCTAssertTrue(viewModel.showSignIn, "Should show sign-in after sign-out")
     }
 
-    @MainActor
     func testSignOutClearsErrorMessage() {
         let viewModel = AuthenticationViewModel(
             authService: MockAuthenticationService()
@@ -266,7 +250,6 @@ final class AuthenticationViewModelTests: XCTestCase {
 
     // MARK: - Initial State
 
-    @MainActor
     func testInitialState() {
         let viewModel = AuthenticationViewModel(
             authService: MockAuthenticationService()

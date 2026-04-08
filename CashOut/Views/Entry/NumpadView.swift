@@ -4,6 +4,9 @@ struct NumpadView: View {
     let onDigit: (String) -> Void
     let onBackspace: () -> Void
 
+    @ScaledMetric(relativeTo: .title2) private var digitFontSize: CGFloat = 24
+    @ScaledMetric(relativeTo: .title3) private var backspaceFontSize: CGFloat = 20
+
     private let rows: [[NumpadKey]] = [
         [.digit("1"), .digit("2"), .digit("3")],
         [.digit("4"), .digit("5"), .digit("6")],
@@ -43,14 +46,14 @@ struct NumpadView: View {
         switch key {
         case .digit(let value):
             Text(value)
-                .font(.system(size: 24, weight: .semibold, design: .rounded))
+                .font(.system(size: digitFontSize, weight: .semibold, design: .rounded))
                 .foregroundStyle(SemanticColor.onSurface)
                 .minimumScaleFactor(0.8)
         case .empty:
             Color.clear
         case .backspace:
             Image(systemName: "delete.backward")
-                .font(.system(size: 20))
+                .font(.system(size: backspaceFontSize))
                 .foregroundStyle(SemanticColor.secondary)
         }
     }

@@ -59,6 +59,8 @@
 - **2026-04-04**: `Color("name")` silently renders as clear/invisible when the name doesn't match an asset catalog entry — no crash, no warning. Always use the `CategoryColor(from:)?.color ?? .gray` enum-based lookup with an explicit fallback instead of raw `Color(colorName)` for data-driven color names.
 
 ## Accessibility
+- **2026-04-08**: Fixed `font(.system(size: N))` blocks Dynamic Type scaling — use `@ScaledMetric(relativeTo: .largeTitle) private var fontSize: CGFloat = N` to let custom sizes scale with the user's preferred text size. The existing `.minimumScaleFactor(0.5)` handles overflow at larger sizes.
+- **2026-04-08**: Decorative large-radius `blur()` circles must be gated on `@Environment(\.accessibilityReduceTransparency)` — omit or replace with solid fill when true. Users who enable Reduce Transparency expect no translucent/blur effects. Add `.drawingGroup()` on blur-heavy backgrounds to rasterize into a single GPU texture.
 - **2026-04-05**: `HStack` rows with icon + text + spacer + badge create 4 separate VoiceOver focus stops — noisy and confusing. Add `.accessibilityElement(children: .combine)` to collapse into one element. Prefer `.imageScale(.medium)` over fixed `.frame(width:height:)` on SF Symbols so icons scale with Dynamic Type.
 - **2026-04-06**: SF Symbol names (e.g., `"cup.and.saucer.fill"`) are incomprehensible as VoiceOver labels — always map to human-readable strings via a `[String: String]` dictionary. Use `.accessibilityAddTraits(.isSelected)` on picker items so VoiceOver announces selection state.
 

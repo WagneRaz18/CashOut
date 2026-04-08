@@ -9,7 +9,6 @@ final class CategoryRepository: CategoryRepositoryProtocol {
 
     private let persistence: PersistenceController
     private let cloudSharingService: CloudSharingServiceProtocol?
-    private var shareTask: Task<Void, Never>?
 
     init(
         persistence: PersistenceController = .shared,
@@ -90,14 +89,17 @@ final class CategoryRepository: CategoryRepositoryProtocol {
             throw error
         }
 
-        // Fire-and-forget: don't block UI on CloudKit network call
+        // Fire-and-forget: each share is independent — do NOT cancel previous shares,
+        // as each targets a different object and must complete for partner visibility.
         if isNewCustomCategory {
             let sharingService = cloudSharingService
-            shareTask?.cancel()
-            shareTask = Task {
+            let objectID = category.objectID
+            Task { @MainActor in
                 do {
+                    let object = context.object(with: objectID)
                     logger.debug("saveCategory: sharing custom category to household (background)")
-                    try await sharingService?.shareObjectsToHouseholdIfNeeded([category])
+                    try await sharingService?.shareObjectsToHouseholdIfNeeded([object])
+                    guard !Task.isCancelled else { return }
                 } catch {
                     logger.error("saveCategory: sharing FAILED — \(error.localizedDescription)")
                 }
@@ -125,14 +127,17 @@ final class CategoryRepository: CategoryRepositoryProtocol {
         ]
 
         let defaults = try context.fetch(request)
+        var seenIDs = Set<UUID>()
         var seenNames = Set<String>()
         var duplicates: [Category] = []
 
         for category in defaults {
+            let id = category.wrappedID
             let name = category.wrappedName
-            if seenNames.contains(name) {
+            if seenIDs.contains(id) || seenNames.contains(name) {
                 duplicates.append(category)
             } else {
+                seenIDs.insert(id)
                 seenNames.insert(name)
             }
         }
@@ -158,12 +163,16 @@ final class CategoryRepository: CategoryRepositoryProtocol {
         // Guard: context.save() throws NSInternalInconsistencyException (ObjC exception,
         // not caught by Swift do/catch) when the coordinator has zero stores.
         // Check specifically for the private store — default categories are private data.
-        guard persistence.privatePersistentStore != nil else {
+        guard let privateStore = persistence.privatePersistentStore else {
             logger.error("seedDefaultCategoriesIfNeeded: no persistent stores — skipping")
             return
         }
 
+        // Scope to private store only — shared-store categories from partner sync
+        // must not suppress seeding into the private store.
         let request: NSFetchRequest<Category> = Category.fetchRequest()
+        request.predicate = NSPredicate(format: "isDefault == YES")
+        request.affectedStores = [privateStore]
         let count = try context.count(for: request)
 
         guard count == 0 else {
@@ -185,6 +194,7 @@ final class CategoryRepository: CategoryRepositoryProtocol {
         do {
             try context.save()
         } catch {
+            logger.error("seedDefaultCategoriesIfNeeded: context.save() FAILED — \(error.localizedDescription)")
             context.rollback()
             throw error
         }

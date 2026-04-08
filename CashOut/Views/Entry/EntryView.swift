@@ -19,6 +19,7 @@ struct EntryView: View {
     @State private var showSuccessOverlay = false
     @State private var showCheckmark = false
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
+    @Environment(\.accessibilityReduceTransparency) private var reduceTransparency
 
     var body: some View {
         VStack(spacing: 0) {
@@ -112,21 +113,24 @@ struct EntryView: View {
         .background {
             Surface.base.ignoresSafeArea()
 
-            // Ambient atmospheric glow — matches mockup
-            Circle()
-                .fill(SemanticColor.primary.opacity(0.10))
-                .blur(radius: 120)
-                .frame(width: 400, height: 280)
-                .offset(x: 120, y: -80)
-                .allowsHitTesting(false)
+            if !reduceTransparency {
+                // Ambient atmospheric glow — matches mockup
+                Circle()
+                    .fill(SemanticColor.primary.opacity(0.10))
+                    .blur(radius: 120)
+                    .frame(width: 400, height: 280)
+                    .offset(x: 120, y: -80)
+                    .allowsHitTesting(false)
 
-            Circle()
-                .fill(SemanticColor.tertiary.opacity(0.05))
-                .blur(radius: 100)
-                .frame(width: 340, height: 210)
-                .offset(x: -100, y: 300)
-                .allowsHitTesting(false)
+                Circle()
+                    .fill(SemanticColor.tertiary.opacity(0.05))
+                    .blur(radius: 100)
+                    .frame(width: 340, height: 210)
+                    .offset(x: -100, y: 300)
+                    .allowsHitTesting(false)
+            }
         }
+        .drawingGroup()
         .overlay { successOverlay }
         .task {
             logger.debug("EntryView.task: loading categories")

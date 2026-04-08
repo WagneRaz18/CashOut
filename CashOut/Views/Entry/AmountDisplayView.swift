@@ -3,6 +3,8 @@ import SwiftUI
 struct AmountDisplayView: View {
     let amount: Int64
 
+    @ScaledMetric(relativeTo: .largeTitle) private var amountFontSize: CGFloat = 64
+
     var body: some View {
         VStack(spacing: Spacing.sm) {
             Text("AMOUNT")
@@ -12,7 +14,7 @@ struct AmountDisplayView: View {
                 .tracking(1.2)
 
             Text(amount.displayAmount)
-                .font(.system(size: 64, weight: .heavy, design: .rounded))
+                .font(.system(size: amountFontSize, weight: .heavy, design: .rounded))
                 .tracking(-2)
                 .foregroundStyle(amount == 0 ? SemanticColor.secondary : SemanticColor.onSurface)
                 .lineLimit(1)
