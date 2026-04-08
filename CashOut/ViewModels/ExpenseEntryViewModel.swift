@@ -48,6 +48,9 @@ final class ExpenseEntryViewModel {
     @ObservationIgnored
     private let hapticService: HapticServiceProtocol
 
+    @ObservationIgnored
+    private var shareTask: Task<Void, Never>?
+
     // MARK: - Constants
 
     private static let maxBeforeAppend: Int64 = 1_000_000
@@ -201,8 +204,19 @@ final class ExpenseEntryViewModel {
         // Persist MRU
         userDefaults.set(categoryID.uuidString, forKey: Self.mruKey)
 
-        // Signal success — View drives animation sequence, then calls resetForm()
+        // Signal success FIRST — View drives animation sequence, then calls resetForm().
+        // Sharing runs in a separate fire-and-forget task so it doesn't block the main
+        // actor and delay the SwiftUI onChange(of: saveCount) animation trigger.
         saveCount += 1
+
+        let repo = expenseRepository
+        let expenseID = expense.id
+        shareTask = Task { await repo.shareNewExpenseToHousehold(id: expenseID) }
+    }
+
+    func cancelPendingShare() {
+        shareTask?.cancel()
+        shareTask = nil
     }
 
     /// Resets the entry form for the next expense. Called by the View after the save animation completes.

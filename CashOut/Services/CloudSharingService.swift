@@ -203,12 +203,8 @@ final class CloudSharingService: CloudSharingServiceProtocol {
             return
         }
         logger.info("shareObjectsToHouseholdIfNeeded: sharing \(objects.count) objects to household")
-        do {
-            _ = try await persistenceController.container.share(objects, to: share)
-            logger.info("shareObjectsToHouseholdIfNeeded: success")
-        } catch {
-            logger.error("shareObjectsToHouseholdIfNeeded: FAILED — \(error.localizedDescription)")
-        }
+        _ = try await persistenceController.container.share(objects, to: share)
+        logger.info("shareObjectsToHouseholdIfNeeded: success")
     }
 
     func resetState() {

@@ -178,22 +178,31 @@ final class ExpenseRepository: ExpenseRepositoryProtocol {
             throw error
         }
 
-        // POST-SAVE: Move to shared zone if owner (new objects only)
-        // Fire-and-forget: each share is independent — do NOT cancel previous shares,
-        // as each targets a different object and must complete for partner visibility.
-        if isNewObject {
-            let sharingService = cloudSharingService
-            let objectID = expense.objectID
-            Task { @MainActor in
-                do {
-                    let object = context.object(with: objectID)
-                    logger.debug("saveExpense: sharing to household (background, new object)")
-                    try await sharingService?.shareObjectsToHouseholdIfNeeded([object])
-                    guard !Task.isCancelled else { return }
-                } catch {
-                    logger.error("saveExpense: sharing FAILED — \(error.localizedDescription)")
-                }
+    }
+
+    func shareNewExpenseToHousehold(id: UUID) async {
+        let context = persistence.container.viewContext
+        let request: NSFetchRequest<Expense> = Expense.fetchRequest()
+        request.predicate = NSPredicate(format: "id == %@", id as CVarArg)
+        request.fetchLimit = 1
+
+        let expense: Expense
+        do {
+            guard let found = try context.fetch(request).first else {
+                logger.warning("shareNewExpenseToHousehold: expense \(id, privacy: .private) not found — skipping")
+                return
             }
+            expense = found
+        } catch {
+            logger.fault("shareNewExpenseToHousehold: fetch FAILED — \(error.localizedDescription, privacy: .public)")
+            return
+        }
+        guard !Task.isCancelled else { return }
+        logger.debug("shareNewExpenseToHousehold: sharing to household")
+        do {
+            try await cloudSharingService?.shareObjectsToHouseholdIfNeeded([expense])
+        } catch {
+            logger.error("shareNewExpenseToHousehold: FAILED — \(error.localizedDescription)")
         }
     }
 

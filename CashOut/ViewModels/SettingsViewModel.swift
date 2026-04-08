@@ -10,6 +10,8 @@ private let logger = Logger(subsystem: "com.wagneraz.CashOut", category: "Settin
 final class SettingsViewModel {
     @ObservationIgnored
     private var refreshTask: Task<Void, Never>?
+    @ObservationIgnored
+    private var categoryShareTask: Task<Void, Never>?
 
     var isShowingShareSheet = false
     var hasPartner: Bool { cloudSharingService.isShared && cloudSharingService.partnerName != nil }
@@ -153,6 +155,12 @@ final class SettingsViewModel {
             logger.info("saveCategory: success")
             hapticService.trigger(.saveTap)
             await loadCategories()
+
+            // Share new custom categories after UI has updated
+            if existingID == nil {
+                let repo = categoryRepository
+                categoryShareTask = Task { await repo.shareNewCategoryToHousehold(id: id) }
+            }
         } catch {
             guard !Task.isCancelled else { return }
             logger.error("saveCategory: FAILED — \(error.localizedDescription)")

@@ -5,6 +5,8 @@ protocol ExpenseRepositoryProtocol {
     func fetchExpenses(for period: DateInterval) async throws -> [ExpenseData]
     func saveExpense(_ data: ExpenseData) async throws
     func deleteExpense(id: UUID) async throws
+    /// Share a newly-created expense to the household. Fire-and-forget from the caller.
+    func shareNewExpenseToHousehold(id: UUID) async
 
     // MARK: - FRC Observation (Story 2-1)
 
@@ -20,4 +22,5 @@ extension ExpenseRepositoryProtocol {
         set { }
     }
     func startObservingExpenses() { }
+    func shareNewExpenseToHousehold(id: UUID) async { }
 }

@@ -16,6 +16,8 @@ final class MockCategoryRepository: CategoryRepositoryProtocol {
     var fetchCategoriesCallCount = 0
     var saveCategoryCalled = false
     var savedCategory: CategoryData?
+    var shareNewCategoryCalled = false
+    var lastSharedCategoryID: UUID?
 
     // MARK: - Protocol Methods
 
@@ -30,5 +32,10 @@ final class MockCategoryRepository: CategoryRepositoryProtocol {
         saveCategoryCalled = true
         savedCategory = data
         if shouldThrow { throw throwError }
+    }
+
+    func shareNewCategoryToHousehold(id: UUID) async {
+        shareNewCategoryCalled = true
+        lastSharedCategoryID = id
     }
 }

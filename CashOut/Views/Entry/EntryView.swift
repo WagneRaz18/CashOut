@@ -115,22 +115,23 @@ struct EntryView: View {
 
             if !reduceTransparency {
                 // Ambient atmospheric glow — matches mockup
-                Circle()
-                    .fill(SemanticColor.primary.opacity(0.10))
-                    .blur(radius: 120)
-                    .frame(width: 400, height: 280)
-                    .offset(x: 120, y: -80)
-                    .allowsHitTesting(false)
+                ZStack {
+                    Circle()
+                        .fill(SemanticColor.primary.opacity(0.10))
+                        .blur(radius: 120)
+                        .frame(width: 400, height: 280)
+                        .offset(x: 120, y: -80)
 
-                Circle()
-                    .fill(SemanticColor.tertiary.opacity(0.05))
-                    .blur(radius: 100)
-                    .frame(width: 340, height: 210)
-                    .offset(x: -100, y: 300)
-                    .allowsHitTesting(false)
+                    Circle()
+                        .fill(SemanticColor.tertiary.opacity(0.05))
+                        .blur(radius: 100)
+                        .frame(width: 340, height: 210)
+                        .offset(x: -100, y: 300)
+                }
+                .drawingGroup()
+                .allowsHitTesting(false)
             }
         }
-        .drawingGroup()
         .overlay { successOverlay }
         .task {
             logger.debug("EntryView.task: loading categories")
@@ -147,6 +148,7 @@ struct EntryView: View {
             logger.debug("EntryView.onDisappear — cancelling tasks")
             saveTask?.cancel()
             animationTask?.cancel()
+            viewModel.cancelPendingShare()
         }
     }
 

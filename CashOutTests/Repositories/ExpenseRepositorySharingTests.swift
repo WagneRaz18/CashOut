@@ -28,7 +28,7 @@ final class ExpenseRepositorySharingTests: XCTestCase {
 
     // MARK: - Solo Mode (isShared = false)
 
-    func testSaveInSoloModeCallsMethodsButGuardsReturnEarly() async throws {
+    func testSaveInSoloModeCallsPrepareButNotShare() async throws {
         let mock = MockCloudSharingService()
         mock.isShared = false
         let repository = ExpenseRepository(
@@ -38,25 +38,21 @@ final class ExpenseRepositorySharingTests: XCTestCase {
 
         let expense = try await makeSampleExpense()
         try await repository.saveExpense(expense)
-        await Task.yield()
-        try await Task.sleep(for: .milliseconds(50))  // Allow fire-and-forget sharing task to complete
 
-        // Repository delegates to service for new objects; the service's
+        // Pre-save routing is called for new objects; the service's
         // guard clauses (isShared check) handle the no-op in solo mode.
-        // Mock records calls but real implementation returns early.
         XCTAssertTrue(
             mock.prepareObjectForSharedSaveCalled,
             "prepareObjectForSharedSave should be called (service guards on isShared)"
         )
-        XCTAssertTrue(
+        // Sharing is now a separate call — saveExpense should NOT trigger it
+        XCTAssertFalse(
             mock.shareObjectsToHouseholdCalled,
-            "shareObjectsToHouseholdIfNeeded should be called (service guards on isShared)"
+            "shareObjectsToHouseholdIfNeeded should NOT be called from saveExpense"
         )
     }
 
-    // MARK: - Owner Mode (isShared = true, isShareOwner = true)
-
-    func testSaveAsOwnerCallsShareObjectsToHousehold() async throws {
+    func testShareNewExpenseCallsShareObjectsToHousehold() async throws {
         let mock = MockCloudSharingService()
         mock.isShared = true
         mock.isShareOwner = true
@@ -67,12 +63,11 @@ final class ExpenseRepositorySharingTests: XCTestCase {
 
         let expense = try await makeSampleExpense()
         try await repository.saveExpense(expense)
-        await Task.yield()
-        try await Task.sleep(for: .milliseconds(50))  // Allow fire-and-forget sharing task to complete
+        await repository.shareNewExpenseToHousehold(id: expense.id)
 
         XCTAssertTrue(
             mock.shareObjectsToHouseholdCalled,
-            "shareObjectsToHouseholdIfNeeded should be called for owner"
+            "shareObjectsToHouseholdIfNeeded should be called via shareNewExpenseToHousehold"
         )
     }
 
@@ -110,8 +105,6 @@ final class ExpenseRepositorySharingTests: XCTestCase {
         // Save initial expense
         let expense = try await makeSampleExpense()
         try await repository.saveExpense(expense)
-        await Task.yield()
-        try await Task.sleep(for: .milliseconds(50))  // Allow fire-and-forget sharing task to complete
 
         // Reset call tracking
         mock.prepareObjectForSharedSaveCalled = false

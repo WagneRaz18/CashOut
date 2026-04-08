@@ -89,21 +89,31 @@ final class CategoryRepository: CategoryRepositoryProtocol {
             throw error
         }
 
-        // Fire-and-forget: each share is independent — do NOT cancel previous shares,
-        // as each targets a different object and must complete for partner visibility.
-        if isNewCustomCategory {
-            let sharingService = cloudSharingService
-            let objectID = category.objectID
-            Task { @MainActor in
-                do {
-                    let object = context.object(with: objectID)
-                    logger.debug("saveCategory: sharing custom category to household (background)")
-                    try await sharingService?.shareObjectsToHouseholdIfNeeded([object])
-                    guard !Task.isCancelled else { return }
-                } catch {
-                    logger.error("saveCategory: sharing FAILED — \(error.localizedDescription)")
-                }
+    }
+
+    func shareNewCategoryToHousehold(id: UUID) async {
+        let context = persistence.container.viewContext
+        let request: NSFetchRequest<Category> = Category.fetchRequest()
+        request.predicate = NSPredicate(format: "id == %@", id as CVarArg)
+        request.fetchLimit = 1
+
+        let category: Category
+        do {
+            guard let found = try context.fetch(request).first else {
+                logger.warning("shareNewCategoryToHousehold: category \(id, privacy: .private) not found — skipping")
+                return
             }
+            category = found
+        } catch {
+            logger.fault("shareNewCategoryToHousehold: fetch FAILED — \(error.localizedDescription, privacy: .public)")
+            return
+        }
+        guard !Task.isCancelled else { return }
+        logger.debug("shareNewCategoryToHousehold: sharing to household")
+        do {
+            try await cloudSharingService?.shareObjectsToHouseholdIfNeeded([category])
+        } catch {
+            logger.error("shareNewCategoryToHousehold: FAILED — \(error.localizedDescription)")
         }
     }
 
