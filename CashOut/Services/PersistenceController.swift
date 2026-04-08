@@ -165,7 +165,11 @@ final class PersistenceController: @unchecked Sendable {
             if let error {
                 logger.fault("Store load FAILED in \(elapsed, format: .fixed(precision: 1))ms: \(error.localizedDescription)")
                 Self.logUnderlyingErrors(error)
-                self?.storeLoadError = error
+                // First-error-wins: preserve the private store's error (loaded first)
+                // rather than letting the shared store's error overwrite it.
+                if self?.storeLoadError == nil {
+                    self?.storeLoadError = error
+                }
                 return
             }
             guard !inMemory, let self, let storeURL = desc.url else { return }

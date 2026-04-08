@@ -28,14 +28,19 @@ final class CategoryRepository: CategoryRepositoryProtocol {
         let results = try persistence.container.viewContext.fetch(request)
         logger.debug("fetchCategories: found \(results.count) categories (pre-dedup)")
 
-        // Deduplicate default categories by name — CloudKit sync across
+        // Deduplicate default categories by name or id — CloudKit sync across
         // private/shared stores can create duplicates when both devices seed.
         // Custom categories are never deduplicated (user may reuse names).
         var seenDefaultNames = Set<String>()
+        var seenDefaultIDs = Set<UUID>()
         let unique = results.compactMap { category -> CategoryData? in
             if category.isDefault {
                 let name = category.wrappedName
-                guard seenDefaultNames.insert(name).inserted else { return nil }
+                let id = category.wrappedID
+                guard !seenDefaultNames.contains(name),
+                      !seenDefaultIDs.contains(id) else { return nil }
+                seenDefaultNames.insert(name)
+                seenDefaultIDs.insert(id)
             }
             return CategoryData(
                 id: category.wrappedID,
@@ -96,8 +101,8 @@ final class CategoryRepository: CategoryRepositoryProtocol {
 
         // Guard: context.save() throws NSInternalInconsistencyException (ObjC exception,
         // not caught by Swift do/catch) when the coordinator has zero stores.
-        guard let coordinator = context.persistentStoreCoordinator,
-              !coordinator.persistentStores.isEmpty else {
+        // Check specifically for the private store — default categories are private data.
+        guard persistence.privatePersistentStore != nil else {
             logger.error("seedDefaultCategoriesIfNeeded: no persistent stores — skipping")
             return
         }
