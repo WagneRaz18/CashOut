@@ -8,39 +8,52 @@ struct FeedRowView: View {
 
     @Environment(\.colorScheme) private var colorScheme
 
+    private static let maxNoteLength = 30
+
+    private var truncatedNote: String? {
+        guard let note = expense.note, !note.isEmpty else { return nil }
+        let singleLine = note.replacingOccurrences(of: "\n", with: " ")
+        if singleLine.count <= Self.maxNoteLength {
+            return singleLine
+        }
+        return String(singleLine.prefix(Self.maxNoteLength - 2)) + ".."
+    }
+
     var body: some View {
-        HStack(spacing: Spacing.sm) {
-            // Leading: category icon in colored circle badge (28×28pt)
-            categoryBadge
-
-            // Center: category name + partner initials + timestamp
-            VStack(alignment: .leading, spacing: Spacing.xs) {
-                Text(category?.name ?? "Unknown")
-                    .font(.body)
-                    .foregroundStyle(SemanticColor.onSurface)
+        VStack(alignment: .leading, spacing: Spacing.xs) {
+            // Note text (only shown when note exists)
+            if let noteText = truncatedNote {
+                Text(noteText)
+                    .font(.caption)
+                    .foregroundStyle(SemanticColor.onSurfaceVariant)
                     .lineLimit(1)
-
-                HStack(spacing: Spacing.xs) {
-                    partnerCircle
-                    Text(expense.createdAt.relativeFormatted)
-                        .font(.caption)
-                        .foregroundStyle(SemanticColor.onSurfaceVariant)
-                }
             }
 
-            Spacer()
+            HStack(spacing: Spacing.sm) {
+                // Leading: category icon in colored circle badge (28×28pt)
+                categoryBadge
 
-            // Trailing: amount + optional note indicator
-            VStack(alignment: .trailing, spacing: Spacing.xs) {
+                // Center: category name + partner initials + timestamp
+                VStack(alignment: .leading, spacing: Spacing.xs) {
+                    Text(category?.name ?? "Unknown")
+                        .font(.body)
+                        .foregroundStyle(SemanticColor.onSurface)
+                        .lineLimit(1)
+
+                    HStack(spacing: Spacing.xs) {
+                        partnerCircle
+                        Text(expense.createdAt.relativeFormatted)
+                            .font(.caption)
+                            .foregroundStyle(SemanticColor.onSurfaceVariant)
+                    }
+                }
+
+                Spacer()
+
+                // Trailing: amount
                 Text(expense.amount.displayAmount)
                     .font(.system(.body, design: .monospaced).monospacedDigit())
                     .foregroundStyle(SemanticColor.onSurface)
-
-                if let note = expense.note, !note.isEmpty {
-                    Image(systemName: "text.bubble")
-                        .font(.caption2)
-                        .foregroundStyle(SemanticColor.onSurfaceVariant)
-                }
             }
         }
         .accessibilityElement(children: .ignore)
@@ -52,7 +65,7 @@ struct FeedRowView: View {
     private var accessibilityText: String {
         var label = "\(partnerInitials) spent \(expense.amount.displayAmount) on \(category?.name ?? "unknown"), \(expense.createdAt.relativeFormatted)"
         if let note = expense.note, !note.isEmpty {
-            label += ", has note"
+            label += ", note: \(note)"
         }
         return label
     }
