@@ -20,6 +20,7 @@ final class ExpenseEntryViewModel {
     var isSaving: Bool = false
     var saveError: String?
     var categoryLoadFailed: Bool = false
+    private(set) var saveCount: Int = 0
 
     var isAmountZero: Bool {
         amountInBaht == 0
@@ -199,7 +200,12 @@ final class ExpenseEntryViewModel {
         // Persist MRU
         userDefaults.set(categoryID.uuidString, forKey: Self.mruKey)
 
-        // Reset for next entry
+        // Signal success — View drives animation sequence, then calls resetForm()
+        saveCount += 1
+    }
+
+    /// Resets the entry form for the next expense. Called by the View after the save animation completes.
+    func resetForm() {
         resetAmount()
         noteText = ""
         // selectedCategoryID stays — MRU principle

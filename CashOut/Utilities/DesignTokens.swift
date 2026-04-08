@@ -47,6 +47,9 @@ enum SemanticColor {
     static let outline = Color(hex: 0x5376AE)
     static let outlineVariant = Color(hex: 0x21487D)
 
+    // Success
+    static let success = Color(hex: 0x81C784)
+
     // Error
     static let error = Color(hex: 0xEE7D77)
     static let errorDim = Color(hex: 0xBB5551)

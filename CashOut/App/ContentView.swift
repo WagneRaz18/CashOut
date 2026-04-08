@@ -10,7 +10,9 @@ struct ContentView: View {
     var body: some View {
         TabView(selection: $selectedTab) {
             Tab("Add", systemImage: "plus", value: 0) {
-                EntryView()
+                EntryView(onSaveComplete: {
+                    withAnimation { selectedTab = 1 }
+                })
             }
             Tab("Feed", systemImage: "list.bullet", value: 1) {
                 NavigationStack {
@@ -36,11 +38,18 @@ struct ContentView: View {
         }
         .task {
             logger.debug("ContentView.task: listening for remote store changes")
-            // Re-check sharing status on remote changes to detect new shares AND revocations
+            // Debounce: coalesce rapid notifications into a single sharing check.
+            // CloudKit sync fires multiple NSPersistentStoreRemoteChange per operation.
+            var debounceTask: Task<Void, Never>?
             for await _ in NotificationCenter.default.notifications(named: .NSPersistentStoreRemoteChange) {
                 guard !Task.isCancelled else { break }
-                logger.info("Remote store change received — re-checking sharing status")
-                await CloudSharingService.shared.checkSharingStatus()
+                debounceTask?.cancel()
+                debounceTask = Task {
+                    try? await Task.sleep(nanoseconds: 500_000_000)
+                    guard !Task.isCancelled else { return }
+                    logger.info("Remote store change (debounced) — re-checking sharing status")
+                    await CloudSharingService.shared.checkSharingStatus()
+                }
             }
         }
         .task {

@@ -60,8 +60,11 @@ struct EditExpenseSheet: View {
             .padding(.horizontal, Spacing.md)
             .padding(.bottom, Spacing.sm)
 
+            // No save animation in edit sheet — it dismisses immediately after save
             SaveButtonView(
                 isDisabled: viewModel.isAmountZero || viewModel.isSaving || viewModel.selectedCategoryID == nil,
+                saveCount: 0,
+                showCheckmark: false,
                 onSave: {
                     Task {
                         do {
