@@ -1,4 +1,7 @@
 import SwiftUI
+import os.log
+
+private let logger = Logger(subsystem: "com.wagneraz.CashOut", category: "FilteredFeedView")
 
 struct FilteredFeedView: View {
     let categoryID: UUID
@@ -53,12 +56,15 @@ struct FilteredFeedView: View {
         }
         .navigationTitle(categoryName)
         .task(id: categoryID) {
+            logger.info("FilteredFeedView.task: fetching expenses for category \(categoryID) (\(categoryName))")
             do {
                 let all = try await repository.fetchExpenses(for: period)
                 guard !Task.isCancelled else { return }
                 expenses = all.filter { $0.categoryID == categoryID }
+                logger.info("FilteredFeedView: showing \(expenses.count) of \(all.count) expenses for \(categoryName)")
             } catch {
                 guard !Task.isCancelled else { return }
+                logger.error("FilteredFeedView: fetch failed — \(error.localizedDescription)")
                 errorMessage = error.localizedDescription
             }
         }

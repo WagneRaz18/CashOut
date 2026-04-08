@@ -1,4 +1,7 @@
 import SwiftUI
+import os.log
+
+private let logger = Logger(subsystem: "com.wagneraz.CashOut", category: "EditExpenseSheet")
 
 struct EditExpenseSheet: View {
     let expense: ExpenseData
@@ -66,14 +69,17 @@ struct EditExpenseSheet: View {
                 saveCount: 0,
                 showCheckmark: false,
                 onSave: {
+                    logger.info("Edit save tapped — amount=\(viewModel.amountInBaht) Baht")
                     Task {
                         do {
                             viewModel.saveError = nil
                             try await viewModel.saveExpense()
                             guard !Task.isCancelled else { return }
+                            logger.info("Edit save succeeded — dismissing sheet")
                             onSaveComplete?()
                         } catch {
                             guard !Task.isCancelled else { return }
+                            logger.error("Edit save failed — showing user error")
                             viewModel.saveError = "Could not save changes. Please try again."
                         }
                     }

@@ -1,4 +1,7 @@
 import SwiftUI
+import os.log
+
+private let logger = Logger(subsystem: "com.wagneraz.CashOut", category: "InsightsView")
 
 struct InsightsView: View {
     @State private var viewModel = InsightsViewModel()
@@ -98,12 +101,15 @@ struct InsightsView: View {
             }
         }
         .navigationDestination(isPresented: $showSettings) {
+            logger.debug("Navigating to Settings from Insights")
             SettingsView()
         }
         .task(id: viewModel.selectedPeriod) {
+            logger.info("InsightsView.task: loading data for period \(viewModel.selectedPeriod.rawValue)")
             await viewModel.loadData()
         }
         .task {
+            logger.debug("InsightsView.task: subscribing to remote changes")
             await viewModel.subscribeToRemoteChanges()
         }
     }

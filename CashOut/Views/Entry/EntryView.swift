@@ -1,4 +1,7 @@
 import SwiftUI
+import os.log
+
+private let logger = Logger(subsystem: "com.wagneraz.CashOut", category: "EntryView")
 
 // MARK: - Save Success Animation Phases
 
@@ -50,6 +53,7 @@ struct EntryView: View {
 
             if viewModel.categoryLoadFailed {
                 Button {
+                    logger.info("Category retry tapped")
                     Task { await viewModel.retryLoadCategories() }
                 } label: {
                     Label("Categories unavailable — tap to retry", systemImage: "arrow.clockwise")
@@ -82,6 +86,7 @@ struct EntryView: View {
                 saveCount: viewModel.saveCount,
                 showCheckmark: showCheckmark,
                 onSave: {
+                    logger.info("Save button tapped — amount=\(viewModel.amountInBaht) Baht")
                     saveTask?.cancel()
                     saveTask = Task {
                         do {
@@ -91,6 +96,7 @@ struct EntryView: View {
                             // Animation sequence is driven by .onChange(of: viewModel.saveCount)
                         } catch {
                             guard !Task.isCancelled else { return }
+                            logger.error("Save failed in EntryView — showing user error")
                             viewModel.saveError = "Could not save entry. Please try again."
                         }
                     }
@@ -102,6 +108,7 @@ struct EntryView: View {
         .background(Surface.base.ignoresSafeArea())
         .overlay { successOverlay }
         .task {
+            logger.debug("EntryView.task: loading categories")
             await viewModel.loadCategories()
         }
         .sheet(isPresented: $showingNoteSheet) {
@@ -112,6 +119,7 @@ struct EntryView: View {
             handleSaveSuccess()
         }
         .onDisappear {
+            logger.debug("EntryView.onDisappear — cancelling tasks")
             saveTask?.cancel()
             animationTask?.cancel()
         }
@@ -183,6 +191,7 @@ struct EntryView: View {
     // MARK: - Save Success Sequence
 
     private func handleSaveSuccess() {
+        logger.info("Save success — starting animation sequence (saveCount=\(viewModel.saveCount))")
         withAnimation { showCheckmark = true }
         withAnimation { showSuccessOverlay = true }
         UIAccessibility.post(notification: .announcement, argument: "Expense saved")
@@ -195,6 +204,7 @@ struct EntryView: View {
             } catch { return }
             guard !Task.isCancelled else { return }
 
+            logger.debug("Animation complete — resetting form")
             viewModel.resetForm()
             withAnimation { showSuccessOverlay = false }
             withAnimation { showCheckmark = false }
@@ -204,6 +214,7 @@ struct EntryView: View {
             } catch { return }
             guard !Task.isCancelled else { return }
 
+            logger.debug("Post-save: switching to Feed tab")
             onSaveComplete?()
         }
     }

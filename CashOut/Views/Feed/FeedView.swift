@@ -1,4 +1,7 @@
 import SwiftUI
+import os.log
+
+private let logger = Logger(subsystem: "com.wagneraz.CashOut", category: "FeedView")
 
 struct FeedView: View {
     @State private var viewModel = FeedViewModel()
@@ -52,7 +55,9 @@ struct FeedView: View {
             }
         }
         .sheet(item: $expenseToEdit) { expense in
+            logger.info("Edit sheet presented for expense id=\(expense.id)")
             EditExpenseSheet(expense: expense, onSaveComplete: {
+                logger.info("Edit sheet dismissed after save")
                 expenseToEdit = nil
             })
             .presentationDetents([.large])
@@ -91,6 +96,7 @@ struct FeedView: View {
             SettingsView()
         }
         .onAppear {
+            logger.debug("FeedView.onAppear — starting observation")
             viewModel.startObserving()
         }
     }
