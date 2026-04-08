@@ -8,13 +8,14 @@ private let logger = Logger(subsystem: "com.wagneraz.CashOut", category: "CloudS
 @MainActor
 protocol CloudSharingServiceProtocol {
     var isShared: Bool { get }
-    var isShareOwner: Bool { get }
+    var isShareOwner: Bool { get set }
     var partnerName: String? { get }
     func createShare(for objects: [NSManagedObject]) async throws -> (CKShare, CKContainer)
     func checkSharingStatus() async
     func persistUpdatedShare(_ share: CKShare)
     func prepareObjectForSharedSave(_ object: NSManagedObject)
     func shareObjectsToHouseholdIfNeeded(_ objects: [NSManagedObject]) async throws
+    func resetState()
 }
 
 @MainActor
@@ -25,10 +26,7 @@ final class CloudSharingService: CloudSharingServiceProtocol {
     var isShared: Bool = false
     var partnerName: String? = nil
 
-    var isShareOwner: Bool {
-        guard let share = currentShare else { return false }
-        return share.currentUserParticipant?.role == .owner
-    }
+    var isShareOwner: Bool = false
 
     @ObservationIgnored private var currentShare: CKShare? = nil
 
@@ -103,6 +101,7 @@ final class CloudSharingService: CloudSharingServiceProtocol {
                 logger.debug("checkSharingStatus: \(privateShares.count) shares in private store")
                 if let share = privateShares.first {
                     isShared = true
+                    isShareOwner = true
                     currentShare = share
                     extractPartnerInfo(from: share)
                     let elapsed = (CFAbsoluteTimeGetCurrent() - checkStart) * 1000
@@ -123,6 +122,7 @@ final class CloudSharingService: CloudSharingServiceProtocol {
                 logger.debug("checkSharingStatus: \(sharedShares.count) shares in shared store")
                 if let share = sharedShares.first {
                     isShared = true
+                    isShareOwner = false
                     currentShare = share
                     extractPartnerInfo(from: share)
                     let elapsed = (CFAbsoluteTimeGetCurrent() - checkStart) * 1000
@@ -146,6 +146,7 @@ final class CloudSharingService: CloudSharingServiceProtocol {
         let elapsed = (CFAbsoluteTimeGetCurrent() - checkStart) * 1000
         logger.info("checkSharingStatus: no shares found — solo mode — \(elapsed, format: .fixed(precision: 1))ms")
         isShared = false
+        isShareOwner = false
         partnerName = nil
         currentShare = nil
     }
@@ -204,21 +205,40 @@ final class CloudSharingService: CloudSharingServiceProtocol {
         }
     }
 
+    func resetState() {
+        guard persistenceController.privatePersistentStore != nil else {
+            logger.debug("resetState: stores not ready — skipping")
+            return
+        }
+        logger.info("resetState: clearing cached sharing state")
+        isShared = false
+        isShareOwner = false
+        partnerName = nil
+        currentShare = nil
+    }
+
     // MARK: - Private
 
     private func extractPartnerInfo(from share: CKShare) {
-        // Filter out the CURRENT user to find the OTHER person
-        guard let currentUserRecordID = share.currentUserParticipant?.userIdentity.userRecordID else {
-            // Can't identify current user — can't determine who the partner is
-            logger.debug("extractPartnerInfo: no currentUserParticipant — can't determine partner")
-            partnerName = nil
+        if !isShareOwner {
+            // Participant path: the owner IS our partner.
+            if let nameComponents = share.owner.userIdentity.nameComponents {
+                partnerName = PersonNameComponentsFormatter.localizedString(
+                    from: nameComponents, style: .short, options: []
+                )
+            } else {
+                partnerName = "Partner"
+            }
+            logger.info("extractPartnerInfo: participant mode — partner (owner) resolved='\(self.partnerName ?? "nil")'")
             return
         }
+
+        // Owner path: look for accepted participants (excluding ourselves).
+        let ownerRecordID = share.owner.userIdentity.userRecordID
         let otherParticipants = share.participants.filter { participant in
-            participant.userIdentity.userRecordID != currentUserRecordID
+            participant.userIdentity.userRecordID != ownerRecordID
         }
 
-        // Accept only participants with .accepted status
         if let partner = otherParticipants.first(where: { $0.acceptanceStatus == .accepted }) {
             if let nameComponents = partner.userIdentity.nameComponents {
                 partnerName = PersonNameComponentsFormatter.localizedString(
@@ -227,9 +247,9 @@ final class CloudSharingService: CloudSharingServiceProtocol {
             } else {
                 partnerName = "Partner"
             }
-            logger.info("extractPartnerInfo: partner resolved=\(self.partnerName != nil)")
+            logger.info("extractPartnerInfo: owner mode — partner resolved='\(self.partnerName ?? "nil")'")
         } else {
-            logger.debug("extractPartnerInfo: no accepted partner found (\(otherParticipants.count) other participants)")
+            logger.debug("extractPartnerInfo: owner mode — no accepted partner yet (\(otherParticipants.count) other participants)")
             partnerName = nil
         }
     }

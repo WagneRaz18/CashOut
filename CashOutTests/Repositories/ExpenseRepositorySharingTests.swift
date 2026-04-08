@@ -38,6 +38,8 @@ final class ExpenseRepositorySharingTests: XCTestCase {
 
         let expense = try await makeSampleExpense()
         try await repository.saveExpense(expense)
+        await Task.yield()
+        try await Task.sleep(for: .milliseconds(50))  // Allow fire-and-forget sharing task to complete
 
         // Repository delegates to service for new objects; the service's
         // guard clauses (isShared check) handle the no-op in solo mode.
@@ -65,6 +67,8 @@ final class ExpenseRepositorySharingTests: XCTestCase {
 
         let expense = try await makeSampleExpense()
         try await repository.saveExpense(expense)
+        await Task.yield()
+        try await Task.sleep(for: .milliseconds(50))  // Allow fire-and-forget sharing task to complete
 
         XCTAssertTrue(
             mock.shareObjectsToHouseholdCalled,
@@ -106,6 +110,8 @@ final class ExpenseRepositorySharingTests: XCTestCase {
         // Save initial expense
         let expense = try await makeSampleExpense()
         try await repository.saveExpense(expense)
+        await Task.yield()
+        try await Task.sleep(for: .milliseconds(50))  // Allow fire-and-forget sharing task to complete
 
         // Reset call tracking
         mock.prepareObjectForSharedSaveCalled = false

@@ -19,6 +19,7 @@ protocol SyncMonitorServiceProtocol: AnyObject {
     var syncStatus: SyncStatus { get }
     var onSyncStatusChanged: [(@MainActor (SyncStatus) -> Void)] { get set }
     func startMonitoring()
+    func stopMonitoring()
 }
 
 // MARK: - Implementation
@@ -49,6 +50,24 @@ final class SyncMonitorService: SyncMonitorServiceProtocol {
     @ObservationIgnored private static let failureWindowSeconds: TimeInterval = 300 // 5 min
 
     init() {}
+
+    func stopMonitoring() {
+        guard isMonitoring else {
+            logger.debug("stopMonitoring: not monitoring — skipped")
+            return
+        }
+        logger.info("stopMonitoring: cancelling all monitoring tasks")
+        initialCheckTask?.cancel()
+        initialCheckTask = nil
+        eventTask?.cancel()
+        eventTask = nil
+        accountTask?.cancel()
+        accountTask = nil
+        isMonitoring = false
+        consecutiveFailures = 0
+        // Preserve syncStatus and lastSuccessDate through stop/start cycle
+        // to avoid spurious .healthy flash and premature .syncFailure on restart
+    }
 
     func startMonitoring() {
         guard !isMonitoring else {

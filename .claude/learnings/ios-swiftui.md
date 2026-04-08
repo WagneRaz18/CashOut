@@ -73,6 +73,7 @@
 - **2026-04-06**: Dark-only apps using hardcoded hex color tokens must add `.preferredColorScheme(.dark)` at the app root — without it, system adaptive colors (`Color.secondary`, `.primary`) resolve to light-mode values when the device OS is in light mode, breaking the custom dark palette.
 - **2026-04-06**: `SignInWithAppleButton` style must be hardcoded `.white` on dark-surface apps — `colorScheme == .dark ? .white : .black` renders black-on-dark when device is in light mode system-wide, making the button invisible.
 - **2026-04-06**: SwiftUI glassmorphism: `.background(tintColor)` must come BEFORE `.background(.ultraThinMaterial)` — material must be the outer (last) background so it blends with content behind it. Reversed order occludes the blur, producing a flat colored rectangle.
+- **2026-04-08**: `Material` (`.ultraThinMaterial`) and `Color` are different types — cannot mix in a ternary for `.background()`. Use `@ViewBuilder` closure with `if/else` and `RoundedRectangle.fill()` for each branch: `if isSelected { RoundedRectangle(...).fill(color) } else { RoundedRectangle(...).fill(.ultraThinMaterial) }`.
 - For Liquid Glass buttons: use .buttonStyle(.glass) or .buttonStyle(.glassProminent) — never combine with .glassEffect() modifier on the same element.
 - .glassEffect() is for non-button views. Button styles auto-apply glass.
 - Use view-associated UIImpactFeedbackGenerator(style:view:) for iOS 26+ (correct Taptic Engine routing), not legacy initializer.

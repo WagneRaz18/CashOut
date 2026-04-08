@@ -9,6 +9,7 @@ final class CategoryRepository: CategoryRepositoryProtocol {
 
     private let persistence: PersistenceController
     private let cloudSharingService: CloudSharingServiceProtocol?
+    private var shareTask: Task<Void, Never>?
 
     init(
         persistence: PersistenceController = .shared,
@@ -89,10 +90,18 @@ final class CategoryRepository: CategoryRepositoryProtocol {
             throw error
         }
 
+        // Fire-and-forget: don't block UI on CloudKit network call
         if isNewCustomCategory {
-            guard !Task.isCancelled else { return }
-            logger.debug("saveCategory: sharing custom category to household")
-            try await cloudSharingService?.shareObjectsToHouseholdIfNeeded([category])
+            let sharingService = cloudSharingService
+            shareTask?.cancel()
+            shareTask = Task {
+                do {
+                    logger.debug("saveCategory: sharing custom category to household (background)")
+                    try await sharingService?.shareObjectsToHouseholdIfNeeded([category])
+                } catch {
+                    logger.error("saveCategory: sharing FAILED — \(error.localizedDescription)")
+                }
+            }
         }
     }
 

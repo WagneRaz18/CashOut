@@ -30,6 +30,8 @@ struct EntryView: View {
                     .padding(.top, Spacing.xs)
             }
 
+            Spacer(minLength: 0)
+
             AmountDisplayView(amount: viewModel.amountInSatang)
                 .padding(.horizontal, Spacing.md)
 
@@ -71,7 +73,8 @@ struct EntryView: View {
                     selectedCategoryID: viewModel.selectedCategoryID,
                     onSelect: { viewModel.selectCategory($0) }
                 )
-                .padding(.vertical, Spacing.sm)
+                .padding(.top, Spacing.md)
+                .padding(.bottom, Spacing.lg)
             }
 
             NumpadView(
@@ -192,27 +195,23 @@ struct EntryView: View {
 
     private func handleSaveSuccess() {
         logger.info("Save success — starting animation sequence (saveCount=\(viewModel.saveCount))")
-        withAnimation { showCheckmark = true }
-        withAnimation { showSuccessOverlay = true }
+        withAnimation { showCheckmark = true; showSuccessOverlay = true }
         UIAccessibility.post(notification: .announcement, argument: "Expense saved")
 
         animationTask?.cancel()
         animationTask = Task { @MainActor in
-            let resetDelay: UInt64 = reduceMotion ? 600_000_000 : 1_000_000_000
+            let resetDelay: UInt64 = reduceMotion ? 400_000_000 : 700_000_000
             do {
                 try await Task.sleep(nanoseconds: resetDelay)
             } catch { return }
-            guard !Task.isCancelled else { return }
 
             logger.debug("Animation complete — resetting form")
             viewModel.resetForm()
-            withAnimation { showSuccessOverlay = false }
-            withAnimation { showCheckmark = false }
+            withAnimation { showSuccessOverlay = false; showCheckmark = false }
 
             do {
-                try await Task.sleep(nanoseconds: 200_000_000)
+                try await Task.sleep(nanoseconds: 100_000_000)
             } catch { return }
-            guard !Task.isCancelled else { return }
 
             logger.debug("Post-save: switching to Feed tab")
             onSaveComplete?()

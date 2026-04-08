@@ -8,7 +8,7 @@ struct CategoryPickerView: View {
     var body: some View {
         ScrollViewReader { proxy in
             ScrollView(.horizontal, showsIndicators: false) {
-                HStack(spacing: Spacing.sm) {
+                HStack(spacing: Spacing.md) {
                     ForEach(categories, id: \.id) { category in
                         categoryChip(category)
                             .id(category.id)
@@ -39,25 +39,29 @@ struct CategoryPickerView: View {
             HStack(spacing: Spacing.xs) {
                 Image(systemName: category.iconName)
                     .font(.footnote)
+                    .fontWeight(isSelected ? .semibold : .regular)
+                    .accessibilityHidden(true)
 
                 Text(category.name)
                     .font(.subheadline)
+                    .fontWeight(isSelected ? .semibold : .medium)
             }
-            .padding(.horizontal, Spacing.md)
+            .padding(.horizontal, Spacing.lg)
             .frame(minHeight: 44)
-            .background(
-                isSelected
-                    ? categoryColor.opacity(0.2)
-                    : SemanticColor.secondaryContainer.opacity(0.6)
-            )
+            .background {
+                if isSelected {
+                    RoundedRectangle(cornerRadius: 12)
+                        .fill(categoryColor.opacity(0.35))
+                } else {
+                    RoundedRectangle(cornerRadius: 12)
+                        .fill(.ultraThinMaterial)
+                }
+            }
             .foregroundStyle(isSelected ? categoryColor : SemanticColor.onSurfaceVariant)
             .clipShape(RoundedRectangle(cornerRadius: 12))
-            .overlay(
-                RoundedRectangle(cornerRadius: 12)
-                    .strokeBorder(
-                        isSelected ? categoryColor.opacity(0.5) : SemanticColor.outlineVariant,
-                        lineWidth: 1
-                    )
+            .shadow(
+                color: isSelected ? categoryColor.opacity(0.15) : .clear,
+                radius: isSelected ? 8 : 0, y: 4
             )
         }
         .buttonStyle(.plain)
