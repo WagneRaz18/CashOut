@@ -41,6 +41,9 @@
 - **2026-04-08**: `context.delete()` on `viewContext` without `request.affectedStores` scoping can delete objects from the shared store — `NSPersistentCloudKitContainer` propagates the tombstone to the partner's device via CloudKit sync. Always scope delete-oriented fetches to `[privatePersistentStore]` when cleaning up private data (e.g., duplicate default categories).
 - **2026-04-08**: `container.share(objects, to: nil)` shares ALL passed `NSManagedObject` instances to a new CloudKit zone. Display-layer dedup (in `fetchCategories`) does not protect this path — if 30 raw duplicate records exist in Core Data, all 30 are shared. Deduplicate managed objects before passing to `container.share()`.
 
+- **2026-04-08**: `isShareOwner` must be a stored `var` set explicitly during `checkSharingStatus()` — a computed property reading `currentUserParticipant?.role` is unreliable because `currentUserParticipant` can be nil on locally-cached `CKShare` objects. Set `true` in the private-store path, `false` in the shared-store path, and `false` in the no-shares fallthrough.
+- **2026-04-08**: Repository post-save sharing (`shareObjectsToHouseholdIfNeeded`) must be fire-and-forget (`Task {}` with stored handle + cancel-before-replace) — `await`-ing CloudKit network calls inside `saveExpense`/`saveCategory` blocks UI on save and causes flaky tests. Error handling moves into the fire-and-forget Task body (`do/catch` + `logger.error`).
+
 ## Conflict Resolution (Last-Write-Wins)
 - NSPersistentCloudKitContainer uses CKRecord change tags for framework-level LWW — NOT any custom `modifiedAt` field.
 - Custom `modifiedAt` field is for display/sorting only — it does not participate in conflict arbitration.

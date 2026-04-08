@@ -58,6 +58,8 @@
 
 - **2026-04-03**: When a ViewModel method calls the same repository method N times per invocation (e.g., `fetchExpenses` for current + previous period), the mock must track calls in an array (`fetchPeriods: [DateInterval]`), not a single optional — otherwise only the last call is captured and earlier calls are lost for assertions.
 
+- **2026-04-08**: Testing fire-and-forget `Task {}` side effects requires `await Task.yield()` + `Task.sleep(for: .milliseconds(50))` after the triggering call — without yielding, the test asserts before the unstructured Task has a chance to run. `Task.yield()` alone is insufficient under MainActor contention; the small sleep gives the executor time to schedule it.
+
 ## Dependency Injection
 - **2026-04-04**: `CloudSharingService.shared` is the second accepted singleton (after `PersistenceController.shared`) — sharing state (`isShared`, `partnerName`, `currentShare`) must be consistent across all consumers (`SettingsViewModel`, `ExpenseRepository`, `FeedViewModel`). Init remains internal for test injection.
 - **2026-04-04**: `SyncMonitorService.shared` is the third accepted singleton — sync status must be consistent across Feed and Insights screens. Same pattern: `static let shared`, internal init for test injection, `@MainActor @Observable`.
