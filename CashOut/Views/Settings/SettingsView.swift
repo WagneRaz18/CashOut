@@ -107,6 +107,7 @@ private struct HouseholdSectionView: View {
                 HStack {
                     Image(systemName: "clock")
                         .foregroundStyle(.secondary)
+                        .accessibilityHidden(true)
                     VStack(alignment: .leading) {
                         Text("Invitation Pending")
                             .font(.body)
@@ -115,6 +116,7 @@ private struct HouseholdSectionView: View {
                             .foregroundStyle(.secondary)
                     }
                 }
+                .accessibilityElement(children: .combine)
             } else {
                 Button("Invite Partner") {
                     inviteTask?.cancel()

@@ -221,6 +221,7 @@ final class AuthenticationViewModelTests: XCTestCase {
     func testSignOutResetsCloudSharingState() {
         let mockSharing = MockCloudSharingService()
         mockSharing.isShared = true
+        mockSharing.isShareOwner = true
         mockSharing.partnerName = "Partner"
         let viewModel = AuthenticationViewModel(
             authService: MockAuthenticationService(),

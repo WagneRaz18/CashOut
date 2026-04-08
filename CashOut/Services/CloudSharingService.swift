@@ -8,7 +8,7 @@ private let logger = Logger(subsystem: "com.wagneraz.CashOut", category: "CloudS
 @MainActor
 protocol CloudSharingServiceProtocol {
     var isShared: Bool { get }
-    var isShareOwner: Bool { get set }
+    var isShareOwner: Bool { get }
     var partnerName: String? { get }
     func createShare(for objects: [NSManagedObject]) async throws -> (CKShare, CKContainer)
     func checkSharingStatus() async
@@ -217,7 +217,9 @@ final class CloudSharingService: CloudSharingServiceProtocol {
 
     private func extractPartnerInfo(from share: CKShare) {
         if !isShareOwner {
-            // Participant path: the owner IS our partner.
+            // Participant path: we accepted the owner's share — the owner IS our partner.
+            // share.owner is populated from the accepted share metadata and is more reliable
+            // than iterating share.participants, which may be incomplete in cached CKShares.
             if let nameComponents = share.owner.userIdentity.nameComponents {
                 partnerName = PersonNameComponentsFormatter.localizedString(
                     from: nameComponents, style: .short, options: []
@@ -225,12 +227,19 @@ final class CloudSharingService: CloudSharingServiceProtocol {
             } else {
                 partnerName = "Partner"
             }
-            logger.info("extractPartnerInfo: participant mode — partner (owner) resolved='\(self.partnerName ?? "nil")'")
+            logger.info("extractPartnerInfo: participant mode — partner resolved=\(self.partnerName != nil)")
             return
         }
 
         // Owner path: look for accepted participants (excluding ourselves).
-        let ownerRecordID = share.owner.userIdentity.userRecordID
+        // Guard against nil ownerRecordID — identity may not be resolved yet in cached CKShares.
+        // Without this guard, nil == nil passes all participants through the filter,
+        // potentially returning the owner as their own partner.
+        guard let ownerRecordID = share.owner.userIdentity.userRecordID else {
+            logger.warning("extractPartnerInfo: owner userRecordID not yet resolved — deferring")
+            partnerName = nil
+            return
+        }
         let otherParticipants = share.participants.filter { participant in
             participant.userIdentity.userRecordID != ownerRecordID
         }
@@ -243,7 +252,7 @@ final class CloudSharingService: CloudSharingServiceProtocol {
             } else {
                 partnerName = "Partner"
             }
-            logger.info("extractPartnerInfo: owner mode — partner resolved='\(self.partnerName ?? "nil")'")
+            logger.info("extractPartnerInfo: owner mode — partner resolved=\(self.partnerName != nil)")
         } else {
             logger.debug("extractPartnerInfo: owner mode — no accepted partner yet (\(otherParticipants.count) other participants)")
             partnerName = nil
