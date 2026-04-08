@@ -4,7 +4,7 @@ struct AmountDisplayView: View {
     let amount: Int64
 
     var body: some View {
-        VStack(spacing: Spacing.xs) {
+        VStack(spacing: Spacing.sm) {
             Text("AMOUNT")
                 .font(.caption)
                 .fontWeight(.semibold)
@@ -12,8 +12,9 @@ struct AmountDisplayView: View {
                 .tracking(1.2)
 
             Text(amount.displayAmount)
-                .font(.system(size: 56, weight: .medium, design: .rounded))
-                .foregroundStyle(amount == 0 ? SemanticColor.onSurfaceVariant : SemanticColor.onSurface)
+                .font(.system(size: 64, weight: .heavy, design: .rounded))
+                .tracking(-2)
+                .foregroundStyle(amount == 0 ? SemanticColor.secondary : SemanticColor.onSurface)
                 .lineLimit(1)
                 .minimumScaleFactor(0.5)
                 .frame(maxWidth: .infinity)

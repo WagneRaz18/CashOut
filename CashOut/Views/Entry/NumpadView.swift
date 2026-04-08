@@ -12,20 +12,20 @@ struct NumpadView: View {
     ]
 
     var body: some View {
-        VStack(spacing: Spacing.sm) {
+        VStack(spacing: 12) {
             ForEach(rows.indices, id: \.self) { rowIndex in
-                HStack(spacing: Spacing.sm) {
+                HStack(spacing: 12) {
                     ForEach(rows[rowIndex]) { key in
                         if case .empty = key {
                             Color.clear
-                                .frame(maxWidth: .infinity, minHeight: 56, maxHeight: 56)
+                                .frame(maxWidth: .infinity, minHeight: 64, maxHeight: 64)
                                 .accessibilityHidden(true)
                         } else {
                             Button {
                                 handleTap(key)
                             } label: {
                                 keyLabel(key)
-                                    .frame(maxWidth: .infinity, minHeight: 56, maxHeight: 56)
+                                    .frame(maxWidth: .infinity, minHeight: 64, maxHeight: 64)
                             }
                             .buttonStyle(.glass)
                             .accessibilityLabel(accessibilityLabel(for: key))
@@ -43,7 +43,7 @@ struct NumpadView: View {
         switch key {
         case .digit(let value):
             Text(value)
-                .font(.system(size: 24, weight: .regular, design: .rounded))
+                .font(.system(size: 24, weight: .semibold, design: .rounded))
                 .foregroundStyle(SemanticColor.onSurface)
                 .minimumScaleFactor(0.8)
         case .empty:
@@ -51,7 +51,7 @@ struct NumpadView: View {
         case .backspace:
             Image(systemName: "delete.backward")
                 .font(.system(size: 20))
-                .foregroundStyle(SemanticColor.onSurfaceVariant)
+                .foregroundStyle(SemanticColor.secondary)
         }
     }
 

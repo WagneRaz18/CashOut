@@ -33,7 +33,7 @@ struct EntryView: View {
             Spacer(minLength: 0)
 
             AmountDisplayView(amount: viewModel.amountInSatang)
-                .padding(.horizontal, Spacing.md)
+                .padding(.horizontal, Spacing.lg)
 
             Button {
                 showingNoteSheet = true
@@ -74,14 +74,14 @@ struct EntryView: View {
                     onSelect: { viewModel.selectCategory($0) }
                 )
                 .padding(.top, Spacing.md)
-                .padding(.bottom, Spacing.lg)
+                .padding(.bottom, Spacing.xl)
             }
 
             NumpadView(
                 onDigit: { viewModel.appendDigit($0) },
                 onBackspace: { viewModel.deleteLastDigit() }
             )
-            .padding(.horizontal, Spacing.md)
+            .padding(.horizontal, Spacing.lg)
             .padding(.bottom, Spacing.sm)
 
             SaveButtonView(
@@ -105,10 +105,28 @@ struct EntryView: View {
                     }
                 }
             )
-            .padding(.horizontal, Spacing.md)
+            .padding(.horizontal, Spacing.lg)
+            .padding(.top, Spacing.lg)
             .padding(.bottom, Spacing.md)
         }
-        .background(Surface.base.ignoresSafeArea())
+        .background {
+            Surface.base.ignoresSafeArea()
+
+            // Ambient atmospheric glow — matches mockup
+            Circle()
+                .fill(SemanticColor.primary.opacity(0.10))
+                .blur(radius: 120)
+                .frame(width: 400, height: 280)
+                .offset(x: 120, y: -80)
+                .allowsHitTesting(false)
+
+            Circle()
+                .fill(SemanticColor.tertiary.opacity(0.05))
+                .blur(radius: 100)
+                .frame(width: 340, height: 210)
+                .offset(x: -100, y: 300)
+                .allowsHitTesting(false)
+        }
         .overlay { successOverlay }
         .task {
             logger.debug("EntryView.task: loading categories")

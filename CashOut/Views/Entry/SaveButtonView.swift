@@ -10,7 +10,7 @@ struct SaveButtonView: View {
         Button {
             onSave()
         } label: {
-            Label("Save Transaction", systemImage: showCheckmark ? "checkmark" : "square.and.arrow.down")
+            Label("Save Transaction", systemImage: showCheckmark ? "checkmark" : "tray.and.arrow.down.fill")
                 .contentTransition(.symbolEffect(.replace.downUp))
                 .font(.headline)
                 .frame(maxWidth: .infinity)

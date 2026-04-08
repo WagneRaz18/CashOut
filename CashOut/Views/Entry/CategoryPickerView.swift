@@ -8,13 +8,13 @@ struct CategoryPickerView: View {
     var body: some View {
         ScrollViewReader { proxy in
             ScrollView(.horizontal, showsIndicators: false) {
-                HStack(spacing: Spacing.md) {
+                HStack(spacing: 12) {
                     ForEach(categories, id: \.id) { category in
                         categoryChip(category)
                             .id(category.id)
                     }
                 }
-                .padding(.horizontal, Spacing.md)
+                .padding(.horizontal, Spacing.lg)
             }
             .task(id: selectedCategoryID) {
                 if let selectedCategoryID {
@@ -47,17 +47,18 @@ struct CategoryPickerView: View {
                     .fontWeight(isSelected ? .semibold : .medium)
             }
             .padding(.horizontal, Spacing.lg)
-            .frame(minHeight: 44)
+            .padding(.vertical, 12)
             .background {
                 if isSelected {
                     RoundedRectangle(cornerRadius: 12)
-                        .fill(categoryColor.opacity(0.35))
+                        .fill(categoryColor)
                 } else {
                     RoundedRectangle(cornerRadius: 12)
                         .fill(.ultraThinMaterial)
+                        .environment(\.colorScheme, .dark)
                 }
             }
-            .foregroundStyle(isSelected ? categoryColor : SemanticColor.onSurfaceVariant)
+            .foregroundStyle(isSelected ? Surface.containerLow : categoryColor)
             .clipShape(RoundedRectangle(cornerRadius: 12))
             .shadow(
                 color: isSelected ? categoryColor.opacity(0.15) : .clear,
