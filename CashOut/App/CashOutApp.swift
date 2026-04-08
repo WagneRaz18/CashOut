@@ -20,6 +20,14 @@ struct CashOutApp: App {
         } catch {
             logger.error("Category seeding failed: \(error.localizedDescription)")
         }
+
+        // Clean up duplicate defaults left by prior seeding failures or CloudKit sync.
+        // Runs independently — purge has its own privatePersistentStore guard.
+        do {
+            try CategoryRepository.shared.purgeDuplicateDefaults()
+        } catch {
+            logger.error("Category duplicate purge failed: \(error.localizedDescription)")
+        }
     }
 
     var body: some Scene {

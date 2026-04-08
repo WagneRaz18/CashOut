@@ -57,11 +57,25 @@ final class SettingsViewModel {
 
         do {
             let request: NSFetchRequest<Category> = Category.fetchRequest()
+            request.sortDescriptors = [
+                NSSortDescriptor(key: "sortOrder", ascending: true),
+                NSSortDescriptor(key: "id", ascending: true),
+            ]
             if let privateStore = persistenceController.privatePersistentStore {
                 request.affectedStores = [privateStore]
             }
-            let categories = try persistenceController.container.viewContext.fetch(request)
-            logger.info("invitePartner: found \(categories.count) categories to share")
+            let allCategories = try persistenceController.container.viewContext.fetch(request)
+
+            // Deduplicate defaults — prior seeding failures can leave duplicates.
+            // Share only unique records to avoid bloating the shared zone.
+            var seenDefaultNames = Set<String>()
+            let categories = allCategories.filter { category in
+                guard category.isDefault else { return true }
+                guard !seenDefaultNames.contains(category.wrappedName) else { return false }
+                seenDefaultNames.insert(category.wrappedName)
+                return true
+            }
+            logger.info("invitePartner: found \(categories.count) categories to share (from \(allCategories.count) raw)")
 
             guard !categories.isEmpty else {
                 logger.error("invitePartner: no categories found — cannot create share")
@@ -70,6 +84,7 @@ final class SettingsViewModel {
             }
 
             let (share, container) = try await cloudSharingService.createShare(for: categories)
+            guard !Task.isCancelled else { return }
             logger.info("invitePartner: share created successfully")
             activeShare = share
             activeContainer = container

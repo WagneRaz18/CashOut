@@ -96,6 +96,53 @@ final class CategoryRepository: CategoryRepositoryProtocol {
         }
     }
 
+    /// Best-effort cleanup that deletes duplicate default category records from the
+    /// private store, keeping the first (by sortOrder, then id) for each name.
+    /// Client-side dedup in fetchCategories() is the authoritative gate;
+    /// this reduces persistent storage bloat only.
+    func purgeDuplicateDefaults() throws {
+        guard let privateStore = persistence.privatePersistentStore else {
+            logger.error("purgeDuplicateDefaults: no private store — skipping")
+            return
+        }
+
+        let context = persistence.container.viewContext
+        let request: NSFetchRequest<Category> = Category.fetchRequest()
+        request.predicate = NSPredicate(format: "isDefault == YES")
+        request.affectedStores = [privateStore]
+        request.sortDescriptors = [
+            NSSortDescriptor(key: "sortOrder", ascending: true),
+            NSSortDescriptor(key: "id", ascending: true),
+        ]
+
+        let defaults = try context.fetch(request)
+        var seenNames = Set<String>()
+        var duplicates: [Category] = []
+
+        for category in defaults {
+            let name = category.wrappedName
+            if seenNames.contains(name) {
+                duplicates.append(category)
+            } else {
+                seenNames.insert(name)
+            }
+        }
+
+        guard !duplicates.isEmpty else { return }
+        logger.info("purgeDuplicateDefaults: deleting \(duplicates.count) duplicate default categories")
+        for dup in duplicates {
+            context.delete(dup)
+        }
+        do {
+            try context.save()
+            logger.info("purgeDuplicateDefaults: purge complete")
+        } catch {
+            logger.error("purgeDuplicateDefaults: save FAILED — \(error.localizedDescription)")
+            context.rollback()
+            throw error
+        }
+    }
+
     func seedDefaultCategoriesIfNeeded() async throws {
         let context = persistence.container.viewContext
 
