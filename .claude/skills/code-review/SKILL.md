@@ -19,6 +19,7 @@ You are a **senior code reviewer** for CashOut — a native iOS 26+ couples cash
 **Supporting Files:**
 - Detailed checklist: [checklist.md](checklist.md)
 - Code patterns and examples: [patterns.md](patterns.md)
+- Logging validation rules: [logging.md](logging.md)
 
 ---
 
@@ -82,12 +83,43 @@ Review changed files yourself for these checks. See [checklist.md](checklist.md)
 | ARCH-001 | `@State` ViewModel in child view (creates duplicate) |
 | ARCH-002 | ViewModel imports SwiftUI / holds `NavigationPath` |
 | ARCH-003 | Stored derived value instead of computed property |
+| LOG-001 | Changed file with business logic has no `Logger` — zero observability |
+| LOG-002 | `catch` block or error branch with no `.error`/`.fault` log — silent failure |
+| LOG-003 | Sensitive data (userID, email, name) logged with `privacy: .public` — PII leak |
+
+**Logging warnings (should fix):**
+
+| Code | Description |
+|------|-------------|
+| LOG-004 | Public/internal method with business logic has no entry-point log |
+| LOG-005 | Async operation (network, CloudKit, Task) has no start/completion log |
+| LOG-006 | Wrong log level — e.g., `.debug` for errors, `.error` for normal flow |
+| LOG-007 | `print()` or `debugPrint()` used instead of Logger |
+
+See [logging.md](logging.md) for detailed patterns and examples.
 
 **SOLID/KISS metrics:**
 - Functions: max 30 lines
 - Types: max 200 lines
 - Files: max 500 lines
 - Parameters: max 5
+
+---
+
+### Phase 3b: Logging Validation
+
+For each changed file that contains business logic (ViewModels, Services, Repositories, Controllers):
+
+1. **Check Logger exists** — file must have `import os.log` and `private let logger = Logger(subsystem: "com.wagneraz.CashOut", category: "TypeName")`
+2. **Scan error paths** — every `catch` block and `.failure` case must contain a `.error` or `.fault` log call
+3. **Check privacy annotations** — grep for `privacy: .public` on any user-identifiable data (userID, email, name, amounts)
+4. **Check entry-point logs** — public/internal methods with business logic should log at entry with key parameters
+5. **Check async coverage** — methods with `await`, `Task {`, or CloudKit operations should log at start and completion
+6. **Check for print()** — no `print()` or `debugPrint()` in production code; must use Logger
+
+**Exempt files:** pure models, simple view compositions, protocol definitions, test files.
+
+See [logging.md](logging.md) for detailed rules, correct/incorrect patterns, and log level guide.
 
 ---
 
@@ -144,6 +176,15 @@ Guardian Reports:
 === SUGGESTIONS (Consider) ===
 
 1. [Improvement] - file.swift:line
+
+=== LOGGING COVERAGE ===
+
+[x] Logger present: [list files with/without Logger]
+[x] Error paths logged: [N/N catch blocks have error logs]
+[x] Entry points logged: [N/N methods have entry logs]
+[x] Async bracketed: [N/N async ops have start+completion logs]
+[x] Privacy annotations: [OK / N issues found]
+[x] No print(): [OK / N print() calls found]
 
 === COMPLIANT AREAS ===
 

@@ -101,6 +101,21 @@ Quick reference checklist for CashOut code reviews.
 
 ---
 
+## Logging & Observability (see [logging.md](logging.md))
+
+- [ ] Changed files with business logic have `import os.log` and a `Logger` instance
+- [ ] Logger uses `subsystem: "com.wagneraz.CashOut"` and `category:` matching the type name
+- [ ] Every `catch` block and error branch logs at `.error` or `.fault` level
+- [ ] Sensitive data (userID, email, names, amounts) uses `privacy: .private` annotation
+- [ ] Non-sensitive operational data (counts, status, durations) uses `privacy: .public`
+- [ ] Public/internal methods with business logic have entry-point logs
+- [ ] Async operations (network, CloudKit, background tasks) log at start AND completion
+- [ ] Log levels match severity: `.debug` for diagnostics, `.info` for events, `.error` for failures
+- [ ] Log messages follow format: `"methodName: description — details"`
+- [ ] No `print()` or `debugPrint()` statements — use Logger instead
+
+---
+
 ## KISS Metrics
 
 | Metric | Max |
