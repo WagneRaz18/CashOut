@@ -111,7 +111,7 @@ final class ExpenseEntryViewModel {
                 guard !Task.isCancelled else { return }
             }
 
-            categories = SettingsViewModel.applyUserOrder(to: fetched)
+            categories = CategoryOrderStore().applyUserOrder(to: fetched)
             logger.info("loadCategories: loaded \(fetched.count) categories")
 
             if fetched.isEmpty {

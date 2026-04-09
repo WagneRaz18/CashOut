@@ -10,28 +10,35 @@ struct SettingsView: View {
     @State private var deleteTask: Task<Void, Never>?
     @State private var cancelInviteTask: Task<Void, Never>?
 
+    @State private var editMode: EditMode = .inactive
+
     var body: some View {
-        Form {
+        List {
             Section("Categories") {
                 ForEach(viewModel.categories, id: \.id) { category in
-                    Group {
-                        if category.isDefault {
-                            CategoryRowView(category: category)
-                        } else {
-                            NavigationLink(destination: CategoryManagementView(
-                                category: category,
-                                viewModel: viewModel
-                            )) {
-                                CategoryRowView(category: category)
+                    if category.isDefault {
+                        CategoryRowView(category: category)
+                            .swipeActions(edge: .trailing, allowsFullSwipe: false) {
+                                Button(role: .destructive) {
+                                    categoryToDelete = category
+                                } label: {
+                                    Label("Delete", systemImage: "trash")
+                                }
                             }
-                            .accessibilityHint("Double tap to edit")
+                    } else {
+                        NavigationLink(destination: CategoryManagementView(
+                            category: category,
+                            viewModel: viewModel
+                        )) {
+                            CategoryRowView(category: category)
                         }
-                    }
-                    .swipeActions(edge: .trailing, allowsFullSwipe: false) {
-                        Button(role: .destructive) {
-                            categoryToDelete = category
-                        } label: {
-                            Label("Delete", systemImage: "trash")
+                        .accessibilityHint("Double tap to edit")
+                        .swipeActions(edge: .trailing, allowsFullSwipe: false) {
+                            Button(role: .destructive) {
+                                categoryToDelete = category
+                            } label: {
+                                Label("Delete", systemImage: "trash")
+                            }
                         }
                     }
                 }
@@ -64,10 +71,21 @@ struct SettingsView: View {
                     .foregroundStyle(.secondary)
             }
         }
+        .listStyle(.insetGrouped)
+        .environment(\.editMode, $editMode)
         .navigationDestination(isPresented: $isShowingAddCategory) {
             CategoryManagementView(category: nil, viewModel: viewModel)
         }
         .navigationTitle("Settings")
+        .toolbar {
+            ToolbarItem(placement: .topBarTrailing) {
+                Button(editMode == .active ? "Done" : "Edit") {
+                    withAnimation {
+                        editMode = editMode == .active ? .inactive : .active
+                    }
+                }
+            }
+        }
         .onDisappear {
             deleteTask?.cancel()
             cancelInviteTask?.cancel()

@@ -41,17 +41,23 @@ final class SettingsViewModel {
     private let categoryRepository: CategoryRepositoryProtocol
     @ObservationIgnored
     private let hapticService: HapticServiceProtocol
+    @ObservationIgnored
+    private let categoryOrderStore: CategoryOrderStore
+    @ObservationIgnored
+    private var reorderTask: Task<Void, Never>?
 
     init(
         cloudSharingService: CloudSharingServiceProtocol = CloudSharingService.shared,
         persistenceController: PersistenceController = .shared,
         categoryRepository: CategoryRepositoryProtocol = CategoryRepository.shared,
-        hapticService: HapticServiceProtocol = HapticService.shared
+        hapticService: HapticServiceProtocol = HapticService.shared,
+        categoryOrderStore: CategoryOrderStore = CategoryOrderStore()
     ) {
         self.cloudSharingService = cloudSharingService
         self.persistenceController = persistenceController
         self.categoryRepository = categoryRepository
         self.hapticService = hapticService
+        self.categoryOrderStore = categoryOrderStore
         logger.debug("SettingsViewModel.init")
     }
 
@@ -89,7 +95,7 @@ final class SettingsViewModel {
             let result = try await categoryRepository.fetchCategories()
             guard !Task.isCancelled else { return }
             logger.info("loadCategories: loaded \(result.count) categories")
-            categories = Self.applyUserOrder(to: result)
+            categories = categoryOrderStore.applyUserOrder(to: result)
         } catch {
             guard !Task.isCancelled else { return }
             // Categories are seeded at startup — empty state is infrastructure failure.
@@ -237,8 +243,9 @@ final class SettingsViewModel {
         logger.info("deleteCategory: id=\(id)")
         do {
             try await categoryRepository.deleteCategory(id: id)
-            guard !Task.isCancelled else { return }
+            // Delete is irreversible — state cleanup must be unconditional
             logger.info("deleteCategory: success")
+            categoryOrderStore.removeFromOrder(id: id)
             hapticService.trigger(.deleteTap)
             await loadCategories()
         } catch let error as CategoryRepositoryError {
@@ -256,49 +263,17 @@ final class SettingsViewModel {
 
     func moveCategory(from source: IndexSet, to destination: Int) {
         categories.move(fromOffsets: source, toOffset: destination)
-        Self.persistUserOrder(categories)
+        categoryOrderStore.persistOrder(categories)
         logger.info("moveCategory: persisted new order to UserDefaults")
 
-        // Fire-and-forget Core Data sortOrder update (canonical fallback)
+        // Core Data sortOrder update (canonical fallback for partner visibility)
         let orderedIDs = categories.map(\.id)
         let repo = categoryRepository
-        Task {
+        reorderTask?.cancel()
+        reorderTask = Task {
             do { try await repo.reorderCategories(orderedIDs) }
             catch { logger.error("moveCategory: reorder FAILED — \(error.localizedDescription)") }
         }
-    }
-
-    // MARK: - User Order Helpers
-
-    private static let orderKey = "categoryDisplayOrder"
-
-    static func applyUserOrder(to fetched: [CategoryData]) -> [CategoryData] {
-        guard let savedOrder = UserDefaults.standard.stringArray(forKey: orderKey) else {
-            return fetched
-        }
-        let indexMap = Dictionary(savedOrder.enumerated().map { ($1, $0) }, uniquingKeysWith: { first, _ in first })
-        let maxIndex = savedOrder.count
-
-        // Categories in saved order first, then any new ones (from partner sync) appended at end
-        let sorted = fetched.sorted { a, b in
-            let aIndex = indexMap[a.id.uuidString] ?? (maxIndex + Int(a.sortOrder))
-            let bIndex = indexMap[b.id.uuidString] ?? (maxIndex + Int(b.sortOrder))
-            return aIndex < bIndex
-        }
-
-        // Prune stale UUIDs from UserDefaults (deleted categories)
-        let liveIDs = Set(fetched.map { $0.id.uuidString })
-        let pruned = savedOrder.filter { liveIDs.contains($0) }
-        if pruned.count != savedOrder.count {
-            UserDefaults.standard.set(pruned, forKey: orderKey)
-        }
-
-        return sorted
-    }
-
-    static func persistUserOrder(_ categories: [CategoryData]) {
-        let order = categories.map { $0.id.uuidString }
-        UserDefaults.standard.set(order, forKey: orderKey)
     }
 
     // MARK: - Private

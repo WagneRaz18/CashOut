@@ -18,6 +18,7 @@ struct CategoryRowView: View {
             Image(systemName: "line.3.horizontal")
                 .foregroundStyle(.tertiary)
                 .imageScale(.small)
+                .accessibilityHidden(true)
         }
         .accessibilityElement(children: .combine)
     }

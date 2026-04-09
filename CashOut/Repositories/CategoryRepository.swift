@@ -104,19 +104,8 @@ final class CategoryRepository: CategoryRepositoryProtocol {
             throw CategoryRepositoryError.categoryInUse(expenseCount: expenseCount)
         }
 
-        // Delete from shared store (propagates tombstone to partner via CloudKit)
-        if let sharedStore = persistence.sharedPersistentStore {
-            let sharedRequest: NSFetchRequest<Category> = Category.fetchRequest()
-            sharedRequest.predicate = NSPredicate(format: "id == %@", id as CVarArg)
-            sharedRequest.affectedStores = [sharedStore]
-            let sharedResults = try context.fetch(sharedRequest)
-            for category in sharedResults {
-                context.delete(category)
-            }
-            logger.debug("deleteCategory: marked \(sharedResults.count) shared-store record(s) for deletion")
-        }
-
-        // Delete from private store (local cleanup, does not propagate to partner)
+        // Delete from private store — NSPersistentCloudKitContainer propagates the
+        // tombstone to the partner's shared store via CloudKit history tracking.
         if let privateStore = persistence.privatePersistentStore {
             let privateRequest: NSFetchRequest<Category> = Category.fetchRequest()
             privateRequest.predicate = NSPredicate(format: "id == %@", id as CVarArg)
@@ -136,11 +125,6 @@ final class CategoryRepository: CategoryRepositoryProtocol {
             context.rollback()
             throw error
         }
-
-        // Clean up UserDefaults category order
-        var order = UserDefaults.standard.stringArray(forKey: "categoryDisplayOrder") ?? []
-        order.removeAll { $0 == id.uuidString }
-        UserDefaults.standard.set(order, forKey: "categoryDisplayOrder")
     }
 
     func reorderCategories(_ orderedIDs: [UUID]) async throws {
@@ -148,7 +132,10 @@ final class CategoryRepository: CategoryRepositoryProtocol {
         let context = persistence.container.viewContext
 
         let request: NSFetchRequest<Category> = Category.fetchRequest()
-        request.predicate = NSPredicate(format: "id IN %@", orderedIDs.map { $0 as CVarArg })
+        request.predicate = NSPredicate(format: "id IN %@", orderedIDs as [NSUUID])
+        if let privateStore = persistence.privatePersistentStore {
+            request.affectedStores = [privateStore]
+        }
         let results = try context.fetch(request)
 
         let lookup = Dictionary(grouping: results, by: { $0.wrappedID })

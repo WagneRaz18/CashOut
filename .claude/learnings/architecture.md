@@ -75,6 +75,8 @@
 - **2026-04-07**: Adding `@Sendable` to `@MainActor` callback closures can change dispatch semantics — `@MainActor @Sendable` closures may dispatch asynchronously rather than executing inline when called from a `@MainActor` context. This breaks synchronous test assertions that check state immediately after firing callbacks. Only add `@Sendable` when the closure genuinely crosses isolation boundaries (e.g., notification observer Tasks).
 - Every service consumed by ViewModels must have a protocol (including HapticServiceProtocol) with a Mock in test targets.
 - App-wide services (PersistenceController) injected at @main App via .environment(\.managedObjectContext). Add EnvironmentKey for PersistenceController itself when repositories need both viewContext and newBackgroundContext().
+- **2026-04-09**: When multiple ViewModels need the same UserDefaults-backed logic (e.g., per-user category ordering), extract to a shared value type (e.g., `CategoryOrderStore`) injected via `init` — never call static methods on a sibling ViewModel. This prevents cross-ViewModel compile-time coupling and keeps UserDefaults key strings in one place.
+- **2026-04-09**: Repository layer must not mutate ViewModel-owned UserDefaults state (e.g., display order cleanup on delete). Keep UserDefaults writes in the ViewModel or a shared utility type — the repository's responsibility is Core Data only.
 - **2026-03-29**: Inject `UserDefaults` via init parameter (`userDefaults: UserDefaults = .standard`) for test isolation ��� tests use `UserDefaults(suiteName:)` with `removePersistentDomain(forName:)` in tearDown to avoid cross-test pollution of MRU/preference state.
 
 ## Services
