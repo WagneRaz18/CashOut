@@ -8,7 +8,7 @@ struct FeedRowView: View {
 
     @Environment(\.colorScheme) private var colorScheme
 
-    private static let maxNoteLength = 30
+    private static let maxNoteLength = 20
 
     private var truncatedNote: String? {
         guard let note = expense.note, !note.isEmpty else { return nil }
@@ -20,42 +20,35 @@ struct FeedRowView: View {
     }
 
     var body: some View {
-        VStack(alignment: .leading, spacing: Spacing.xs) {
-            // Note text (only shown when note exists)
-            if let noteText = truncatedNote {
-                Text(noteText)
-                    .font(.caption)
-                    .foregroundStyle(SemanticColor.onSurfaceVariant)
-                    .lineLimit(1)
-            }
+        HStack(spacing: Spacing.sm) {
+            // Leading: category icon in colored circle badge (28×28pt)
+            categoryBadge
 
-            HStack(spacing: Spacing.sm) {
-                // Leading: category icon in colored circle badge (28×28pt)
-                categoryBadge
-
-                // Center: category name + partner initials + timestamp
-                VStack(alignment: .leading, spacing: Spacing.xs) {
-                    Text(category?.name ?? "Unknown")
-                        .font(.body)
-                        .foregroundStyle(SemanticColor.onSurface)
-                        .lineLimit(1)
-
-                    HStack(spacing: Spacing.xs) {
-                        partnerCircle
-                        Text(expense.createdAt.relativeFormatted)
-                            .font(.caption)
-                            .foregroundStyle(SemanticColor.onSurfaceVariant)
-                    }
-                }
-
-                Spacer()
-
-                // Trailing: amount
-                Text(expense.amount.displayAmount)
-                    .font(.system(.body, design: .monospaced).monospacedDigit())
+            // Center: category name + partner initials + timestamp
+            VStack(alignment: .leading, spacing: Spacing.xs) {
+                Text(category?.name ?? "Unknown")
+                    .font(.body)
                     .foregroundStyle(SemanticColor.onSurface)
+                    .lineLimit(1)
+
+                HStack(spacing: Spacing.xs) {
+                    partnerCircle
+                    Text(expense.createdAt.relativeFormatted)
+                        .font(.caption)
+                        .foregroundStyle(SemanticColor.onSurfaceVariant)
+                }
             }
+
+            noteChip
+
+            Spacer()
+
+            // Trailing: amount
+            Text(expense.amount.displayAmount)
+                .font(.system(.body, design: .monospaced).monospacedDigit())
+                .foregroundStyle(SemanticColor.onSurface)
         }
+        .contentShape(Rectangle())
         .accessibilityElement(children: .ignore)
         .accessibilityLabel(accessibilityText)
     }
@@ -71,6 +64,23 @@ struct FeedRowView: View {
     }
 
     // MARK: - Subviews
+
+    @ViewBuilder
+    private var noteChip: some View {
+        if let noteText = truncatedNote {
+            Text(noteText)
+                .font(.caption2)
+                .foregroundStyle(SemanticColor.onSurfaceVariant)
+                .lineLimit(1)
+                .padding(.horizontal, Spacing.sm)
+                .padding(.vertical, 2)
+                .background(
+                    SemanticColor.secondaryContainer,
+                    in: RoundedRectangle(cornerRadius: 6, style: .continuous)
+                )
+                .frame(maxWidth: 100)
+        }
+    }
 
     private var categoryBadge: some View {
         let color = CategoryColor(from: category?.colorName ?? "CoolGray")?.color ?? .gray

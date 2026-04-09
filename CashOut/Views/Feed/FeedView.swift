@@ -6,6 +6,7 @@ private let logger = Logger(subsystem: "com.wagneraz.CashOut", category: "FeedVi
 struct FeedView: View {
     @State private var viewModel = FeedViewModel()
     @State private var expenseToEdit: ExpenseData?
+    @State private var expenseToDelete: ExpenseData?
     @State private var showSettings = false
 
     var body: some View {
@@ -30,24 +31,15 @@ struct FeedView: View {
                         }
                         .buttonStyle(.plain)
                         .listRowBackground(Surface.containerLow)
-                        .listRowSeparator(.hidden)
-                        .swipeActions(edge: .leading, allowsFullSwipe: false) {
+                        .listRowSeparator(.visible)
+                        .listRowSeparatorTint(SemanticColor.outlineVariant)
+                        .swipeActions(edge: .trailing, allowsFullSwipe: false) {
                             Button(role: .destructive) {
                                 logger.info("Delete swiped for expense id=\(expense.id, privacy: .private)")
-                                Task {
-                                    await viewModel.deleteExpense(expense)
-                                }
+                                expenseToDelete = expense
                             } label: {
                                 Label("Delete", systemImage: "trash")
                             }
-                        }
-                        .swipeActions(edge: .trailing, allowsFullSwipe: false) {
-                            Button {
-                                expenseToEdit = expense
-                            } label: {
-                                Label("Edit", systemImage: "pencil")
-                            }
-                            .tint(SemanticColor.primary)
                         }
                     }
                 }
@@ -62,6 +54,22 @@ struct FeedView: View {
             })
             .presentationDetents([.large])
             .onAppear { logger.info("Edit sheet presented for expense id=\(expense.id, privacy: .private)") }
+        }
+        .confirmationDialog(
+            "Delete expense?",
+            isPresented: Binding(
+                get: { expenseToDelete != nil },
+                set: { if !$0 { expenseToDelete = nil } }
+            ),
+            titleVisibility: .visible
+        ) {
+            Button("Delete", role: .destructive) {
+                if let expense = expenseToDelete {
+                    logger.info("Delete confirmed for expense id=\(expense.id, privacy: .private)")
+                    Task { await viewModel.deleteExpense(expense) }
+                }
+                expenseToDelete = nil
+            }
         }
         .safeAreaInset(edge: .top) {
             VStack(spacing: 0) {
