@@ -9,7 +9,7 @@ enum SaveAnimationPhase: CaseIterable {
 struct SaveConfirmationOverlay: View {
     let trigger: Int
 
-    @ScaledMetric(relativeTo: .largeTitle) private var iconSize: CGFloat = 56
+    @ScaledMetric(relativeTo: .largeTitle) private var iconSize: CGFloat = 64
     private static let phases = SaveAnimationPhase.allCases
 
     var body: some View {
@@ -23,7 +23,7 @@ struct SaveConfirmationOverlay: View {
             switch phase {
             case .hidden: .easeOut(duration: 0.15)
             case .visible: .easeOut(duration: 0.2)
-            case .fadeOut: .easeOut(duration: 0.2)
+            case .fadeOut: .easeOut(duration: 0.3).delay(0.4)
             }
         }
         .allowsHitTesting(false)

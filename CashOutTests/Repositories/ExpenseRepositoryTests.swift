@@ -7,6 +7,7 @@ final class ExpenseRepositoryTests: XCTestCase {
 
     @MainActor
     override func setUp() async throws {
+        UserDefaults.standard.removeObject(forKey: "categoriesHaveBeenSeeded")
         let controller = TestPersistenceHelper.makeInMemoryController()
         repository = ExpenseRepository(persistence: controller)
         categoryRepository = CategoryRepository(persistence: controller)

@@ -38,9 +38,6 @@ final class ExpenseEntryViewModel {
     private let authService: AuthenticationServiceProtocol
 
     @ObservationIgnored
-    private let userDefaults: UserDefaults
-
-    @ObservationIgnored
     private let hapticService: HapticServiceProtocol
 
     @ObservationIgnored
@@ -52,7 +49,6 @@ final class ExpenseEntryViewModel {
     // MARK: - Constants
 
     private static let maxBeforeAppend: Int64 = 1_000_000
-    private static let mruKey = "lastUsedCategoryID"
 
     // MARK: - Init
 
@@ -60,16 +56,14 @@ final class ExpenseEntryViewModel {
         expenseRepository: ExpenseRepositoryProtocol = ExpenseRepository.shared,
         categoryRepository: CategoryRepositoryProtocol = CategoryRepository.shared,
         authService: AuthenticationServiceProtocol = AuthenticationService.shared,
-        userDefaults: UserDefaults = .standard,
         hapticService: HapticServiceProtocol = HapticService.shared,
-        categoryOrderStore: CategoryOrderStore? = nil
+        categoryOrderStore: CategoryOrderStore = CategoryOrderStore()
     ) {
         self.expenseRepository = expenseRepository
         self.categoryRepository = categoryRepository
         self.authService = authService
-        self.userDefaults = userDefaults
         self.hapticService = hapticService
-        self.categoryOrderStore = categoryOrderStore ?? CategoryOrderStore(defaults: userDefaults)
+        self.categoryOrderStore = categoryOrderStore
         logger.debug("ExpenseEntryViewModel.init")
     }
 
@@ -128,7 +122,8 @@ final class ExpenseEntryViewModel {
                 return
             }
 
-            restoreMRUSelection(from: fetched)
+            selectedCategoryID = categories.first?.id
+            logger.debug("loadCategories: selected first category")
         } catch is CancellationError {
             return
         } catch {
@@ -153,18 +148,6 @@ final class ExpenseEntryViewModel {
         selectedCategoryID = nil
         categoryLoadFailed = false
         await loadCategories()
-    }
-
-    private func restoreMRUSelection(from fetched: [CategoryData]) {
-        if let mruString = userDefaults.string(forKey: Self.mruKey),
-           let mruID = UUID(uuidString: mruString),
-           fetched.contains(where: { $0.id == mruID }) {
-            selectedCategoryID = mruID
-            logger.debug("loadCategories: restored MRU category \(mruID, privacy: .private)")
-        } else {
-            selectedCategoryID = fetched.first?.id
-            logger.debug("loadCategories: defaulting to first category")
-        }
     }
 
     func selectCategory(_ id: UUID) {
@@ -218,9 +201,6 @@ final class ExpenseEntryViewModel {
             let saveElapsed = (CFAbsoluteTimeGetCurrent() - saveStart) * 1000
             logger.info("saveExpense: saved successfully — id=\(expense.id, privacy: .private) — total \(saveElapsed, format: .fixed(precision: 1))ms")
 
-            // Persist MRU
-            userDefaults.set(categoryID.uuidString, forKey: Self.mruKey)
-
             // Fire-and-forget sharing — doesn't block the save caller
             let repo = expenseRepository
             let expenseID = expense.id
@@ -243,9 +223,9 @@ final class ExpenseEntryViewModel {
 
     /// Resets the entry form for the next expense. Called by the View after the save animation completes.
     func resetForm() {
-        logger.debug("resetForm: clearing amount and note (category preserved via MRU)")
+        logger.debug("resetForm: clearing amount, note, and resetting to first category")
         resetAmount()
         noteText = ""
-        // selectedCategoryID stays — MRU principle
+        selectedCategoryID = categories.first?.id
     }
 }

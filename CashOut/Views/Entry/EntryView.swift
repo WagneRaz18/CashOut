@@ -26,7 +26,6 @@ struct EntryView: View {
             Spacer(minLength: 0)
 
             AmountDisplayView(amount: viewModel.amountInSatang)
-                .overlay { SaveConfirmationOverlay(trigger: saveTrigger) }
                 .padding(.horizontal, Spacing.lg)
 
             Button {
@@ -96,7 +95,7 @@ struct EntryView: View {
 
                         // Wait for animation to complete
                         do {
-                            try await Task.sleep(for: .milliseconds(400))
+                            try await Task.sleep(for: .milliseconds(900))
                         } catch { return }
                         guard !Task.isCancelled else { return }
 
@@ -110,14 +109,17 @@ struct EntryView: View {
                         let tapElapsed = (CFAbsoluteTimeGetCurrent() - tapStart) * 1000
                         logger.info("Save success — navigating — \(tapElapsed, format: .fixed(precision: 1))ms since tap")
                         UIAccessibility.post(notification: .announcement, argument: "Expense saved")
-                        viewModel.resetForm()
                         onSaveComplete?()
+                        viewModel.resetForm()
                     }
                 }
             )
             .padding(.horizontal, Spacing.lg)
             .padding(.top, Spacing.lg)
             .padding(.bottom, Spacing.md)
+        }
+        .overlay {
+            SaveConfirmationOverlay(trigger: saveTrigger)
         }
         .background {
             Surface.base.ignoresSafeArea()
