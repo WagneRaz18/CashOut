@@ -16,6 +16,7 @@ protocol CloudSharingServiceProtocol {
     func prepareObjectForSharedSave(_ object: NSManagedObject)
     func shareObjectsToHouseholdIfNeeded(_ objects: [NSManagedObject]) async throws
     func resetState()
+    func cancelShare() async throws
 }
 
 @MainActor
@@ -211,6 +212,45 @@ final class CloudSharingService: CloudSharingServiceProtocol {
 
     func resetState() {
         logger.info("resetState: clearing cached sharing state")
+        isShared = false
+        isShareOwner = false
+        partnerName = nil
+        currentShare = nil
+    }
+
+    func cancelShare() async throws {
+        logger.info("cancelShare: deleting current share")
+        guard let share = currentShare else {
+            logger.warning("cancelShare: no current share to cancel")
+            return
+        }
+
+        guard FileManager.default.ubiquityIdentityToken != nil else {
+            logger.error("cancelShare: no iCloud account")
+            throw NSError(
+                domain: "CloudSharingService",
+                code: 3,
+                userInfo: [NSLocalizedDescriptionKey: "Sign in to iCloud in Settings to manage sharing."]
+            )
+        }
+
+        let container = CKContainer(identifier: Self.containerIdentifier)
+        let operation = CKModifyRecordsOperation(recordsToSave: nil, recordIDsToDelete: [share.recordID])
+        operation.qualityOfService = .userInitiated
+
+        try await withCheckedThrowingContinuation { (continuation: CheckedContinuation<Void, Error>) in
+            operation.modifyRecordsResultBlock = { result in
+                switch result {
+                case .success:
+                    continuation.resume()
+                case .failure(let error):
+                    continuation.resume(throwing: error)
+                }
+            }
+            container.privateCloudDatabase.add(operation)
+        }
+
+        logger.info("cancelShare: share deleted from CloudKit")
         isShared = false
         isShareOwner = false
         partnerName = nil

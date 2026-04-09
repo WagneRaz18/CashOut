@@ -8,6 +8,8 @@ final class CategoryRepositoryTests: XCTestCase {
     override func setUp() async throws {
         let controller = TestPersistenceHelper.makeInMemoryController()
         repository = CategoryRepository(persistence: controller)
+        // Reset seeding flag so each test starts fresh
+        UserDefaults.standard.removeObject(forKey: "categoriesHaveBeenSeeded")
     }
 
     @MainActor

@@ -20,7 +20,10 @@ final class MockCloudSharingService: CloudSharingServiceProtocol {
     var prepareObjectForSharedSaveCalled = false
     var shareObjectsToHouseholdCalled = false
     var resetStateCalled = false
+    var cancelShareCalled = false
     var lastPersistedShare: CKShare?
+
+    var cancelShareShouldThrow = false
 
     // MARK: - Configurable Results
 
@@ -55,6 +58,17 @@ final class MockCloudSharingService: CloudSharingServiceProtocol {
 
     func resetState() {
         resetStateCalled = true
+        isShared = false
+        isShareOwner = false
+        partnerName = nil
+    }
+
+    func cancelShare() async throws {
+        cancelShareCalled = true
+        if cancelShareShouldThrow {
+            throw NSError(domain: "MockCloudSharingService", code: 0,
+                          userInfo: [NSLocalizedDescriptionKey: "Cancel failed"])
+        }
         isShared = false
         isShareOwner = false
         partnerName = nil

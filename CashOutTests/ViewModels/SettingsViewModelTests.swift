@@ -338,6 +338,222 @@ final class SettingsViewModelTests: XCTestCase {
         XCTAssertFalse(mockCategories.saveCategoryCalled)
     }
 
+    // MARK: - Cancel Invitation Tests
+
+    func testCancelInvitationCallsCancelShareOnService() async {
+        let (viewModel, mockService, _, _) = makeSUT(isShared: true, partnerName: nil)
+
+        await viewModel.cancelInvitation()
+
+        XCTAssertTrue(mockService.cancelShareCalled)
+    }
+
+    func testCancelInvitationOnSuccessClearsActiveShare() async {
+        let (viewModel, mockService, _, _) = makeSUT(isShared: true, partnerName: nil)
+        let testShare = CKShare(recordZoneID: CKRecordZone.ID(zoneName: "test", ownerName: CKCurrentUserDefaultName))
+        viewModel.activeShare = testShare
+        viewModel.activeContainer = CKContainer.default()
+
+        await viewModel.cancelInvitation()
+
+        XCTAssertNil(viewModel.activeShare)
+        XCTAssertNil(viewModel.activeContainer)
+        XCTAssertFalse(mockService.isShared)
+    }
+
+    func testCancelInvitationOnErrorSetsErrorMessage() async {
+        let (viewModel, mockService, _, _) = makeSUT(isShared: true, partnerName: nil)
+        mockService.cancelShareShouldThrow = true
+
+        await viewModel.cancelInvitation()
+
+        XCTAssertNotNil(viewModel.errorMessage)
+    }
+
+    func testCancelInvitationResetsPendingState() async {
+        let (viewModel, _, _, _) = makeSUT(isShared: true, partnerName: nil)
+        XCTAssertTrue(viewModel.isPendingInvitation)
+
+        await viewModel.cancelInvitation()
+
+        XCTAssertFalse(viewModel.isPendingInvitation)
+    }
+
+    // MARK: - Resend Invitation Tests
+
+    func testResendInvitationCallsCreateShareAndShowsSheet() async {
+        let (viewModel, mockService, persistence) = makeSUTWithPersistence()
+        seedCategories(in: persistence)
+        mockService.isShared = true
+
+        let testShare = CKShare(recordZoneID: CKRecordZone.ID(zoneName: "test", ownerName: CKCurrentUserDefaultName))
+        mockService.createShareResult = .success((testShare, CKContainer.default()))
+
+        await viewModel.resendInvitation()
+
+        XCTAssertTrue(mockService.createShareCalled)
+        XCTAssertNotNil(viewModel.activeShare)
+        XCTAssertTrue(viewModel.isShowingShareSheet)
+    }
+
+    func testResendInvitationOnErrorSetsErrorMessage() async {
+        let (viewModel, mockService, persistence) = makeSUTWithPersistence()
+        seedCategories(in: persistence)
+        mockService.isShared = true
+        // No handler set on mock — will throw default error
+
+        await viewModel.resendInvitation()
+
+        XCTAssertNotNil(viewModel.errorMessage)
+        XCTAssertFalse(viewModel.isShowingShareSheet)
+    }
+
+    // MARK: - Handle Share Dismiss Idempotency Tests
+
+    func testHandleDismissIsIdempotent() {
+        let (viewModel, mockService, _, _) = makeSUT()
+        viewModel.isShowingShareSheet = true
+
+        let testShare = CKShare(recordZoneID: CKRecordZone.ID(zoneName: "test", ownerName: CKCurrentUserDefaultName))
+        viewModel.handleShareDismiss(testShare)
+        // Second call (simulating SwiftUI onDismiss after delegate)
+        viewModel.handleShareDismiss(nil)
+
+        XCTAssertTrue(mockService.persistUpdatedShareCalled)
+        XCTAssertEqual(mockService.lastPersistedShare?.recordID, testShare.recordID)
+    }
+
+    // MARK: - Delete Category Tests
+
+    func testDeleteCategoryCallsRepositoryAndReloads() async {
+        let categoryID = UUID()
+        let categories = makeDefaultCategories() + [
+            CategoryData(id: categoryID, name: "Custom", iconName: "star.fill", colorName: "Teal", isDefault: false, sortOrder: 6)
+        ]
+        let (viewModel, _, mockCategories, mockHaptics) = makeSUT(categories: categories)
+        await viewModel.loadCategories()
+        mockCategories.fetchCategoriesCallCount = 0
+
+        await viewModel.deleteCategory(id: categoryID)
+
+        XCTAssertTrue(mockCategories.deleteCategoryCalled)
+        XCTAssertEqual(mockCategories.lastDeletedCategoryID, categoryID)
+        XCTAssertTrue(mockHaptics.triggeredEvents.contains(.deleteTap))
+        XCTAssertEqual(mockCategories.fetchCategoriesCallCount, 1, "Should reload categories after delete")
+    }
+
+    func testDeleteCategoryInUseSetsDeleteError() async {
+        let categoryID = UUID()
+        let categories = [CategoryData(id: categoryID, name: "Food", iconName: "fork.knife", colorName: "Sage", isDefault: true, sortOrder: 0)]
+        let (viewModel, _, mockCategories, mockHaptics) = makeSUT(categories: categories)
+        await viewModel.loadCategories()
+        mockCategories.throwError = CategoryRepositoryError.categoryInUse(expenseCount: 3)
+        mockCategories.shouldThrow = true
+
+        await viewModel.deleteCategory(id: categoryID)
+
+        XCTAssertNotNil(viewModel.categoryDeleteError)
+        XCTAssertTrue(viewModel.categoryDeleteError?.contains("3") == true)
+        XCTAssertTrue(mockHaptics.triggeredEvents.contains(.error))
+    }
+
+    func testDeleteCategoryGuardsAgainstConcurrentDeletes() async {
+        let id1 = UUID()
+        let id2 = UUID()
+        let categories = [
+            CategoryData(id: id1, name: "Cat1", iconName: "star.fill", colorName: "Teal", isDefault: false, sortOrder: 0),
+            CategoryData(id: id2, name: "Cat2", iconName: "heart.fill", colorName: "Coral", isDefault: false, sortOrder: 1)
+        ]
+        let (viewModel, _, mockCategories, _) = makeSUT(categories: categories)
+        await viewModel.loadCategories()
+
+        await viewModel.deleteCategory(id: id1)
+        await viewModel.deleteCategory(id: id2)
+
+        // Both should succeed (sequential on @MainActor, defer resets flag)
+        XCTAssertEqual(mockCategories.lastDeletedCategoryID, id2)
+        XCTAssertFalse(viewModel.isDeletingCategory)
+    }
+
+    // MARK: - Move Category Tests
+
+    func testMoveCategoryReordersArray() async {
+        let ids = [UUID(), UUID(), UUID()]
+        let categories = ids.enumerated().map { i, id in
+            CategoryData(id: id, name: "Cat\(i)", iconName: "star.fill", colorName: "Teal", isDefault: false, sortOrder: Int16(i))
+        }
+        let (viewModel, _, _, _) = makeSUT(categories: categories)
+        await viewModel.loadCategories()
+
+        // Move first item to last position
+        viewModel.moveCategory(from: IndexSet(integer: 0), to: 3)
+
+        XCTAssertEqual(viewModel.categories[0].id, ids[1])
+        XCTAssertEqual(viewModel.categories[1].id, ids[2])
+        XCTAssertEqual(viewModel.categories[2].id, ids[0])
+    }
+
+    func testMoveCategoryPersistsOrderToUserDefaults() async {
+        let ids = [UUID(), UUID()]
+        let categories = ids.enumerated().map { i, id in
+            CategoryData(id: id, name: "Cat\(i)", iconName: "star.fill", colorName: "Teal", isDefault: false, sortOrder: Int16(i))
+        }
+        let (viewModel, _, _, _) = makeSUT(categories: categories)
+        await viewModel.loadCategories()
+
+        viewModel.moveCategory(from: IndexSet(integer: 0), to: 2)
+
+        let savedOrder = UserDefaults.standard.stringArray(forKey: "categoryDisplayOrder")
+        XCTAssertEqual(savedOrder, [ids[1].uuidString, ids[0].uuidString])
+
+        // Clean up
+        UserDefaults.standard.removeObject(forKey: "categoryDisplayOrder")
+    }
+
+    // MARK: - User Order Overlay Tests
+
+    func testLoadCategoriesAppliesUserDefaultsOrder() async {
+        let ids = [UUID(), UUID(), UUID()]
+        let categories = ids.enumerated().map { i, id in
+            CategoryData(id: id, name: "Cat\(i)", iconName: "star.fill", colorName: "Teal", isDefault: false, sortOrder: Int16(i))
+        }
+        // Set reversed order in UserDefaults
+        UserDefaults.standard.set([ids[2].uuidString, ids[1].uuidString, ids[0].uuidString], forKey: "categoryDisplayOrder")
+
+        let (viewModel, _, _, _) = makeSUT(categories: categories)
+        await viewModel.loadCategories()
+
+        XCTAssertEqual(viewModel.categories[0].id, ids[2])
+        XCTAssertEqual(viewModel.categories[1].id, ids[1])
+        XCTAssertEqual(viewModel.categories[2].id, ids[0])
+
+        // Clean up
+        UserDefaults.standard.removeObject(forKey: "categoryDisplayOrder")
+    }
+
+    func testLoadCategoriesAppendsNewCategoriesAtEnd() async {
+        let ids = [UUID(), UUID()]
+        let newID = UUID()
+        let categories = [
+            CategoryData(id: ids[0], name: "Cat0", iconName: "star.fill", colorName: "Teal", isDefault: false, sortOrder: 0),
+            CategoryData(id: ids[1], name: "Cat1", iconName: "star.fill", colorName: "Teal", isDefault: false, sortOrder: 1),
+            CategoryData(id: newID, name: "New", iconName: "star.fill", colorName: "Teal", isDefault: false, sortOrder: 2),
+        ]
+        // UserDefaults only knows about first two
+        UserDefaults.standard.set([ids[1].uuidString, ids[0].uuidString], forKey: "categoryDisplayOrder")
+
+        let (viewModel, _, _, _) = makeSUT(categories: categories)
+        await viewModel.loadCategories()
+
+        // First two in UserDefaults order, new one appended at end
+        XCTAssertEqual(viewModel.categories[0].id, ids[1])
+        XCTAssertEqual(viewModel.categories[1].id, ids[0])
+        XCTAssertEqual(viewModel.categories[2].id, newID)
+
+        // Clean up
+        UserDefaults.standard.removeObject(forKey: "categoryDisplayOrder")
+    }
+
     // MARK: - Category Test Helpers
 
     private func makeDefaultCategories() -> [CategoryData] {

@@ -91,6 +91,84 @@ final class CategoryRepository: CategoryRepositoryProtocol {
 
     }
 
+    func deleteCategory(id: UUID) async throws {
+        logger.info("deleteCategory: id=\(id)")
+        let context = persistence.container.viewContext
+
+        // Block deletion if any expenses reference this category
+        let expenseRequest: NSFetchRequest<Expense> = Expense.fetchRequest()
+        expenseRequest.predicate = NSPredicate(format: "categoryID == %@", id as CVarArg)
+        let expenseCount = try context.count(for: expenseRequest)
+        if expenseCount > 0 {
+            logger.warning("deleteCategory: blocked — \(expenseCount) expenses reference this category")
+            throw CategoryRepositoryError.categoryInUse(expenseCount: expenseCount)
+        }
+
+        // Delete from shared store (propagates tombstone to partner via CloudKit)
+        if let sharedStore = persistence.sharedPersistentStore {
+            let sharedRequest: NSFetchRequest<Category> = Category.fetchRequest()
+            sharedRequest.predicate = NSPredicate(format: "id == %@", id as CVarArg)
+            sharedRequest.affectedStores = [sharedStore]
+            let sharedResults = try context.fetch(sharedRequest)
+            for category in sharedResults {
+                context.delete(category)
+            }
+            logger.debug("deleteCategory: marked \(sharedResults.count) shared-store record(s) for deletion")
+        }
+
+        // Delete from private store (local cleanup, does not propagate to partner)
+        if let privateStore = persistence.privatePersistentStore {
+            let privateRequest: NSFetchRequest<Category> = Category.fetchRequest()
+            privateRequest.predicate = NSPredicate(format: "id == %@", id as CVarArg)
+            privateRequest.affectedStores = [privateStore]
+            let privateResults = try context.fetch(privateRequest)
+            for category in privateResults {
+                context.delete(category)
+            }
+            logger.debug("deleteCategory: marked \(privateResults.count) private-store record(s) for deletion")
+        }
+
+        do {
+            try context.save()
+            logger.info("deleteCategory: success")
+        } catch {
+            logger.error("deleteCategory: context.save() FAILED — \(error.localizedDescription)")
+            context.rollback()
+            throw error
+        }
+
+        // Clean up UserDefaults category order
+        var order = UserDefaults.standard.stringArray(forKey: "categoryDisplayOrder") ?? []
+        order.removeAll { $0 == id.uuidString }
+        UserDefaults.standard.set(order, forKey: "categoryDisplayOrder")
+    }
+
+    func reorderCategories(_ orderedIDs: [UUID]) async throws {
+        logger.info("reorderCategories: \(orderedIDs.count) categories")
+        let context = persistence.container.viewContext
+
+        let request: NSFetchRequest<Category> = Category.fetchRequest()
+        request.predicate = NSPredicate(format: "id IN %@", orderedIDs.map { $0 as CVarArg })
+        let results = try context.fetch(request)
+
+        let lookup = Dictionary(grouping: results, by: { $0.wrappedID })
+        for (index, id) in orderedIDs.enumerated() {
+            guard let categories = lookup[id] else { continue }
+            for category in categories {
+                category.sortOrder = Int16(index)
+            }
+        }
+
+        do {
+            try context.save()
+            logger.info("reorderCategories: saved successfully")
+        } catch {
+            logger.error("reorderCategories: context.save() FAILED — \(error.localizedDescription)")
+            context.rollback()
+            throw error
+        }
+    }
+
     func shareNewCategoryToHousehold(id: UUID) async {
         let context = persistence.container.viewContext
         let request: NSFetchRequest<Category> = Category.fetchRequest()
@@ -178,15 +256,22 @@ final class CategoryRepository: CategoryRepositoryProtocol {
             return
         }
 
-        // Scope to private store only — shared-store categories from partner sync
-        // must not suppress seeding into the private store.
+        // Use a UserDefaults flag instead of count check. If user deletes all defaults,
+        // count would be 0 and re-seeding would undo their deletions.
+        guard !UserDefaults.standard.bool(forKey: "categoriesHaveBeenSeeded") else {
+            logger.debug("seedDefaultCategoriesIfNeeded: already seeded — skipped")
+            return
+        }
+
+        // Also skip if defaults already exist (first-launch backward compat)
         let request: NSFetchRequest<Category> = Category.fetchRequest()
         request.predicate = NSPredicate(format: "isDefault == YES")
         request.affectedStores = [privateStore]
         let count = try context.count(for: request)
 
         guard count == 0 else {
-            logger.debug("seedDefaultCategoriesIfNeeded: \(count) categories exist — skipped")
+            logger.debug("seedDefaultCategoriesIfNeeded: \(count) categories exist — setting flag and skipping")
+            UserDefaults.standard.set(true, forKey: "categoriesHaveBeenSeeded")
             return
         }
 
@@ -208,6 +293,7 @@ final class CategoryRepository: CategoryRepositoryProtocol {
             context.rollback()
             throw error
         }
+        UserDefaults.standard.set(true, forKey: "categoriesHaveBeenSeeded")
         logger.info("seedDefaultCategoriesIfNeeded: seeding complete")
     }
 }

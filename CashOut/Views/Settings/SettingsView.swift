@@ -6,22 +6,37 @@ struct SettingsView: View {
     @State private var viewModel = SettingsViewModel()
     @State private var isShowingAddCategory = false
     @State private var isShowingSignOutAlert = false
+    @State private var categoryToDelete: CategoryData?
+    @State private var deleteTask: Task<Void, Never>?
+    @State private var cancelInviteTask: Task<Void, Never>?
 
     var body: some View {
         Form {
             Section("Categories") {
                 ForEach(viewModel.categories, id: \.id) { category in
-                    if category.isDefault {
-                        CategoryRowView(category: category)
-                    } else {
-                        NavigationLink(destination: CategoryManagementView(
-                            category: category,
-                            viewModel: viewModel
-                        )) {
+                    Group {
+                        if category.isDefault {
                             CategoryRowView(category: category)
+                        } else {
+                            NavigationLink(destination: CategoryManagementView(
+                                category: category,
+                                viewModel: viewModel
+                            )) {
+                                CategoryRowView(category: category)
+                            }
+                            .accessibilityHint("Double tap to edit")
                         }
-                        .accessibilityHint("Double tap to edit")
                     }
+                    .swipeActions(edge: .trailing, allowsFullSwipe: false) {
+                        Button(role: .destructive) {
+                            categoryToDelete = category
+                        } label: {
+                            Label("Delete", systemImage: "trash")
+                        }
+                    }
+                }
+                .onMove { from, to in
+                    viewModel.moveCategory(from: from, to: to)
                 }
                 Button {
                     isShowingAddCategory = true
@@ -53,12 +68,25 @@ struct SettingsView: View {
             CategoryManagementView(category: nil, viewModel: viewModel)
         }
         .navigationTitle("Settings")
+        .onDisappear {
+            deleteTask?.cancel()
+            cancelInviteTask?.cancel()
+        }
         // Both calls re-fire on every NavigationStack appear — intentional.
         // Categories list is small, re-fetch ensures partner-added custom categories
         // appear immediately via NSPersistentCloudKitContainer auto-merge.
         .task {
             await viewModel.refreshSharingStatus()
             await viewModel.loadCategories()
+        }
+        .alert("Cancel Invitation", isPresented: Bindable(viewModel).isShowingCancelAlert) {
+            Button("Cancel Invitation", role: .destructive) {
+                cancelInviteTask?.cancel()
+                cancelInviteTask = Task { await viewModel.cancelInvitation() }
+            }
+            Button("Keep", role: .cancel) { }
+        } message: {
+            Text("This will revoke the invitation link. You can invite a partner again later.")
         }
         .alert("Sign Out", isPresented: $isShowingSignOutAlert) {
             Button("Sign Out", role: .destructive) {
@@ -68,11 +96,46 @@ struct SettingsView: View {
         } message: {
             Text("You will need to sign in again with your Apple ID to sync expenses.")
         }
-        .sheet(isPresented: Bindable(viewModel).isShowingShareSheet, onDismiss: {
-            // Catches interactive dismiss (swipe-down) when no delegate method fires
-            if viewModel.isShowingShareSheet {
-                viewModel.handleShareDismiss(nil)
+        .alert(
+            "Delete Category?",
+            isPresented: Binding(
+                get: { categoryToDelete != nil },
+                set: { if !$0 { categoryToDelete = nil } }
+            )
+        ) {
+            Button("Delete", role: .destructive) {
+                guard let category = categoryToDelete else { return }
+                categoryToDelete = nil
+                deleteTask?.cancel()
+                deleteTask = Task { await viewModel.deleteCategory(id: category.id) }
             }
+            Button("Cancel", role: .cancel) {
+                categoryToDelete = nil
+            }
+        } message: {
+            if let category = categoryToDelete {
+                Text("'\(category.name)' will be removed for you and your partner.")
+            }
+        }
+        .alert(
+            "Cannot Delete",
+            isPresented: Binding(
+                get: { viewModel.categoryDeleteError != nil },
+                set: { if !$0 { viewModel.categoryDeleteError = nil } }
+            )
+        ) {
+            Button("OK", role: .cancel) {
+                viewModel.categoryDeleteError = nil
+            }
+        } message: {
+            if let error = viewModel.categoryDeleteError {
+                Text(error)
+            }
+        }
+        .sheet(isPresented: Bindable(viewModel).isShowingShareSheet, onDismiss: {
+            // Catches interactive dismiss (swipe-down) when no delegate method fires.
+            // Safe to call unconditionally — handleShareDismiss is idempotent per presentation.
+            viewModel.handleShareDismiss(nil)
         }) {
             if let share = viewModel.activeShare,
                let container = viewModel.activeContainer {
@@ -89,6 +152,8 @@ struct SettingsView: View {
 private struct HouseholdSectionView: View {
     @Bindable var viewModel: SettingsViewModel
     @State private var inviteTask: Task<Void, Never>?
+    @State private var resendTask: Task<Void, Never>?
+    @State private var cancelTask: Task<Void, Never>?
 
     var body: some View {
         Group {
@@ -118,6 +183,23 @@ private struct HouseholdSectionView: View {
                     }
                 }
                 .accessibilityElement(children: .combine)
+
+                Button("Resend Invitation") {
+                    resendTask?.cancel()
+                    resendTask = Task { await viewModel.resendInvitation() }
+                }
+                .disabled(viewModel.isInviting)
+
+                Button("Cancel Invitation", role: .destructive) {
+                    viewModel.isShowingCancelAlert = true
+                }
+                .disabled(viewModel.isCancelling)
+
+                if let error = viewModel.errorMessage {
+                    Text(error)
+                        .font(.caption)
+                        .foregroundStyle(.red)
+                }
             } else {
                 Button("Invite Partner") {
                     inviteTask?.cancel()
@@ -132,7 +214,11 @@ private struct HouseholdSectionView: View {
                 }
             }
         }
-        .onDisappear { inviteTask?.cancel() }
+        .onDisappear {
+            inviteTask?.cancel()
+            resendTask?.cancel()
+            cancelTask?.cancel()
+        }
     }
 
     private var partnerAvatar: some View {

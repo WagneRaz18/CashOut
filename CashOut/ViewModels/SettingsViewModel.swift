@@ -21,10 +21,17 @@ final class SettingsViewModel {
     var categories: [CategoryData] = []
     private(set) var isSavingCategory = false
     var categorySaveError: String?
+    private(set) var isDeletingCategory = false
+    var categoryDeleteError: String?
 
     var activeShare: CKShare?
     var activeContainer: CKContainer?
     private(set) var isInviting = false
+    private(set) var isCancelling = false
+    var isShowingCancelAlert = false
+
+    @ObservationIgnored
+    private var hasHandledCurrentDismiss = false
 
     @ObservationIgnored
     private let cloudSharingService: CloudSharingServiceProtocol
@@ -59,38 +66,13 @@ final class SettingsViewModel {
         errorMessage = nil
 
         do {
-            let request: NSFetchRequest<Category> = Category.fetchRequest()
-            request.sortDescriptors = [
-                NSSortDescriptor(key: "sortOrder", ascending: true),
-                NSSortDescriptor(key: "id", ascending: true),
-            ]
-            if let privateStore = persistenceController.privatePersistentStore {
-                request.affectedStores = [privateStore]
-            }
-            let allCategories = try persistenceController.container.viewContext.fetch(request)
-
-            // Deduplicate defaults — prior seeding failures can leave duplicates.
-            // Share only unique records to avoid bloating the shared zone.
-            var seenDefaultNames = Set<String>()
-            let categories = allCategories.filter { category in
-                guard category.isDefault else { return true }
-                guard !seenDefaultNames.contains(category.wrappedName) else { return false }
-                seenDefaultNames.insert(category.wrappedName)
-                return true
-            }
-            logger.info("invitePartner: found \(categories.count) categories to share (from \(allCategories.count) raw)")
-
-            guard !categories.isEmpty else {
-                logger.error("invitePartner: no categories found — cannot create share")
-                errorMessage = "No categories found. Please restart the app."
-                return
-            }
-
+            let categories = try fetchCategoriesForSharing()
             let (share, container) = try await cloudSharingService.createShare(for: categories)
             guard !Task.isCancelled else { return }
             logger.info("invitePartner: share created successfully")
             activeShare = share
             activeContainer = container
+            hasHandledCurrentDismiss = false
             isShowingShareSheet = true
         } catch {
             guard !Task.isCancelled else { return }
@@ -107,7 +89,7 @@ final class SettingsViewModel {
             let result = try await categoryRepository.fetchCategories()
             guard !Task.isCancelled else { return }
             logger.info("loadCategories: loaded \(result.count) categories")
-            categories = result
+            categories = Self.applyUserOrder(to: result)
         } catch {
             guard !Task.isCancelled else { return }
             // Categories are seeded at startup — empty state is infrastructure failure.
@@ -176,6 +158,11 @@ final class SettingsViewModel {
     }
 
     func handleShareDismiss(_ share: CKShare?) {
+        guard !hasHandledCurrentDismiss else {
+            logger.debug("handleShareDismiss: already handled — skipped")
+            return
+        }
+        hasHandledCurrentDismiss = true
         logger.info("handleShareDismiss: share=\(share != nil ? "present" : "nil")")
         if let share {
             cloudSharingService.persistUpdatedShare(share)
@@ -183,5 +170,169 @@ final class SettingsViewModel {
         isShowingShareSheet = false
         refreshTask?.cancel()
         refreshTask = Task { await refreshSharingStatus() }
+    }
+
+    func cancelInvitation() async {
+        guard !isCancelling else {
+            logger.debug("cancelInvitation: already cancelling — skipped")
+            return
+        }
+        logger.info("cancelInvitation: starting share deletion")
+        isCancelling = true
+        defer { isCancelling = false }
+        errorMessage = nil
+
+        do {
+            try await cloudSharingService.cancelShare()
+            // State cleanup is unconditional — the CloudKit delete already happened
+            logger.info("cancelInvitation: share deleted successfully")
+            activeShare = nil
+            activeContainer = nil
+        } catch {
+            guard !Task.isCancelled else { return }
+            logger.error("cancelInvitation: FAILED — \(error.localizedDescription)")
+            errorMessage = error.localizedDescription
+        }
+    }
+
+    func resendInvitation() async {
+        guard !isInviting else {
+            logger.debug("resendInvitation: already inviting — skipped")
+            return
+        }
+        logger.info("resendInvitation: re-presenting share sheet with existing share")
+        isInviting = true
+        defer { isInviting = false }
+        errorMessage = nil
+
+        do {
+            let categories = try fetchCategoriesForSharing()
+            let (share, container) = try await cloudSharingService.createShare(for: categories)
+            guard !Task.isCancelled else { return }
+            logger.info("resendInvitation: share ready — presenting sheet")
+            activeShare = share
+            activeContainer = container
+            hasHandledCurrentDismiss = false
+            isShowingShareSheet = true
+        } catch {
+            guard !Task.isCancelled else { return }
+            logger.error("resendInvitation: FAILED — \(error.localizedDescription)")
+            errorMessage = error.localizedDescription
+            activeShare = nil
+            activeContainer = nil
+        }
+    }
+
+    // MARK: - Category Reorder & Delete
+
+    func deleteCategory(id: UUID) async {
+        guard !isDeletingCategory else {
+            logger.debug("deleteCategory: already deleting — skipped")
+            return
+        }
+        isDeletingCategory = true
+        defer { isDeletingCategory = false }
+        categoryDeleteError = nil
+
+        logger.info("deleteCategory: id=\(id)")
+        do {
+            try await categoryRepository.deleteCategory(id: id)
+            guard !Task.isCancelled else { return }
+            logger.info("deleteCategory: success")
+            hapticService.trigger(.deleteTap)
+            await loadCategories()
+        } catch let error as CategoryRepositoryError {
+            guard !Task.isCancelled else { return }
+            logger.warning("deleteCategory: blocked — \(error.localizedDescription)")
+            hapticService.trigger(.error)
+            categoryDeleteError = error.localizedDescription
+        } catch {
+            guard !Task.isCancelled else { return }
+            logger.error("deleteCategory: FAILED — \(error.localizedDescription)")
+            hapticService.trigger(.error)
+            categoryDeleteError = "Failed to delete category. Please try again."
+        }
+    }
+
+    func moveCategory(from source: IndexSet, to destination: Int) {
+        categories.move(fromOffsets: source, toOffset: destination)
+        Self.persistUserOrder(categories)
+        logger.info("moveCategory: persisted new order to UserDefaults")
+
+        // Fire-and-forget Core Data sortOrder update (canonical fallback)
+        let orderedIDs = categories.map(\.id)
+        let repo = categoryRepository
+        Task {
+            do { try await repo.reorderCategories(orderedIDs) }
+            catch { logger.error("moveCategory: reorder FAILED — \(error.localizedDescription)") }
+        }
+    }
+
+    // MARK: - User Order Helpers
+
+    private static let orderKey = "categoryDisplayOrder"
+
+    static func applyUserOrder(to fetched: [CategoryData]) -> [CategoryData] {
+        guard let savedOrder = UserDefaults.standard.stringArray(forKey: orderKey) else {
+            return fetched
+        }
+        let indexMap = Dictionary(savedOrder.enumerated().map { ($1, $0) }, uniquingKeysWith: { first, _ in first })
+        let maxIndex = savedOrder.count
+
+        // Categories in saved order first, then any new ones (from partner sync) appended at end
+        let sorted = fetched.sorted { a, b in
+            let aIndex = indexMap[a.id.uuidString] ?? (maxIndex + Int(a.sortOrder))
+            let bIndex = indexMap[b.id.uuidString] ?? (maxIndex + Int(b.sortOrder))
+            return aIndex < bIndex
+        }
+
+        // Prune stale UUIDs from UserDefaults (deleted categories)
+        let liveIDs = Set(fetched.map { $0.id.uuidString })
+        let pruned = savedOrder.filter { liveIDs.contains($0) }
+        if pruned.count != savedOrder.count {
+            UserDefaults.standard.set(pruned, forKey: orderKey)
+        }
+
+        return sorted
+    }
+
+    static func persistUserOrder(_ categories: [CategoryData]) {
+        let order = categories.map { $0.id.uuidString }
+        UserDefaults.standard.set(order, forKey: orderKey)
+    }
+
+    // MARK: - Private
+
+    private func fetchCategoriesForSharing() throws -> [Category] {
+        let request: NSFetchRequest<Category> = Category.fetchRequest()
+        request.sortDescriptors = [
+            NSSortDescriptor(key: "sortOrder", ascending: true),
+            NSSortDescriptor(key: "id", ascending: true),
+        ]
+        if let privateStore = persistenceController.privatePersistentStore {
+            request.affectedStores = [privateStore]
+        }
+        let allCategories = try persistenceController.container.viewContext.fetch(request)
+
+        // Deduplicate defaults — prior seeding failures can leave duplicates.
+        // Share only unique records to avoid bloating the shared zone.
+        var seenDefaultNames = Set<String>()
+        let categories = allCategories.filter { category in
+            guard category.isDefault else { return true }
+            guard !seenDefaultNames.contains(category.wrappedName) else { return false }
+            seenDefaultNames.insert(category.wrappedName)
+            return true
+        }
+        logger.info("fetchCategoriesForSharing: \(categories.count) categories (from \(allCategories.count) raw)")
+
+        guard !categories.isEmpty else {
+            logger.error("fetchCategoriesForSharing: no categories found")
+            throw NSError(
+                domain: "SettingsViewModel",
+                code: 1,
+                userInfo: [NSLocalizedDescriptionKey: "No categories found. Please restart the app."]
+            )
+        }
+        return categories
     }
 }

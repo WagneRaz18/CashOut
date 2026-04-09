@@ -18,6 +18,10 @@ final class MockCategoryRepository: CategoryRepositoryProtocol {
     var savedCategory: CategoryData?
     var shareNewCategoryCalled = false
     var lastSharedCategoryID: UUID?
+    var deleteCategoryCalled = false
+    var lastDeletedCategoryID: UUID?
+    var reorderCategoriesCalled = false
+    var lastReorderedIDs: [UUID]?
 
     // MARK: - Protocol Methods
 
@@ -37,5 +41,18 @@ final class MockCategoryRepository: CategoryRepositoryProtocol {
     func shareNewCategoryToHousehold(id: UUID) async {
         shareNewCategoryCalled = true
         lastSharedCategoryID = id
+    }
+
+    func deleteCategory(id: UUID) async throws {
+        deleteCategoryCalled = true
+        lastDeletedCategoryID = id
+        if shouldThrow { throw throwError }
+        categoriesToReturn.removeAll { $0.id == id }
+    }
+
+    func reorderCategories(_ orderedIDs: [UUID]) async throws {
+        reorderCategoriesCalled = true
+        lastReorderedIDs = orderedIDs
+        if shouldThrow { throw throwError }
     }
 }
