@@ -345,15 +345,15 @@ final class ExpenseEntryViewModelTests: XCTestCase {
         XCTAssertEqual(hapticService.lastEvent, .categorySelect, "Should trigger .categorySelect haptic")
     }
 
-    func testSaveExpenseTriggersSaveTapHaptic() async throws {
+    func testSaveExpenseDoesNotTriggerSaveTapHaptic() async throws {
+        // .saveTap moved to View layer for animation synchronization
         let (viewModel, _, _, _, _, hapticService) = makeSUT()
         viewModel.amountInBaht = 1250
         viewModel.selectedCategoryID = UUID()
 
         try await viewModel.saveExpense()
 
-        XCTAssertEqual(hapticService.triggeredEvents.count, 1, "Should trigger exactly one haptic event")
-        XCTAssertEqual(hapticService.lastEvent, .saveTap, "Should trigger .saveTap haptic on successful save")
+        XCTAssertTrue(hapticService.triggeredEvents.isEmpty, "ViewModel should NOT trigger .saveTap — moved to View layer")
     }
 
     func testSaveExpenseWithZeroAmountDoesNotTriggerSaveTapHaptic() async throws {

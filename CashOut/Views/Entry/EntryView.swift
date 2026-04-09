@@ -9,6 +9,7 @@ struct EntryView: View {
     @State private var viewModel = ExpenseEntryViewModel()
     @State private var showingNoteSheet = false
     @State private var saveTask: Task<Void, Never>?
+    @State private var saveTrigger: Int = 0
     @Environment(\.accessibilityReduceTransparency) private var reduceTransparency
 
     var body: some View {
@@ -24,6 +25,7 @@ struct EntryView: View {
             Spacer(minLength: 0)
 
             AmountDisplayView(amount: viewModel.amountInSatang)
+                .overlay { SaveConfirmationOverlay(trigger: saveTrigger) }
                 .padding(.horizontal, Spacing.lg)
 
             Button {
@@ -80,22 +82,38 @@ struct EntryView: View {
                 onSave: {
                     logger.info("Save button tapped — amount=\(viewModel.amountInBaht, privacy: .private) Baht")
                     let tapStart = CFAbsoluteTimeGetCurrent()
+
+                    // Immediate: animation + haptic (optimistic, same frame as tap)
+                    saveTrigger += 1
+                    HapticService.shared.trigger(.saveTap)
+
                     saveTask?.cancel()
                     saveTask = Task {
+                        // Save runs in parallel with animation
+                        async let save: Void = viewModel.saveExpense()
+
+                        // Wait for animation to complete
                         do {
-                            viewModel.saveError = nil
-                            try await viewModel.saveExpense()
-                            guard !Task.isCancelled else { return }
-                            let tapElapsed = (CFAbsoluteTimeGetCurrent() - tapStart) * 1000
-                            logger.info("Save success — navigating immediately — \(tapElapsed, format: .fixed(precision: 1))ms since tap")
-                            UIAccessibility.post(notification: .announcement, argument: "Expense saved")
-                            viewModel.resetForm()
-                            onSaveComplete?()
+                            try await Task.sleep(for: .milliseconds(400))
+                        } catch is CancellationError { return }
+                        guard !Task.isCancelled else { return }
+
+                        // Collect save result
+                        do {
+                            try await save
                         } catch {
                             guard !Task.isCancelled else { return }
-                            logger.error("Save failed in EntryView — showing user error")
+                            logger.error("Save failed in EntryView: \(error.localizedDescription, privacy: .public)")
                             viewModel.saveError = "Could not save entry. Please try again."
+                            return
                         }
+
+                        // Save succeeded — cleanup must always run
+                        let tapElapsed = (CFAbsoluteTimeGetCurrent() - tapStart) * 1000
+                        logger.info("Save success — navigating — \(tapElapsed, format: .fixed(precision: 1))ms since tap")
+                        UIAccessibility.post(notification: .announcement, argument: "Expense saved")
+                        viewModel.resetForm()
+                        onSaveComplete?()
                     }
                 }
             )

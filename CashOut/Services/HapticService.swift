@@ -17,10 +17,19 @@ protocol HapticServiceProtocol {
 final class HapticService: HapticServiceProtocol {
     static let shared = HapticService()
 
-    private let impactGenerator = UIImpactFeedbackGenerator(style: .light)
-    private let notificationGenerator = UINotificationFeedbackGenerator()
+    private var impactGenerator: UIImpactFeedbackGenerator
+    private var notificationGenerator: UINotificationFeedbackGenerator
 
     init() {
+        impactGenerator = UIImpactFeedbackGenerator(style: .light)
+        notificationGenerator = UINotificationFeedbackGenerator()
+        impactGenerator.prepare()
+        notificationGenerator.prepare()
+    }
+
+    func configure(view: UIView) {
+        impactGenerator = UIImpactFeedbackGenerator(style: .light, view: view)
+        notificationGenerator = UINotificationFeedbackGenerator(view: view)
         impactGenerator.prepare()
         notificationGenerator.prepare()
     }

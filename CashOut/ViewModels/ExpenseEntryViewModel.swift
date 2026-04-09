@@ -167,6 +167,7 @@ final class ExpenseEntryViewModel {
         }
         isSaving = true
         defer { isSaving = false }
+        saveError = nil
 
         guard amountInBaht > 0 else {
             logger.debug("saveExpense: amount is zero — skipped")
@@ -200,7 +201,6 @@ final class ExpenseEntryViewModel {
 
         let saveElapsed = (CFAbsoluteTimeGetCurrent() - saveStart) * 1000
         logger.info("saveExpense: saved successfully — id=\(expense.id, privacy: .private) — total \(saveElapsed, format: .fixed(precision: 1))ms")
-        hapticService.trigger(.saveTap)
 
         // Persist MRU
         userDefaults.set(categoryID.uuidString, forKey: Self.mruKey)

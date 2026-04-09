@@ -81,6 +81,7 @@
 		M1N2O3P4Q5R60D12M1N2O3P4 /* MockSyncMonitorService.swift in Sources */ = {isa = PBXBuildFile; fileRef = M1N2O3P4Q5R60D02M1N2O3P4 /* MockSyncMonitorService.swift */; };
 		N1O2P3Q4R5S60E11N1O2P3Q4 /* SyncStatusIndicator.swift in Sources */ = {isa = PBXBuildFile; fileRef = N1O2P3Q4R5S60E01N1O2P3Q4 /* SyncStatusIndicator.swift */; };
 		O1P2Q3R4S5T60F11O1P2Q3R4 /* ICloudBannerView.swift in Sources */ = {isa = PBXBuildFile; fileRef = O1P2Q3R4S5T60F01O1P2Q3R4 /* ICloudBannerView.swift */; };
+		SAV3C0NF1RM0V3RL4Y11SAV3 /* SaveConfirmationOverlay.swift in Sources */ = {isa = PBXBuildFile; fileRef = SAV3C0NF1RM0V3RL4Y01SAV3 /* SaveConfirmationOverlay.swift */; };
 		P1Q2R3S4T5U60G11P1Q2R3S4 /* SyncMonitorServiceTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = P1Q2R3S4T5U60G01P1Q2R3S4 /* SyncMonitorServiceTests.swift */; };
 		Q1R2S3T4U5V60H01Q1R2S3T4 /* CategoryRowView.swift in Sources */ = {isa = PBXBuildFile; fileRef = R1S2T3U4V5W60I01R1S2T3U4 /* CategoryRowView.swift */; };
 		S2T3U4V5W6X70J01S2T3U4V5 /* CategoryManagementView.swift in Sources */ = {isa = PBXBuildFile; fileRef = T2U3V4W5X6Y70K01T2U3V4W5 /* CategoryManagementView.swift */; };
@@ -185,6 +186,7 @@
 		M1N2O3P4Q5R60D01M1N2O3P4 /* SyncMonitorService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SyncMonitorService.swift; sourceTree = "<group>"; };
 		M1N2O3P4Q5R60D02M1N2O3P4 /* MockSyncMonitorService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MockSyncMonitorService.swift; sourceTree = "<group>"; };
 		N1O2P3Q4R5S60E01N1O2P3Q4 /* SyncStatusIndicator.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SyncStatusIndicator.swift; sourceTree = "<group>"; };
+		SAV3C0NF1RM0V3RL4Y01SAV3 /* SaveConfirmationOverlay.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SaveConfirmationOverlay.swift; sourceTree = "<group>"; };
 		O1P2Q3R4S5T60F01O1P2Q3R4 /* ICloudBannerView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ICloudBannerView.swift; sourceTree = "<group>"; };
 		P1Q2R3S4T5U60G01P1Q2R3S4 /* SyncMonitorServiceTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SyncMonitorServiceTests.swift; sourceTree = "<group>"; };
 		R1S2T3U4V5W60I01R1S2T3U4 /* CategoryRowView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CategoryRowView.swift; sourceTree = "<group>"; };
@@ -469,6 +471,7 @@
 			isa = PBXGroup;
 			children = (
 				O1P2Q3R4S5T60F01O1P2Q3R4 /* ICloudBannerView.swift */,
+				SAV3C0NF1RM0V3RL4Y01SAV3 /* SaveConfirmationOverlay.swift */,
 				N1O2P3Q4R5S60E01N1O2P3Q4 /* SyncStatusIndicator.swift */,
 			);
 			path = Components;
@@ -673,6 +676,7 @@
 				F57145CC7AF2B512474D364D /* SettingsViewModel.swift in Sources */,
 				B483D9DD79CB54CBA920091B /* Bundle+Version.swift in Sources */,
 				M1N2O3P4Q5R60D11M1N2O3P4 /* SyncMonitorService.swift in Sources */,
+				SAV3C0NF1RM0V3RL4Y11SAV3 /* SaveConfirmationOverlay.swift in Sources */,
 				N1O2P3Q4R5S60E11N1O2P3Q4 /* SyncStatusIndicator.swift in Sources */,
 				O1P2Q3R4S5T60F11O1P2Q3R4 /* ICloudBannerView.swift in Sources */,
 				Q1R2S3T4U5V60H01Q1R2S3T4 /* CategoryRowView.swift in Sources */,

@@ -117,6 +117,7 @@ final class EditExpenseViewModel {
         }
         isSaving = true
         defer { isSaving = false }
+        saveError = nil
 
         guard amountInBaht > 0 else {
             logger.debug("saveExpense: amount is zero — skipped")
@@ -143,7 +144,6 @@ final class EditExpenseViewModel {
         guard !Task.isCancelled else { return }
 
         logger.info("saveExpense: update saved successfully")
-        hapticService.trigger(.saveTap)
         // No form reset, no MRU update — sheet dismisses after save
     }
 }

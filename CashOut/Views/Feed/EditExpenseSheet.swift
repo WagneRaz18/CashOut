@@ -10,6 +10,7 @@ struct EditExpenseSheet: View {
     @State private var viewModel: EditExpenseViewModel
     @State private var showingNoteSheet = false
     @State private var saveTask: Task<Void, Never>?
+    @State private var saveTrigger: Int = 0
 
     init(
         expense: ExpenseData,
@@ -31,6 +32,7 @@ struct EditExpenseSheet: View {
             }
 
             AmountDisplayView(amount: viewModel.amountInSatang)
+                .overlay { SaveConfirmationOverlay(trigger: saveTrigger) }
                 .padding(.top, Spacing.lg)
                 .padding(.horizontal, Spacing.md)
 
@@ -68,19 +70,36 @@ struct EditExpenseSheet: View {
                 isDisabled: viewModel.isAmountZero || viewModel.isSaving || viewModel.selectedCategoryID == nil,
                 onSave: {
                     logger.info("Edit save tapped — amount=\(viewModel.amountInBaht, privacy: .private) Baht")
+
+                    // Immediate: animation + haptic (optimistic, same frame as tap)
+                    saveTrigger += 1
+                    HapticService.shared.trigger(.saveTap)
+
                     saveTask?.cancel()
                     saveTask = Task {
+                        // Save runs in parallel with animation
+                        async let save: Void = viewModel.saveExpense()
+
+                        // Wait for animation to complete
                         do {
-                            viewModel.saveError = nil
-                            try await viewModel.saveExpense()
-                            guard !Task.isCancelled else { return }
-                            logger.info("Edit save succeeded — dismissing sheet")
-                            onSaveComplete?()
+                            try await Task.sleep(for: .milliseconds(400))
+                        } catch is CancellationError { return }
+                        guard !Task.isCancelled else { return }
+
+                        // Collect save result
+                        do {
+                            try await save
                         } catch {
                             guard !Task.isCancelled else { return }
-                            logger.error("Edit save failed — showing user error")
+                            logger.error("Edit save failed: \(error.localizedDescription, privacy: .public)")
                             viewModel.saveError = "Could not save changes. Please try again."
+                            return
                         }
+
+                        // Save succeeded — cleanup must always run
+                        logger.info("Edit save succeeded — dismissing sheet")
+                        UIAccessibility.post(notification: .announcement, argument: "Changes saved")
+                        onSaveComplete?()
                     }
                 }
             )

@@ -4,6 +4,18 @@ import os.log
 
 private let logger = Logger(subsystem: "com.wagneraz.CashOut", category: "ContentView")
 
+/// Zero-size bridge that captures a UIView reference for HapticService configuration.
+private struct HapticViewBridge: UIViewRepresentable {
+    func makeUIView(context: Context) -> UIView {
+        let view = UIView()
+        view.isHidden = true
+        HapticService.shared.configure(view: view)
+        return view
+    }
+
+    func updateUIView(_ uiView: UIView, context: Context) {}
+}
+
 struct ContentView: View {
     @State private var selectedTab = 0
 
@@ -25,6 +37,7 @@ struct ContentView: View {
                 }
             }
         }
+        .background { HapticViewBridge() }
         .tabBarMinimizeBehavior(.onScrollDown)
         .onChange(of: selectedTab) { oldTab, newTab in
             logger.info("Tab switched: \(oldTab) → \(newTab)")

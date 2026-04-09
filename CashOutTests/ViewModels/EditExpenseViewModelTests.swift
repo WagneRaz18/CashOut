@@ -169,12 +169,13 @@ final class EditExpenseViewModelTests: XCTestCase {
 
     // MARK: - Save Haptic Tests (AC #3)
 
-    func testSaveExpenseTriggersSaveTapHaptic() async throws {
+    func testSaveExpenseDoesNotTriggerSaveTapHaptic() async throws {
+        // .saveTap moved to View layer for animation synchronization
         let (viewModel, _, _, hapticService) = makeSUT()
 
         try await viewModel.saveExpense()
 
-        XCTAssertEqual(hapticService.lastEvent, .saveTap, "Should trigger .saveTap haptic on successful save")
+        XCTAssertTrue(hapticService.triggeredEvents.isEmpty, "ViewModel should NOT trigger .saveTap — moved to View layer")
     }
 
     func testSaveExpenseDoesNotTriggerHapticOnFailure() async {
