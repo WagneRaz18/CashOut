@@ -203,8 +203,10 @@ final class CloudSharingService: CloudSharingServiceProtocol {
             return
         }
         logger.info("shareObjectsToHouseholdIfNeeded: sharing \(objects.count) objects to household")
+        let shareOpStart = CFAbsoluteTimeGetCurrent()
         _ = try await persistenceController.container.share(objects, to: share)
-        logger.info("shareObjectsToHouseholdIfNeeded: success")
+        let shareOpElapsed = (CFAbsoluteTimeGetCurrent() - shareOpStart) * 1000
+        logger.info("shareObjectsToHouseholdIfNeeded: success — \(shareOpElapsed, format: .fixed(precision: 1))ms")
     }
 
     func resetState() {

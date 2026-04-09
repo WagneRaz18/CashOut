@@ -160,17 +160,19 @@ final class ExpenseRepository: ExpenseRepositoryProtocol {
     }
 
     func saveExpense(_ data: ExpenseData) async throws {
-        logger.info("saveExpense: id=\(data.id), amount=\(data.amount) satang")
+        logger.info("saveExpense: id=\(data.id, privacy: .private), amount=\(data.amount, privacy: .private) satang")
         let context = persistence.container.viewContext
 
+        let upsertStart = CFAbsoluteTimeGetCurrent()
         let request: NSFetchRequest<Expense> = Expense.fetchRequest()
         request.predicate = NSPredicate(format: "id == %@", data.id as CVarArg)
         request.fetchLimit = 1
 
         let existing = try context.fetch(request).first
         let isNewObject = existing == nil
+        let upsertElapsed = (CFAbsoluteTimeGetCurrent() - upsertStart) * 1000
         let expense = existing ?? Expense(context: context)
-        logger.debug("saveExpense: \(isNewObject ? "new" : "update")")
+        logger.debug("saveExpense: upsert fetch in \(upsertElapsed, format: .fixed(precision: 1))ms — \(isNewObject ? "new" : "update")")
 
         expense.id = data.id
         expense.amount = data.amount
@@ -186,8 +188,10 @@ final class ExpenseRepository: ExpenseRepositoryProtocol {
         }
 
         do {
+            let contextSaveStart = CFAbsoluteTimeGetCurrent()
             try context.save()
-            logger.info("saveExpense: context.save() succeeded")
+            let contextSaveElapsed = (CFAbsoluteTimeGetCurrent() - contextSaveStart) * 1000
+            logger.info("saveExpense: context.save() succeeded in \(contextSaveElapsed, format: .fixed(precision: 1))ms")
         } catch {
             logger.error("saveExpense: context.save() FAILED — \(error.localizedDescription)")
             context.rollback()
@@ -197,7 +201,10 @@ final class ExpenseRepository: ExpenseRepositoryProtocol {
     }
 
     func shareNewExpenseToHousehold(id: UUID) async {
+        logger.info("shareNewExpenseToHousehold: starting — id=\(id, privacy: .private)")
+        let totalStart = CFAbsoluteTimeGetCurrent()
         let context = persistence.container.viewContext
+        let refetchStart = CFAbsoluteTimeGetCurrent()
         let request: NSFetchRequest<Expense> = Expense.fetchRequest()
         request.predicate = NSPredicate(format: "id == %@", id as CVarArg)
         request.fetchLimit = 1
@@ -209,6 +216,8 @@ final class ExpenseRepository: ExpenseRepositoryProtocol {
                 return
             }
             expense = found
+            let refetchElapsed = (CFAbsoluteTimeGetCurrent() - refetchStart) * 1000
+            logger.debug("shareNewExpenseToHousehold: re-fetch in \(refetchElapsed, format: .fixed(precision: 1))ms")
         } catch {
             logger.fault("shareNewExpenseToHousehold: fetch FAILED — \(error.localizedDescription, privacy: .public)")
             return
@@ -220,6 +229,8 @@ final class ExpenseRepository: ExpenseRepositoryProtocol {
         } catch {
             logger.error("shareNewExpenseToHousehold: FAILED — \(error.localizedDescription)")
         }
+        let totalElapsed = (CFAbsoluteTimeGetCurrent() - totalStart) * 1000
+        logger.info("shareNewExpenseToHousehold: completed in \(totalElapsed, format: .fixed(precision: 1))ms")
     }
 
     func deleteExpense(id: UUID) async throws {

@@ -182,6 +182,7 @@ final class ExpenseEntryViewModel {
         }
 
         logger.info("saveExpense: saving \(self.amountInBaht, privacy: .private) Baht, category=\(categoryID, privacy: .private)")
+        let saveStart = CFAbsoluteTimeGetCurrent()
 
         let now = Date()
         let expense = ExpenseData(
@@ -197,7 +198,8 @@ final class ExpenseEntryViewModel {
         try await expenseRepository.saveExpense(expense)
         guard !Task.isCancelled else { return }
 
-        logger.debug("saveExpense: saved successfully — id=\(expense.id, privacy: .private)")
+        let saveElapsed = (CFAbsoluteTimeGetCurrent() - saveStart) * 1000
+        logger.info("saveExpense: saved successfully — id=\(expense.id, privacy: .private) — total \(saveElapsed, format: .fixed(precision: 1))ms")
         hapticService.trigger(.saveTap)
 
         // Persist MRU

@@ -79,13 +79,15 @@ struct EntryView: View {
                 isDisabled: viewModel.isAmountZero || viewModel.isSaving || viewModel.selectedCategoryID == nil,
                 onSave: {
                     logger.info("Save button tapped — amount=\(viewModel.amountInBaht, privacy: .private) Baht")
+                    let tapStart = CFAbsoluteTimeGetCurrent()
                     saveTask?.cancel()
                     saveTask = Task {
                         do {
                             viewModel.saveError = nil
                             try await viewModel.saveExpense()
                             guard !Task.isCancelled else { return }
-                            logger.info("Save success — navigating immediately")
+                            let tapElapsed = (CFAbsoluteTimeGetCurrent() - tapStart) * 1000
+                            logger.info("Save success — navigating immediately — \(tapElapsed, format: .fixed(precision: 1))ms since tap")
                             UIAccessibility.post(notification: .announcement, argument: "Expense saved")
                             viewModel.resetForm()
                             onSaveComplete?()
