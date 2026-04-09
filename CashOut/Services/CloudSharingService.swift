@@ -31,11 +31,33 @@ final class CloudSharingService: CloudSharingServiceProtocol {
 
     @ObservationIgnored private var currentShare: CKShare? = nil
 
+    /// Tracks a recently-canceled share's recordName so `checkSharingStatus()` and
+    /// `createShare()` skip the stale CKShare that remains in the local Core Data
+    /// mirror until NSPersistentCloudKitContainer processes the CloudKit deletion.
+    /// Persisted to UserDefaults to survive app termination during the sync window.
+    @ObservationIgnored private var canceledShareRecordName: String? = nil
+    @ObservationIgnored private var canceledShareTimestamp: Date? = nil
+    private static let canceledShareKey = "CashOut.canceledShareRecordName"
+    private static let canceledShareTimestampKey = "CashOut.canceledShareTimestamp"
+    /// How long to suppress a stale share after cancellation (seconds).
+    /// The mirror typically catches up within 5–15s on a live connection.
+    private static let canceledShareTTL: TimeInterval = 120
+
     private let persistenceController: PersistenceController
     private static let containerIdentifier = "iCloud.com.wagneraz.CashOut"
 
     init(persistenceController: PersistenceController = .shared) {
         self.persistenceController = persistenceController
+        // Restore cancellation sentinel from UserDefaults (survives app termination)
+        if let name = UserDefaults.standard.string(forKey: Self.canceledShareKey),
+           let ts = UserDefaults.standard.object(forKey: Self.canceledShareTimestampKey) as? Date,
+           Date().timeIntervalSince(ts) < Self.canceledShareTTL {
+            canceledShareRecordName = name
+            canceledShareTimestamp = ts
+            logger.debug("CloudSharingService.init — restored canceledShareRecordName=\(name)")
+        } else {
+            clearCanceledShareSentinel()
+        }
         logger.debug("CloudSharingService.init")
     }
 
@@ -75,12 +97,19 @@ final class CloudSharingService: CloudSharingServiceProtocol {
                 do {
                     let freshShares = try persistenceController.container.fetchShares(in: store)
                     if freshShares.contains(where: { $0.recordID == existingShare.recordID }) {
-                        logger.info("createShare: reusing existing valid share")
-                        return (existingShare, CKContainer(identifier: Self.containerIdentifier))
+                        // Skip stale share that was recently canceled from CloudKit
+                        if isRecentlyCanceled(recordName: existingShare.recordID.recordName) {
+                            logger.info("createShare: cached share was recently canceled — creating new")
+                            currentShare = nil
+                        } else {
+                            logger.info("createShare: reusing existing valid share")
+                            return (existingShare, CKContainer(identifier: Self.containerIdentifier))
+                        }
+                    } else {
+                        // Share not found in store — revoked or deleted, create new
+                        logger.info("createShare: cached share no longer valid — creating new")
+                        currentShare = nil
                     }
-                    // Share not found in store — revoked or deleted, create new
-                    logger.info("createShare: cached share no longer valid — creating new")
-                    currentShare = nil
                 } catch {
                     // Transient error (network, etc.) — keep cached share to avoid duplicate creation
                     logger.error("createShare: fetchShares validation failed — \(error.localizedDescription), reusing cached")
@@ -91,6 +120,7 @@ final class CloudSharingService: CloudSharingServiceProtocol {
 
         logger.info("createShare: creating new CloudKit share")
         let (_, share, _) = try await persistenceController.container.share(objects, to: nil)
+        clearCanceledShareSentinel()
         currentShare = share
         share[CKShare.SystemFieldKey.title] = "CashOut Household"
         logger.info("createShare: new share created successfully")
@@ -101,55 +131,33 @@ final class CloudSharingService: CloudSharingServiceProtocol {
         logger.info("checkSharingStatus: checking stores for shares")
         let checkStart = CFAbsoluteTimeGetCurrent()
 
-        // 1. Check owner's private store for shares
-        if let privateStore = persistenceController.privatePersistentStore {
-            do {
-                let privateShares = try persistenceController.container.fetchShares(in: privateStore)
-                logger.debug("checkSharingStatus: \(privateShares.count) shares in private store")
-                if let share = privateShares.first {
-                    isShared = true
-                    isShareOwner = true
-                    currentShare = share
-                    extractPartnerInfo(from: share)
-                    let elapsed = (CFAbsoluteTimeGetCurrent() - checkStart) * 1000
-                    logger.info("checkSharingStatus: found share in private store (owner) — \(elapsed, format: .fixed(precision: 1))ms")
-                    return
-                }
-            } catch {
-                logger.error("checkSharingStatus: failed to fetch from private store — \(error.localizedDescription)")
-            }
-        } else {
-            logger.debug("checkSharingStatus: private store is nil")
+        if let share = fetchActiveShare(from: persistenceController.privatePersistentStore, label: "private") {
+            isShared = true
+            isShareOwner = true
+            currentShare = share
+            extractPartnerInfo(from: share)
+            let elapsed = (CFAbsoluteTimeGetCurrent() - checkStart) * 1000
+            logger.info("checkSharingStatus: found share in private store (owner) — \(elapsed, format: .fixed(precision: 1))ms")
+            return
         }
 
-        // 2. Check shared store for shares (partner perspective)
-        if let sharedStore = persistenceController.sharedPersistentStore {
-            do {
-                let sharedShares = try persistenceController.container.fetchShares(in: sharedStore)
-                logger.debug("checkSharingStatus: \(sharedShares.count) shares in shared store")
-                if let share = sharedShares.first {
-                    isShared = true
-                    isShareOwner = false
-                    currentShare = share
-                    extractPartnerInfo(from: share)
-                    let elapsed = (CFAbsoluteTimeGetCurrent() - checkStart) * 1000
-                    logger.info("checkSharingStatus: found share in shared store (participant) — \(elapsed, format: .fixed(precision: 1))ms")
-                    return
-                }
-            } catch {
-                logger.error("checkSharingStatus: failed to fetch from shared store — \(error.localizedDescription)")
-            }
-        } else {
-            logger.debug("checkSharingStatus: shared store is nil")
+        if let share = fetchActiveShare(from: persistenceController.sharedPersistentStore, label: "shared") {
+            isShared = true
+            isShareOwner = false
+            currentShare = share
+            extractPartnerInfo(from: share)
+            let elapsed = (CFAbsoluteTimeGetCurrent() - checkStart) * 1000
+            logger.info("checkSharingStatus: found share in shared store (participant) — \(elapsed, format: .fixed(precision: 1))ms")
+            return
         }
 
-        // 3. No shares found — solo mode (only reset if both stores are loaded)
+        // No shares found (or only stale canceled shares) — solo mode
         guard persistenceController.privatePersistentStore != nil ||
               persistenceController.sharedPersistentStore != nil else {
-            // Store references nil (e.g., mid-account-change) — don't reset sharing state
             logger.warning("checkSharingStatus: both stores nil — skipping state reset (mid-account-change?)")
             return
         }
+        clearCanceledShareSentinel()
         let elapsed = (CFAbsoluteTimeGetCurrent() - checkStart) * 1000
         logger.info("checkSharingStatus: no shares found — solo mode — \(elapsed, format: .fixed(precision: 1))ms")
         isShared = false
@@ -216,6 +224,7 @@ final class CloudSharingService: CloudSharingServiceProtocol {
         isShareOwner = false
         partnerName = nil
         currentShare = nil
+        clearCanceledShareSentinel()
     }
 
     func cancelShare() async throws {
@@ -244,13 +253,23 @@ final class CloudSharingService: CloudSharingServiceProtocol {
                 case .success:
                     continuation.resume()
                 case .failure(let error):
-                    continuation.resume(throwing: error)
+                    // Treat .unknownItem as success — share already deleted server-side
+                    if let ckError = error as? CKError,
+                       ckError.code == .partialFailure,
+                       let partialErrors = ckError.partialErrorsByItemID,
+                       partialErrors.values.allSatisfy({ ($0 as? CKError)?.code == .unknownItem }) {
+                        continuation.resume()
+                    } else {
+                        continuation.resume(throwing: error)
+                    }
                 }
             }
             container.privateCloudDatabase.add(operation)
         }
 
         logger.info("cancelShare: share deleted from CloudKit")
+        setCanceledShareSentinel(recordName: share.recordID.recordName)
+        logger.debug("cancelShare: set sentinel for recordName=\(share.recordID.recordName)")
         isShared = false
         isShareOwner = false
         partnerName = nil
@@ -258,6 +277,50 @@ final class CloudSharingService: CloudSharingServiceProtocol {
     }
 
     // MARK: - Private
+
+    /// Returns true if `recordName` matches a recently-canceled share within the TTL window.
+    /// Pure query — does not mutate state. Callers clear the sentinel explicitly.
+    private func isRecentlyCanceled(recordName: String) -> Bool {
+        guard let canceled = canceledShareRecordName, canceled == recordName,
+              let ts = canceledShareTimestamp else { return false }
+        return Date().timeIntervalSince(ts) < Self.canceledShareTTL
+    }
+
+    private func setCanceledShareSentinel(recordName: String) {
+        let now = Date()
+        canceledShareRecordName = recordName
+        canceledShareTimestamp = now
+        UserDefaults.standard.set(recordName, forKey: Self.canceledShareKey)
+        UserDefaults.standard.set(now, forKey: Self.canceledShareTimestampKey)
+    }
+
+    private func clearCanceledShareSentinel() {
+        canceledShareRecordName = nil
+        canceledShareTimestamp = nil
+        UserDefaults.standard.removeObject(forKey: Self.canceledShareKey)
+        UserDefaults.standard.removeObject(forKey: Self.canceledShareTimestampKey)
+    }
+
+    /// Fetches the first non-canceled CKShare from a persistent store, or nil.
+    private func fetchActiveShare(from store: NSPersistentStore?, label: String) -> CKShare? {
+        guard let store else {
+            logger.debug("checkSharingStatus: \(label) store is nil")
+            return nil
+        }
+        do {
+            let shares = try persistenceController.container.fetchShares(in: store)
+            logger.debug("checkSharingStatus: \(shares.count) shares in \(label) store")
+            guard let share = shares.first else { return nil }
+            if isRecentlyCanceled(recordName: share.recordID.recordName) {
+                logger.info("checkSharingStatus: ignoring stale canceled share in \(label) store")
+                return nil
+            }
+            return share
+        } catch {
+            logger.error("checkSharingStatus: failed to fetch from \(label) store — \(error.localizedDescription)")
+            return nil
+        }
+    }
 
     private func extractPartnerInfo(from share: CKShare) {
         if !isShareOwner {

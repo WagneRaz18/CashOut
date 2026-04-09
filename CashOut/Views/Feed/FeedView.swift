@@ -6,8 +6,6 @@ private let logger = Logger(subsystem: "com.wagneraz.CashOut", category: "FeedVi
 struct FeedView: View {
     @State private var viewModel = FeedViewModel()
     @State private var expenseToEdit: ExpenseData?
-    @State private var expenseToDelete: ExpenseData?
-    @State private var deleteTask: Task<Void, Never>?
     @State private var showSettings = false
 
     var body: some View {
@@ -37,8 +35,8 @@ struct FeedView: View {
                         .listRowSeparatorTint(SemanticColor.outlineVariant)
                         .swipeActions(edge: .trailing, allowsFullSwipe: false) {
                             Button(role: .destructive) {
-                                logger.info("Delete swiped for expense id=\(expense.id, privacy: .private)")
-                                expenseToDelete = expense
+                                logger.info("Delete confirmed for expense id=\(expense.id, privacy: .private)")
+                                Task { await viewModel.deleteExpense(expense) }
                             } label: {
                                 Label("Delete", systemImage: "trash")
                             }
@@ -56,21 +54,6 @@ struct FeedView: View {
             })
             .presentationDetents([.large])
             .onAppear { logger.info("Edit sheet presented for expense id=\(expense.id, privacy: .private)") }
-        }
-        .confirmationDialog(
-            "Delete expense?",
-            isPresented: Binding(
-                get: { expenseToDelete != nil },
-                set: { if !$0 { expenseToDelete = nil } }
-            ),
-            titleVisibility: .visible,
-            presenting: expenseToDelete
-        ) { expense in
-            Button("Delete", role: .destructive) {
-                logger.info("Delete confirmed for expense id=\(expense.id, privacy: .private)")
-                deleteTask?.cancel()
-                deleteTask = Task { await viewModel.deleteExpense(expense) }
-            }
         }
         .safeAreaInset(edge: .top) {
             VStack(spacing: 0) {
@@ -111,8 +94,7 @@ struct FeedView: View {
             viewModel.startObserving()
         }
         .onDisappear {
-            logger.debug("FeedView.onDisappear — cancelling tasks")
-            deleteTask?.cancel()
+            logger.debug("FeedView.onDisappear")
         }
     }
 }

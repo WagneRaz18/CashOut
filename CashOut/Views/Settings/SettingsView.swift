@@ -175,7 +175,6 @@ private struct HouseholdSectionView: View {
     @Bindable var viewModel: SettingsViewModel
     @State private var inviteTask: Task<Void, Never>?
     @State private var resendTask: Task<Void, Never>?
-    @State private var cancelTask: Task<Void, Never>?
 
     var body: some View {
         Group {
@@ -240,7 +239,6 @@ private struct HouseholdSectionView: View {
             logger.debug("HouseholdSectionView.onDisappear — cancelling tasks")
             inviteTask?.cancel()
             resendTask?.cancel()
-            cancelTask?.cancel()
         }
     }
 
