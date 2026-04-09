@@ -7,54 +7,84 @@ struct FeedView: View {
     @State private var viewModel = FeedViewModel()
     @State private var expenseToEdit: ExpenseData?
     @State private var showSettings = false
+    @State private var deleteTask: Task<Void, Never>?
 
     var body: some View {
-        Group {
+        List {
             if viewModel.isEmpty {
                 Text("No entries yet")
                     .font(.body)
                     .foregroundStyle(SemanticColor.onSurfaceVariant)
-                    .frame(maxWidth: .infinity, maxHeight: .infinity)
+                    .frame(maxWidth: .infinity)
+                    .containerRelativeFrame(.vertical) { height, _ in height }
+                    .listRowBackground(Color.clear)
+                    .listRowSeparator(.hidden)
             } else {
-                List {
-                    ForEach(viewModel.expenses) { expense in
-                        Button {
-                            expenseToEdit = expense
-                        } label: {
-                            FeedRowView(
-                                expense: expense,
-                                category: viewModel.categoryFor(expense),
-                                isCurrentUser: viewModel.isCurrentUser(expense),
-                                partnerInitials: viewModel.partnerInitials(for: expense)
+                ForEach(viewModel.groupedExpenses) { section in
+                    Section {
+                        ForEach(section.expenses) { expense in
+                            let isFirst = expense.id == section.expenses.first?.id
+                            let isLast = expense.id == section.expenses.last?.id
+                            let radius: CGFloat = 16
+                            let shape = UnevenRoundedRectangle(
+                                topLeadingRadius: isFirst ? radius : 0,
+                                bottomLeadingRadius: isLast ? radius : 0,
+                                bottomTrailingRadius: isLast ? radius : 0,
+                                topTrailingRadius: isFirst ? radius : 0,
+                                style: .continuous
                             )
-                        }
-                        .buttonStyle(.plain)
-                        .accessibilityHint("Double tap to edit")
-                        .listRowBackground(Surface.containerLow)
-                        .listRowSeparator(.visible)
-                        .listRowSeparatorTint(SemanticColor.outlineVariant)
-                        .swipeActions(edge: .trailing, allowsFullSwipe: false) {
-                            Button(role: .destructive) {
-                                logger.info("Delete confirmed for expense id=\(expense.id, privacy: .private)")
-                                Task { await viewModel.deleteExpense(expense) }
+
+                            Button {
+                                expenseToEdit = expense
                             } label: {
-                                Label("Delete", systemImage: "trash")
+                                FeedRowView(
+                                    expense: expense,
+                                    category: viewModel.categoryFor(expense),
+                                    isCurrentUser: viewModel.isCurrentUser(expense),
+                                    partnerInitials: viewModel.partnerInitials(for: expense)
+                                )
+                                .padding(.vertical, Spacing.sm)
+                                .frame(maxWidth: .infinity, alignment: .leading)
+                                .background(Surface.containerLow)
+                                .clipShape(shape)
+                            }
+                            .buttonStyle(.plain)
+                            .accessibilityHint("Double tap to edit")
+                            .listRowBackground(Color.clear)
+                            .listRowSeparator(.hidden)
+                            .listRowInsets(EdgeInsets(
+                                top: isFirst ? Spacing.xs : 0.5,
+                                leading: Spacing.md,
+                                bottom: isLast ? Spacing.xs : 0.5,
+                                trailing: Spacing.md
+                            ))
+                            .swipeActions(edge: .trailing, allowsFullSwipe: false) {
+                                Button(role: .destructive) {
+                                    logger.info("Delete confirmed for expense id=\(expense.id, privacy: .private)")
+                                    deleteTask = Task { await viewModel.deleteExpense(expense) }
+                                } label: {
+                                    Label("Delete", systemImage: "trash")
+                                }
                             }
                         }
+                    } header: {
+                        Text(section.title)
+                            .font(.caption)
+                            .fontWeight(.semibold)
+                            .tracking(1.2)
+                            .textCase(.uppercase)
+                            .foregroundStyle(SemanticColor.onSurfaceVariant.opacity(0.7))
+                            .listRowInsets(EdgeInsets(
+                                top: 0, leading: Spacing.md,
+                                bottom: 0, trailing: Spacing.md
+                            ))
                     }
                 }
-                .scrollContentBackground(.hidden)
-                .background(Surface.base)
             }
         }
-        .sheet(item: $expenseToEdit) { expense in
-            EditExpenseSheet(expense: expense, onSaveComplete: {
-                logger.info("Edit sheet dismissed after save")
-                expenseToEdit = nil
-            })
-            .presentationDetents([.large])
-            .onAppear { logger.info("Edit sheet presented for expense id=\(expense.id, privacy: .private)") }
-        }
+        .listStyle(.plain)
+        .scrollContentBackground(.hidden)
+        .background(Surface.base)
         .safeAreaInset(edge: .top) {
             VStack(spacing: 0) {
                 if viewModel.syncStatus == .noICloudAccount {
@@ -71,6 +101,7 @@ struct FeedView: View {
             }
         }
         .navigationTitle("Feed")
+        .toolbarBackgroundVisibility(.hidden, for: .navigationBar)
         .toolbar {
             if viewModel.syncStatus == .syncFailure {
                 ToolbarItem(placement: .topBarLeading) {
@@ -85,16 +116,25 @@ struct FeedView: View {
                 }
             }
         }
+        .sheet(item: $expenseToEdit) { expense in
+            EditExpenseSheet(expense: expense, onSaveComplete: {
+                logger.info("Edit sheet dismissed after save")
+                expenseToEdit = nil
+            })
+            .presentationDetents([.large])
+            .onAppear { logger.info("Edit sheet presented for expense id=\(expense.id, privacy: .private)") }
+        }
         .navigationDestination(isPresented: $showSettings) {
             SettingsView()
                 .onAppear { logger.debug("Navigating to Settings from Feed") }
         }
-        .onAppear {
-            logger.debug("FeedView.onAppear — starting observation")
+        .task {
+            logger.debug("FeedView.task — starting observation")
             viewModel.startObserving()
         }
         .onDisappear {
             logger.debug("FeedView.onDisappear")
+            deleteTask?.cancel()
         }
     }
 }

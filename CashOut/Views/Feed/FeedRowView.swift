@@ -93,7 +93,7 @@ struct FeedRowView: View {
             .font(.system(size: badgeIconSize))
             .foregroundStyle(.white)
             .frame(width: badgeSize, height: badgeSize)
-            .background(color, in: Circle())
+            .background(color, in: RoundedRectangle(cornerRadius: 8, style: .continuous))
     }
 
     private var partnerCircle: some View {

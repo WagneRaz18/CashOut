@@ -3,6 +3,12 @@ import os.log
 
 private let logger = Logger(subsystem: "com.wagneraz.CashOut", category: "FeedViewModel")
 
+struct DateSection: Identifiable {
+    let id: String
+    let title: String
+    let expenses: [ExpenseData]
+}
+
 @MainActor
 @Observable
 final class FeedViewModel {
@@ -10,11 +16,24 @@ final class FeedViewModel {
     // MARK: - Observable Properties
 
     var expenses: [ExpenseData] = []
+    var groupedExpenses: [DateSection] = []
     var categories: [CategoryData] = []
     var errorMessage: String?
     var syncStatus: SyncStatus = .healthy
 
     var isEmpty: Bool { expenses.isEmpty }
+
+    // MARK: - Calendar & Formatting
+
+    private static let calendar = Calendar(identifier: .gregorian)
+
+    private static let sectionDateFormatter: DateFormatter = {
+        let fmt = DateFormatter()
+        fmt.dateStyle = .medium
+        fmt.timeStyle = .none
+        fmt.locale = Locale(identifier: "en_US_POSIX")
+        return fmt
+    }()
 
     // MARK: - Dependencies
 
@@ -81,6 +100,7 @@ final class FeedViewModel {
         repository.onExpensesChanged = { [weak self] expenses in
             logger.info("onExpensesChanged: received \(expenses.count) expenses")
             self?.expenses = expenses
+            self?.rebuildSections()
             self?.reloadCategories()
         }
         repository.startObservingExpenses()
@@ -135,6 +155,28 @@ final class FeedViewModel {
     }
 
     // MARK: - Private
+
+    private func rebuildSections() {
+        let cal = Self.calendar
+        let grouped = Dictionary(grouping: expenses) { expense in
+            cal.startOfDay(for: expense.createdAt)
+        }
+        let sortedKeys = grouped.keys.sorted(by: >)
+        groupedExpenses = sortedKeys.map { date in
+            let title: String
+            if cal.isDateInToday(date) {
+                title = "Today"
+            } else if cal.isDateInYesterday(date) {
+                title = "Yesterday"
+            } else {
+                title = Self.sectionDateFormatter.string(from: date)
+            }
+            let sectionExpenses = grouped[date] ?? []
+            let key = date.formatted(.iso8601.year().month().day())
+            return DateSection(id: key, title: title, expenses: sectionExpenses)
+        }
+        logger.debug("rebuildSections: \(self.groupedExpenses.count) sections")
+    }
 
     private func reloadCategories() {
         logger.debug("reloadCategories: starting category fetch")
