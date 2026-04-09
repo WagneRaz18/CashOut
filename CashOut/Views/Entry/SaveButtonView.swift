@@ -2,31 +2,26 @@ import SwiftUI
 
 struct SaveButtonView: View {
     let isDisabled: Bool
-    let saveCount: Int
-    let showCheckmark: Bool
     let onSave: () -> Void
 
     var body: some View {
         Button {
             onSave()
         } label: {
-            Label("Save Transaction", systemImage: showCheckmark ? "checkmark" : "tray.and.arrow.down.fill")
-                .contentTransition(.symbolEffect(.replace.downUp))
+            Label("Save Transaction", systemImage: "tray.and.arrow.down.fill")
                 .font(.headline)
                 .frame(maxWidth: .infinity)
         }
-        .symbolEffect(.bounce, value: saveCount)
         .buttonStyle(.glassProminent)
-        .disabled(isDisabled || showCheckmark)
+        .disabled(isDisabled)
         .accessibilityLabel("Save expense")
     }
 }
 
 #Preview {
     VStack(spacing: 20) {
-        SaveButtonView(isDisabled: false, saveCount: 0, showCheckmark: false, onSave: {})
-        SaveButtonView(isDisabled: true, saveCount: 0, showCheckmark: false, onSave: {})
-        SaveButtonView(isDisabled: false, saveCount: 1, showCheckmark: true, onSave: {})
+        SaveButtonView(isDisabled: false, onSave: {})
+        SaveButtonView(isDisabled: true, onSave: {})
     }
     .padding()
 }

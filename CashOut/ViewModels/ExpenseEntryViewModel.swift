@@ -20,7 +20,6 @@ final class ExpenseEntryViewModel {
     var isSaving: Bool = false
     var saveError: String?
     var categoryLoadFailed: Bool = false
-    private(set) var saveCount: Int = 0
 
     var isAmountZero: Bool {
         amountInBaht == 0
@@ -204,11 +203,7 @@ final class ExpenseEntryViewModel {
         // Persist MRU
         userDefaults.set(categoryID.uuidString, forKey: Self.mruKey)
 
-        // Signal success FIRST — View drives animation sequence, then calls resetForm().
-        // Sharing runs in a separate fire-and-forget task so it doesn't block the main
-        // actor and delay the SwiftUI onChange(of: saveCount) animation trigger.
-        saveCount += 1
-
+        // Fire-and-forget sharing — doesn't block the save caller
         let repo = expenseRepository
         let expenseID = expense.id
         shareTask = Task { await repo.shareNewExpenseToHousehold(id: expenseID) }

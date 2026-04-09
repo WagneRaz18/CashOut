@@ -162,16 +162,6 @@ final class ExpenseEntryViewModelTests: XCTestCase {
         XCTAssertEqual(saved.note, "Lunch")
     }
 
-    func testSaveExpenseIncrementsSaveCount() async throws {
-        let (viewModel, _, _, _, _, _) = makeSUT()
-        viewModel.amountInBaht = 5000
-        viewModel.selectedCategoryID = UUID()
-
-        XCTAssertEqual(viewModel.saveCount, 0)
-        try await viewModel.saveExpense()
-        XCTAssertEqual(viewModel.saveCount, 1, "saveCount should increment after successful save")
-    }
-
     func testSaveExpenseDoesNotResetFormInline() async throws {
         let (viewModel, _, _, _, _, _) = makeSUT()
         viewModel.amountInBaht = 5000
@@ -180,8 +170,8 @@ final class ExpenseEntryViewModelTests: XCTestCase {
 
         try await viewModel.saveExpense()
 
-        XCTAssertEqual(viewModel.amountInBaht, 5000, "Amount should NOT reset inline — View calls resetForm() after animation")
-        XCTAssertEqual(viewModel.noteText, "Test note", "noteText should NOT reset inline — View calls resetForm() after animation")
+        XCTAssertEqual(viewModel.amountInBaht, 5000, "Amount should NOT reset inline — View calls resetForm() after save")
+        XCTAssertEqual(viewModel.noteText, "Test note", "noteText should NOT reset inline — View calls resetForm() after save")
     }
 
     func testResetFormClearsAmountAndNote() {
@@ -204,22 +194,6 @@ final class ExpenseEntryViewModelTests: XCTestCase {
         viewModel.resetForm()
 
         XCTAssertEqual(viewModel.selectedCategoryID, categoryID, "selectedCategoryID should stay — MRU principle")
-    }
-
-    func testSaveCountDoesNotIncrementOnGuardPaths() async throws {
-        let (viewModel, _, _, _, _, _) = makeSUT()
-
-        // Zero amount guard
-        viewModel.amountInBaht = 0
-        viewModel.selectedCategoryID = UUID()
-        try await viewModel.saveExpense()
-        XCTAssertEqual(viewModel.saveCount, 0, "saveCount should not increment when amount is zero")
-
-        // Nil category guard
-        viewModel.amountInBaht = 1000
-        viewModel.selectedCategoryID = nil
-        try await viewModel.saveExpense()
-        XCTAssertEqual(viewModel.saveCount, 0, "saveCount should not increment when category is nil")
     }
 
     func testSaveExpenseDoesNotSaveWhenAmountIsZero() async throws {

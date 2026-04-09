@@ -9,6 +9,7 @@ struct EditExpenseSheet: View {
 
     @State private var viewModel: EditExpenseViewModel
     @State private var showingNoteSheet = false
+    @State private var saveTask: Task<Void, Never>?
 
     init(
         expense: ExpenseData,
@@ -63,14 +64,12 @@ struct EditExpenseSheet: View {
             .padding(.horizontal, Spacing.md)
             .padding(.bottom, Spacing.sm)
 
-            // No save animation in edit sheet — it dismisses immediately after save
             SaveButtonView(
                 isDisabled: viewModel.isAmountZero || viewModel.isSaving || viewModel.selectedCategoryID == nil,
-                saveCount: 0,
-                showCheckmark: false,
                 onSave: {
                     logger.info("Edit save tapped — amount=\(viewModel.amountInBaht, privacy: .private) Baht")
-                    Task {
+                    saveTask?.cancel()
+                    saveTask = Task {
                         do {
                             viewModel.saveError = nil
                             try await viewModel.saveExpense()
@@ -95,6 +94,9 @@ struct EditExpenseSheet: View {
         .sheet(isPresented: $showingNoteSheet) {
             NoteEntrySheet(noteText: $viewModel.noteText)
                 .presentationDetents([.large])
+        }
+        .onDisappear {
+            saveTask?.cancel()
         }
     }
 }
