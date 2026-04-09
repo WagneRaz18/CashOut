@@ -12,6 +12,7 @@ protocol ExpenseRepositoryProtocol {
 
     var onExpensesChanged: (@MainActor ([ExpenseData]) -> Void)? { get set }
     func startObservingExpenses()
+    func stopObservingExpenses()
 }
 
 // MARK: - Default no-op implementations (prevent breaking existing conformers)
@@ -22,5 +23,6 @@ extension ExpenseRepositoryProtocol {
         set { }
     }
     func startObservingExpenses() { }
+    func stopObservingExpenses() { }
     func shareNewExpenseToHousehold(id: UUID) async { }
 }

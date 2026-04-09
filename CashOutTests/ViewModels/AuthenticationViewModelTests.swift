@@ -204,6 +204,18 @@ final class AuthenticationViewModelTests: XCTestCase {
         XCTAssertTrue(mockSync.stopMonitoringCalled, "Should stop sync monitoring on sign-out")
     }
 
+    func testSignOutStopsExpenseObservation() {
+        let mockRepo = MockExpenseRepository()
+        let viewModel = AuthenticationViewModel(
+            authService: MockAuthenticationService(),
+            expenseRepository: mockRepo
+        )
+
+        viewModel.signOut()
+
+        XCTAssertTrue(mockRepo.stopObservingCalled, "Should stop expense observation on sign-out")
+    }
+
     func testSignOutResetsCloudSharingState() {
         let mockSharing = MockCloudSharingService()
         mockSharing.isShared = true

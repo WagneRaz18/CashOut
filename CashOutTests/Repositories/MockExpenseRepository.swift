@@ -29,10 +29,16 @@ final class MockExpenseRepository: ExpenseRepositoryProtocol {
     var onExpensesChanged: (@MainActor ([ExpenseData]) -> Void)?
     var stubbedExpenses: [ExpenseData] = []
     var startObservingCalled = false
+    var stopObservingCalled = false
 
     func startObservingExpenses() {
         startObservingCalled = true
         onExpensesChanged?(stubbedExpenses)
+    }
+
+    func stopObservingExpenses() {
+        stopObservingCalled = true
+        onExpensesChanged = nil
     }
 
     // MARK: - Protocol Methods

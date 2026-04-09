@@ -30,6 +30,9 @@ final class AuthenticationViewModel {
     @ObservationIgnored
     private var cloudSharingService: CloudSharingServiceProtocol
 
+    @ObservationIgnored
+    private var expenseRepository: ExpenseRepositoryProtocol
+
     // MARK: - Guards
 
     @ObservationIgnored
@@ -40,11 +43,13 @@ final class AuthenticationViewModel {
     init(
         authService: AuthenticationServiceProtocol = AuthenticationService.shared,
         syncMonitorService: SyncMonitorServiceProtocol = SyncMonitorService.shared,
-        cloudSharingService: CloudSharingServiceProtocol = CloudSharingService.shared
+        cloudSharingService: CloudSharingServiceProtocol = CloudSharingService.shared,
+        expenseRepository: ExpenseRepositoryProtocol = ExpenseRepository.shared
     ) {
         self.authService = authService
         self.syncMonitorService = syncMonitorService
         self.cloudSharingService = cloudSharingService
+        self.expenseRepository = expenseRepository
         logger.debug("AuthenticationViewModel.init")
     }
 
@@ -129,6 +134,7 @@ final class AuthenticationViewModel {
     func signOut() {
         logger.info("signOut: user-initiated sign out")
         syncMonitorService.stopMonitoring()
+        expenseRepository.stopObservingExpenses()
         cloudSharingService.resetState()
         authService.signOut()
         isAuthenticated = false

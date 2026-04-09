@@ -29,9 +29,20 @@ final class ExpenseRepository: ExpenseRepositoryProtocol {
         logger.debug("ExpenseRepository.init")
     }
 
+    func stopObservingExpenses() {
+        feedFRC?.delegate = nil
+        feedFRC = nil
+        frcDelegate = nil
+        onExpensesChanged = nil
+        logger.info("stopObservingExpenses: FRC and callback cleared")
+    }
+
     func startObservingExpenses() {
+        assert(onExpensesChanged != nil, "Set onExpensesChanged before calling startObservingExpenses()")
+
         guard feedFRC == nil else {
-            logger.debug("startObservingExpenses: FRC already exists — skipped")
+            logger.debug("startObservingExpenses: FRC already exists — pushing current data to new subscriber")
+            handleFRCUpdate()
             return
         }
 
@@ -73,6 +84,11 @@ final class ExpenseRepository: ExpenseRepositoryProtocol {
         } catch {
             let elapsed = (CFAbsoluteTimeGetCurrent() - fetchStart) * 1000
             logger.fault("startObservingExpenses: performFetch FAILED in \(elapsed, format: .fixed(precision: 1))ms — \(error.localizedDescription)")
+            // Tear down so a future call can retry from scratch
+            self.feedFRC?.delegate = nil
+            self.feedFRC = nil
+            self.frcDelegate = nil
+            return
         }
         handleFRCUpdate()
     }
