@@ -120,6 +120,8 @@
 - **2026-04-07**: `context.save()` in all repositories must be wrapped in `do/catch` with `context.rollback()` before rethrowing + `logger.error()` — bare `try context.save()` leaves dirty context on failure and no log trace.
 - **2026-04-07**: Always log `event.error?.localizedDescription` on `NSPersistentCloudKitContainer.Event` failures — event type alone is insufficient to distinguish network errors from quota exceeded from zone-not-found.
 - **2026-04-08**: `[weak self]` callback closures registered on services (e.g., `onSyncStatusChanged.append`) must `guard let self else { return }` BEFORE any file-scope `logger` call — the logger is captured independently of `self`, so it fires even after the ViewModel deallocates, producing ghost log entries with misleading category attribution.
+- **2026-04-09**: Fire-and-forget `Task {}` blocks that dispatch sharing/sync work must log at the enqueue site in the ViewModel (`.debug` level with the object ID) — the called repository method logs internally, but when filtering Console.app by ViewModel category, the share dispatch is invisible without a caller-side log. Same applies to `cancelPendingShare()`-style cleanup methods.
+- **2026-04-09**: Utility types with side-effecting UserDefaults writes (e.g., `CategoryOrderStore.applyUserOrder` pruning stale UUIDs) need their own `Logger` even though they are value types — the pruning is invisible in production logs and impossible to diagnose when category ordering behaves unexpectedly after partner sync.
 
 ## Navigation Coordination
 - For simple apps (3 tabs + sheets): TabView selection is @State in ContentView, sheet presentation is @State on presenting View. Full Coordinator pattern is unnecessary.

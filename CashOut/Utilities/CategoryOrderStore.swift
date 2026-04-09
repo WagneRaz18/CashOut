@@ -1,4 +1,7 @@
 import Foundation
+import os.log
+
+private let logger = Logger(subsystem: "com.wagneraz.CashOut", category: "CategoryOrderStore")
 
 /// Per-user category display order stored in UserDefaults.
 /// Not synced via CloudKit — each user has their own order.
@@ -16,6 +19,7 @@ struct CategoryOrderStore {
     /// Stale UUIDs (deleted categories) are pruned from the saved order.
     func applyUserOrder(to fetched: [CategoryData]) -> [CategoryData] {
         guard let savedOrder = defaults.stringArray(forKey: Self.key) else {
+            logger.debug("applyUserOrder: no saved order — using fetch order (\(fetched.count) categories)")
             return fetched
         }
         let indexMap = Dictionary(savedOrder.enumerated().map { ($1, $0) }, uniquingKeysWith: { first, _ in first })
@@ -31,6 +35,8 @@ struct CategoryOrderStore {
         let liveIDs = Set(fetched.map { $0.id.uuidString })
         let pruned = savedOrder.filter { liveIDs.contains($0) }
         if pruned.count != savedOrder.count {
+            let staleCount = savedOrder.count - pruned.count
+            logger.debug("applyUserOrder: pruned \(staleCount) stale UUID(s) from saved order")
             defaults.set(pruned, forKey: Self.key)
         }
 
@@ -41,6 +47,7 @@ struct CategoryOrderStore {
     func persistOrder(_ categories: [CategoryData]) {
         let order = categories.map { $0.id.uuidString }
         defaults.set(order, forKey: Self.key)
+        logger.debug("persistOrder: saved \(order.count) categories")
     }
 
     /// Remove a deleted category from the saved order.
@@ -48,5 +55,6 @@ struct CategoryOrderStore {
         var order = defaults.stringArray(forKey: Self.key) ?? []
         order.removeAll { $0 == id.uuidString }
         defaults.set(order, forKey: Self.key)
+        logger.debug("removeFromOrder: removed \(id, privacy: .private) — \(order.count) remaining")
     }
 }

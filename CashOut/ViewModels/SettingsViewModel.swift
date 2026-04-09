@@ -108,7 +108,10 @@ final class SettingsViewModel {
 
     func saveCategory(name: String, iconName: String, colorName: String, existingID: UUID?) async {
         let trimmedName = name.trimmingCharacters(in: .whitespacesAndNewlines)
-        guard !trimmedName.isEmpty else { return }
+        guard !trimmedName.isEmpty else {
+            logger.debug("saveCategory: empty name — skipped")
+            return
+        }
 
         // Prevent accidental demotion of default categories
         if let existingID, categories.first(where: { $0.id == existingID })?.isDefault == true {
@@ -116,7 +119,10 @@ final class SettingsViewModel {
             return
         }
 
-        guard !isSavingCategory else { return }
+        guard !isSavingCategory else {
+            logger.debug("saveCategory: already saving — skipped")
+            return
+        }
         isSavingCategory = true
         defer { isSavingCategory = false }
         categorySaveError = nil
@@ -146,6 +152,7 @@ final class SettingsViewModel {
 
             // Share new custom categories after UI has updated
             if existingID == nil {
+                logger.debug("saveCategory: enqueuing share task for new category id=\(id, privacy: .private)")
                 let repo = categoryRepository
                 categoryShareTask = Task { await repo.shareNewCategoryToHousehold(id: id) }
             }
@@ -262,17 +269,24 @@ final class SettingsViewModel {
     }
 
     func moveCategory(from source: IndexSet, to destination: Int) {
+        logger.info("moveCategory: from=\(source.map { $0 }) to=\(destination) (\(self.categories.count) categories)")
         categories.move(fromOffsets: source, toOffset: destination)
         categoryOrderStore.persistOrder(categories)
-        logger.info("moveCategory: persisted new order to UserDefaults")
 
         // Core Data sortOrder update (canonical fallback for partner visibility)
         let orderedIDs = categories.map(\.id)
         let repo = categoryRepository
+        if reorderTask != nil {
+            logger.debug("moveCategory: cancelling prior reorder task (coalescing)")
+        }
         reorderTask?.cancel()
         reorderTask = Task {
-            do { try await repo.reorderCategories(orderedIDs) }
-            catch { logger.error("moveCategory: reorder FAILED — \(error.localizedDescription)") }
+            do {
+                try await repo.reorderCategories(orderedIDs)
+                logger.debug("moveCategory: Core Data reorder complete")
+            } catch {
+                logger.error("moveCategory: reorder FAILED — \(error.localizedDescription)")
+            }
         }
     }
 

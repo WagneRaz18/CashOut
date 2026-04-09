@@ -71,7 +71,10 @@ final class ExpenseEntryViewModel {
     // MARK: - Numpad Actions
 
     func appendDigit(_ digit: String) {
-        guard amountInBaht < Self.maxBeforeAppend else { return }
+        guard amountInBaht < Self.maxBeforeAppend else {
+            logger.debug("appendDigit: amount cap reached (\(Self.maxBeforeAppend) Baht) — skipped")
+            return
+        }
         guard let value = Int64(digit) else { return }
         hapticService.trigger(.numpadKey)
         amountInBaht = amountInBaht * 10 + value
@@ -206,6 +209,7 @@ final class ExpenseEntryViewModel {
             // Fire-and-forget sharing — doesn't block the save caller
             let repo = expenseRepository
             let expenseID = expense.id
+            logger.debug("saveExpense: enqueuing share task — id=\(expenseID, privacy: .private)")
             shareTask = Task { await repo.shareNewExpenseToHousehold(id: expenseID) }
         } catch {
             guard !Task.isCancelled else { return }
@@ -215,6 +219,9 @@ final class ExpenseEntryViewModel {
     }
 
     func cancelPendingShare() {
+        if shareTask != nil {
+            logger.debug("cancelPendingShare: cancelling in-flight share task")
+        }
         shareTask?.cancel()
         shareTask = nil
     }

@@ -26,7 +26,7 @@ struct EditExpenseSheet: View {
             if let error = viewModel.saveError {
                 Text(error)
                     .font(.caption)
-                    .foregroundStyle(.secondary)
+                    .foregroundStyle(SemanticColor.error)
                     .padding(.horizontal, Spacing.md)
                     .padding(.top, Spacing.xs)
             }
@@ -86,7 +86,10 @@ struct EditExpenseSheet: View {
                         // Save expense
                         await viewModel.saveExpense()
                         guard !Task.isCancelled else { return }
-                        guard viewModel.saveError == nil else { return }
+                        guard viewModel.saveError == nil else {
+                            logger.warning("Edit save failed after animation — error: \(viewModel.saveError ?? "unknown", privacy: .public)")
+                            return
+                        }
 
                         logger.info("Edit save succeeded — dismissing sheet")
                         UIAccessibility.post(notification: .announcement, argument: "Changes saved")
@@ -106,6 +109,7 @@ struct EditExpenseSheet: View {
                 .presentationDetents([.large])
         }
         .onDisappear {
+            logger.debug("EditExpenseSheet.onDisappear — cancelling tasks")
             saveTask?.cancel()
         }
     }

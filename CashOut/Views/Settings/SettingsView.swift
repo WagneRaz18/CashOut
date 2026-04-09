@@ -1,5 +1,8 @@
 import SwiftUI
 import CloudKit
+import os.log
+
+private let logger = Logger(subsystem: "com.wagneraz.CashOut", category: "SettingsView")
 
 struct SettingsView: View {
     @Environment(AuthenticationViewModel.self) private var authViewModel
@@ -87,6 +90,7 @@ struct SettingsView: View {
             }
         }
         .onDisappear {
+            logger.debug("SettingsView.onDisappear — cancelling tasks")
             deleteTask?.cancel()
             cancelInviteTask?.cancel()
         }
@@ -233,6 +237,7 @@ private struct HouseholdSectionView: View {
             }
         }
         .onDisappear {
+            logger.debug("HouseholdSectionView.onDisappear — cancelling tasks")
             inviteTask?.cancel()
             resendTask?.cancel()
             cancelTask?.cancel()

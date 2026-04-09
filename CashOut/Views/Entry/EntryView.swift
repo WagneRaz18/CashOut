@@ -102,7 +102,10 @@ struct EntryView: View {
 
                         await save
                         guard !Task.isCancelled else { return }
-                        guard viewModel.saveError == nil else { return }
+                        guard viewModel.saveError == nil else {
+                            logger.warning("Save failed after animation — error: \(viewModel.saveError ?? "unknown", privacy: .public)")
+                            return
+                        }
 
                         let tapElapsed = (CFAbsoluteTimeGetCurrent() - tapStart) * 1000
                         logger.info("Save success — navigating — \(tapElapsed, format: .fixed(precision: 1))ms since tap")

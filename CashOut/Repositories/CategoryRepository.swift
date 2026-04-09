@@ -77,6 +77,7 @@ final class CategoryRepository: CategoryRepositoryProtocol {
 
         // Route new custom categories to shared zone for partner sync
         if isNewCustomCategory {
+            logger.debug("saveCategory: routing new custom category to shared zone")
             cloudSharingService?.prepareObjectForSharedSave(category)
         }
 
@@ -137,6 +138,9 @@ final class CategoryRepository: CategoryRepositoryProtocol {
             request.affectedStores = [privateStore]
         }
         let results = try context.fetch(request)
+        if results.count != orderedIDs.count {
+            logger.warning("reorderCategories: fetched \(results.count) but expected \(orderedIDs.count) — some categories missing from store")
+        }
 
         let lookup = Dictionary(grouping: results, by: { $0.wrappedID })
         for (index, id) in orderedIDs.enumerated() {

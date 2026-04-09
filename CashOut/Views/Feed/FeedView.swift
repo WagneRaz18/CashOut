@@ -111,6 +111,7 @@ struct FeedView: View {
             viewModel.startObserving()
         }
         .onDisappear {
+            logger.debug("FeedView.onDisappear — cancelling tasks")
             deleteTask?.cancel()
         }
     }

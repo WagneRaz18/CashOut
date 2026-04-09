@@ -67,7 +67,10 @@ final class EditExpenseViewModel {
     // MARK: - Numpad Actions
 
     func appendDigit(_ digit: String) {
-        guard amountInBaht < Self.maxBeforeAppend else { return }
+        guard amountInBaht < Self.maxBeforeAppend else {
+            logger.debug("appendDigit: amount cap reached (\(Self.maxBeforeAppend) Baht) — skipped")
+            return
+        }
         guard let value = Int64(digit) else { return }
         hapticService.trigger(.numpadKey)
         amountInBaht = amountInBaht * 10 + value
@@ -129,6 +132,7 @@ final class EditExpenseViewModel {
         }
 
         logger.info("saveExpense: updating id=\(self.originalExpense.id), amount=\(self.amountInBaht) Baht")
+        let saveStart = CFAbsoluteTimeGetCurrent()
 
         let updatedExpense = ExpenseData(
             id: originalExpense.id,
@@ -143,7 +147,8 @@ final class EditExpenseViewModel {
         do {
             try await expenseRepository.saveExpense(updatedExpense)
             guard !Task.isCancelled else { return }
-            logger.info("saveExpense: update saved successfully")
+            let saveElapsed = (CFAbsoluteTimeGetCurrent() - saveStart) * 1000
+            logger.info("saveExpense: update saved successfully — \(saveElapsed, format: .fixed(precision: 1))ms")
         } catch {
             guard !Task.isCancelled else { return }
             logger.error("saveExpense: failed — \(error.localizedDescription, privacy: .public)")
