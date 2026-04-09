@@ -145,6 +145,9 @@ struct EntryView: View {
             logger.debug("EntryView.task: loading categories")
             await viewModel.loadCategories()
         }
+        .onAppear {
+            viewModel.refreshCategoryOrder()
+        }
         .sheet(isPresented: $showingNoteSheet) {
             NoteEntrySheet(noteText: $viewModel.noteText)
                 .presentationDetents([.large])

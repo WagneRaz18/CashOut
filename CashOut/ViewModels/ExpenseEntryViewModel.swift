@@ -132,6 +132,13 @@ final class ExpenseEntryViewModel {
         }
     }
 
+    /// Re-apply UserDefaults order overlay without re-fetching from Core Data.
+    /// Called on every tab appear to pick up order changes from Settings.
+    func refreshCategoryOrder() {
+        guard !categories.isEmpty else { return }
+        categories = CategoryOrderStore().applyUserOrder(to: categories)
+    }
+
     func retryLoadCategories() async {
         logger.info("retryLoadCategories: resetting state and retrying")
         categories = []
