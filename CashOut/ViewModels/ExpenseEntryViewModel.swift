@@ -44,6 +44,9 @@ final class ExpenseEntryViewModel {
     private let hapticService: HapticServiceProtocol
 
     @ObservationIgnored
+    private let categoryOrderStore: CategoryOrderStore
+
+    @ObservationIgnored
     private var shareTask: Task<Void, Never>?
 
     // MARK: - Constants
@@ -58,13 +61,15 @@ final class ExpenseEntryViewModel {
         categoryRepository: CategoryRepositoryProtocol = CategoryRepository.shared,
         authService: AuthenticationServiceProtocol = AuthenticationService.shared,
         userDefaults: UserDefaults = .standard,
-        hapticService: HapticServiceProtocol = HapticService.shared
+        hapticService: HapticServiceProtocol = HapticService.shared,
+        categoryOrderStore: CategoryOrderStore? = nil
     ) {
         self.expenseRepository = expenseRepository
         self.categoryRepository = categoryRepository
         self.authService = authService
         self.userDefaults = userDefaults
         self.hapticService = hapticService
+        self.categoryOrderStore = categoryOrderStore ?? CategoryOrderStore(defaults: userDefaults)
         logger.debug("ExpenseEntryViewModel.init")
     }
 
@@ -114,7 +119,7 @@ final class ExpenseEntryViewModel {
                 guard !Task.isCancelled else { return }
             }
 
-            categories = CategoryOrderStore().applyUserOrder(to: fetched)
+            categories = categoryOrderStore.applyUserOrder(to: fetched)
             logger.info("loadCategories: loaded \(fetched.count) categories")
 
             if fetched.isEmpty {
@@ -135,8 +140,11 @@ final class ExpenseEntryViewModel {
     /// Re-apply UserDefaults order overlay without re-fetching from Core Data.
     /// Called on every tab appear to pick up order changes from Settings.
     func refreshCategoryOrder() {
+        // Guard handles first-appear race: .onAppear fires while .task's
+        // loadCategories is still in flight — ordering is applied there instead.
         guard !categories.isEmpty else { return }
-        categories = CategoryOrderStore().applyUserOrder(to: categories)
+        logger.debug("refreshCategoryOrder: re-applying order to \(self.categories.count) categories")
+        categories = categoryOrderStore.applyUserOrder(to: categories)
     }
 
     func retryLoadCategories() async {
