@@ -7,6 +7,7 @@ struct FeedView: View {
     @State private var viewModel = FeedViewModel()
     @State private var expenseToEdit: ExpenseData?
     @State private var expenseToDelete: ExpenseData?
+    @State private var deleteTask: Task<Void, Never>?
     @State private var showSettings = false
 
     var body: some View {
@@ -30,6 +31,7 @@ struct FeedView: View {
                             )
                         }
                         .buttonStyle(.plain)
+                        .accessibilityHint("Double tap to edit")
                         .listRowBackground(Surface.containerLow)
                         .listRowSeparator(.visible)
                         .listRowSeparatorTint(SemanticColor.outlineVariant)
@@ -61,14 +63,13 @@ struct FeedView: View {
                 get: { expenseToDelete != nil },
                 set: { if !$0 { expenseToDelete = nil } }
             ),
-            titleVisibility: .visible
-        ) {
+            titleVisibility: .visible,
+            presenting: expenseToDelete
+        ) { expense in
             Button("Delete", role: .destructive) {
-                if let expense = expenseToDelete {
-                    logger.info("Delete confirmed for expense id=\(expense.id, privacy: .private)")
-                    Task { await viewModel.deleteExpense(expense) }
-                }
-                expenseToDelete = nil
+                logger.info("Delete confirmed for expense id=\(expense.id, privacy: .private)")
+                deleteTask?.cancel()
+                deleteTask = Task { await viewModel.deleteExpense(expense) }
             }
         }
         .safeAreaInset(edge: .top) {
@@ -108,6 +109,9 @@ struct FeedView: View {
         .onAppear {
             logger.debug("FeedView.onAppear — starting observation")
             viewModel.startObserving()
+        }
+        .onDisappear {
+            deleteTask?.cancel()
         }
     }
 }

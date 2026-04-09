@@ -91,7 +91,7 @@ final class EditExpenseViewModelTests: XCTestCase {
         let expense = Self.makeExpense(id: originalID)
         let (viewModel, expenseRepo, _, _) = makeSUT(expense: expense)
 
-        try await viewModel.saveExpense()
+        await viewModel.saveExpense()
 
         let saved = try XCTUnwrap(expenseRepo.lastSavedExpense)
         XCTAssertEqual(saved.id, originalID, "Should preserve original expense ID on save")
@@ -102,7 +102,7 @@ final class EditExpenseViewModelTests: XCTestCase {
         let expense = Self.makeExpense(createdAt: originalDate)
         let (viewModel, expenseRepo, _, _) = makeSUT(expense: expense)
 
-        try await viewModel.saveExpense()
+        await viewModel.saveExpense()
 
         let saved = try XCTUnwrap(expenseRepo.lastSavedExpense)
         XCTAssertEqual(saved.createdAt, originalDate, "Should preserve original createdAt on save")
@@ -112,7 +112,7 @@ final class EditExpenseViewModelTests: XCTestCase {
         let expense = Self.makeExpense(createdByUserID: "partner-user-123")
         let (viewModel, expenseRepo, _, _) = makeSUT(expense: expense)
 
-        try await viewModel.saveExpense()
+        await viewModel.saveExpense()
 
         let saved = try XCTUnwrap(expenseRepo.lastSavedExpense)
         XCTAssertEqual(saved.createdByUserID, "partner-user-123", "Should preserve original createdByUserID on save")
@@ -122,7 +122,7 @@ final class EditExpenseViewModelTests: XCTestCase {
         let (viewModel, expenseRepo, _, _) = makeSUT()
         let beforeSave = Date()
 
-        try await viewModel.saveExpense()
+        await viewModel.saveExpense()
 
         let saved = try XCTUnwrap(expenseRepo.lastSavedExpense)
         let afterSave = Date()
@@ -137,7 +137,7 @@ final class EditExpenseViewModelTests: XCTestCase {
         let (viewModel, expenseRepo, _, _) = makeSUT(expense: expense)
         viewModel.amountInBaht = 250
 
-        try await viewModel.saveExpense()
+        await viewModel.saveExpense()
 
         let saved = try XCTUnwrap(expenseRepo.lastSavedExpense)
         XCTAssertEqual(saved.amount, 25000, "Should convert 250 Baht to 25000 satang on save")
@@ -150,7 +150,7 @@ final class EditExpenseViewModelTests: XCTestCase {
         let (viewModel, expenseRepo, _, _) = makeSUT(expense: expense)
         viewModel.selectedCategoryID = newCategoryID
 
-        try await viewModel.saveExpense()
+        await viewModel.saveExpense()
 
         let saved = try XCTUnwrap(expenseRepo.lastSavedExpense)
         XCTAssertEqual(saved.categoryID, newCategoryID, "Should use current selectedCategoryID, not original")
@@ -161,7 +161,7 @@ final class EditExpenseViewModelTests: XCTestCase {
         let (viewModel, expenseRepo, _, _) = makeSUT(expense: expense)
         viewModel.noteText = "Updated note"
 
-        try await viewModel.saveExpense()
+        await viewModel.saveExpense()
 
         let saved = try XCTUnwrap(expenseRepo.lastSavedExpense)
         XCTAssertEqual(saved.note, "Updated note", "Should use current noteText, not original")
@@ -169,11 +169,11 @@ final class EditExpenseViewModelTests: XCTestCase {
 
     // MARK: - Save Haptic Tests (AC #3)
 
-    func testSaveExpenseDoesNotTriggerSaveTapHaptic() async throws {
+    func testSaveExpenseDoesNotTriggerSaveTapHaptic() async {
         // .saveTap moved to View layer for animation synchronization
         let (viewModel, _, _, hapticService) = makeSUT()
 
-        try await viewModel.saveExpense()
+        await viewModel.saveExpense()
 
         XCTAssertTrue(hapticService.triggeredEvents.isEmpty, "ViewModel should NOT trigger .saveTap — moved to View layer")
     }
@@ -181,42 +181,38 @@ final class EditExpenseViewModelTests: XCTestCase {
     func testSaveExpenseDoesNotTriggerHapticOnFailure() async {
         let (viewModel, _, _, hapticService) = makeSUT(expenseRepoShouldThrow: true)
 
-        do {
-            try await viewModel.saveExpense()
-            XCTFail("Should have thrown")
-        } catch {
-            // Expected
-        }
+        await viewModel.saveExpense()
 
         XCTAssertNil(hapticService.lastEvent, "Should NOT trigger haptic when repository throws")
+        XCTAssertNotNil(viewModel.saveError, "Should set saveError when repository throws")
     }
 
     // MARK: - Save Guard Tests
 
-    func testSaveExpenseReturnsSilentlyWhenAmountIsZero() async throws {
+    func testSaveExpenseReturnsSilentlyWhenAmountIsZero() async {
         let expense = Self.makeExpense(amount: 0)
         let (viewModel, expenseRepo, _, _) = makeSUT(expense: expense)
         viewModel.amountInBaht = 0
 
-        try await viewModel.saveExpense()
+        await viewModel.saveExpense()
 
         XCTAssertFalse(expenseRepo.saveExpenseCalled, "Should not save when amount is zero")
     }
 
-    func testSaveExpenseReturnsSilentlyWhenCategoryIsNil() async throws {
+    func testSaveExpenseReturnsSilentlyWhenCategoryIsNil() async {
         let (viewModel, expenseRepo, _, _) = makeSUT()
         viewModel.selectedCategoryID = nil
 
-        try await viewModel.saveExpense()
+        await viewModel.saveExpense()
 
         XCTAssertFalse(expenseRepo.saveExpenseCalled, "Should not save when selectedCategoryID is nil")
     }
 
-    func testIsSavingGuardPreventsConcurrentSaves() async throws {
+    func testIsSavingGuardPreventsConcurrentSaves() async {
         let (viewModel, expenseRepo, _, _) = makeSUT()
         viewModel.isSaving = true
 
-        try await viewModel.saveExpense()
+        await viewModel.saveExpense()
 
         XCTAssertTrue(viewModel.isSaving, "isSaving should stay true (guard returned early)")
         XCTAssertFalse(expenseRepo.saveExpenseCalled, "Should not save when already saving")

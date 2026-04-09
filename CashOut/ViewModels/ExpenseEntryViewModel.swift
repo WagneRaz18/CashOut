@@ -3,10 +3,6 @@ import os.log
 
 private let logger = Logger(subsystem: "com.wagneraz.CashOut", category: "ExpenseEntryViewModel")
 
-enum ExpenseEntryError: Error {
-    case notAuthenticated
-}
-
 @MainActor
 @Observable
 final class ExpenseEntryViewModel {
@@ -115,7 +111,7 @@ final class ExpenseEntryViewModel {
                 guard !Task.isCancelled else { return }
             }
 
-            categories = fetched
+            categories = SettingsViewModel.applyUserOrder(to: fetched)
             logger.info("loadCategories: loaded \(fetched.count) categories")
 
             if fetched.isEmpty {
@@ -160,7 +156,7 @@ final class ExpenseEntryViewModel {
 
     // MARK: - Save Action
 
-    func saveExpense() async throws {
+    func saveExpense() async {
         guard !isSaving else {
             logger.debug("saveExpense: already saving — skipped")
             return
@@ -179,7 +175,8 @@ final class ExpenseEntryViewModel {
         }
         guard let userID = authService.currentUserID else {
             logger.error("saveExpense: not authenticated")
-            throw ExpenseEntryError.notAuthenticated
+            saveError = "Not signed in. Please sign in and try again."
+            return
         }
 
         logger.info("saveExpense: saving \(self.amountInBaht, privacy: .private) Baht, category=\(categoryID, privacy: .private)")
@@ -196,19 +193,25 @@ final class ExpenseEntryViewModel {
             modifiedAt: now
         )
 
-        try await expenseRepository.saveExpense(expense)
-        guard !Task.isCancelled else { return }
+        do {
+            try await expenseRepository.saveExpense(expense)
+            guard !Task.isCancelled else { return }
 
-        let saveElapsed = (CFAbsoluteTimeGetCurrent() - saveStart) * 1000
-        logger.info("saveExpense: saved successfully — id=\(expense.id, privacy: .private) — total \(saveElapsed, format: .fixed(precision: 1))ms")
+            let saveElapsed = (CFAbsoluteTimeGetCurrent() - saveStart) * 1000
+            logger.info("saveExpense: saved successfully — id=\(expense.id, privacy: .private) — total \(saveElapsed, format: .fixed(precision: 1))ms")
 
-        // Persist MRU
-        userDefaults.set(categoryID.uuidString, forKey: Self.mruKey)
+            // Persist MRU
+            userDefaults.set(categoryID.uuidString, forKey: Self.mruKey)
 
-        // Fire-and-forget sharing — doesn't block the save caller
-        let repo = expenseRepository
-        let expenseID = expense.id
-        shareTask = Task { await repo.shareNewExpenseToHousehold(id: expenseID) }
+            // Fire-and-forget sharing — doesn't block the save caller
+            let repo = expenseRepository
+            let expenseID = expense.id
+            shareTask = Task { await repo.shareNewExpenseToHousehold(id: expenseID) }
+        } catch {
+            guard !Task.isCancelled else { return }
+            logger.error("saveExpense: failed — \(error.localizedDescription, privacy: .public)")
+            saveError = "Could not save entry. Please try again."
+        }
     }
 
     func cancelPendingShare() {

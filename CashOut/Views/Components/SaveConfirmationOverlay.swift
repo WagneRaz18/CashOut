@@ -17,7 +17,7 @@ struct SaveConfirmationOverlay: View {
             Image(systemName: "checkmark.circle.fill")
                 .font(.system(size: iconSize))
                 .foregroundStyle(SemanticColor.success)
-                .opacity(phase == .visible && trigger > 0 ? 1 : 0)
+                .opacity(phase == .visible ? 1 : 0)
                 .scaleEffect(scaleFor(phase))
         } animation: { phase in
             switch phase {

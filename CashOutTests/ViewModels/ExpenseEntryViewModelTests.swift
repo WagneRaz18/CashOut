@@ -152,7 +152,7 @@ final class ExpenseEntryViewModelTests: XCTestCase {
         viewModel.selectedCategoryID = UUID()
         viewModel.noteText = "Lunch"
 
-        try await viewModel.saveExpense()
+        await viewModel.saveExpense()
 
         XCTAssertTrue(expenseRepo.saveExpenseCalled, "Should call repository saveExpense")
         let saved = try XCTUnwrap(expenseRepo.lastSavedExpense)
@@ -162,13 +162,13 @@ final class ExpenseEntryViewModelTests: XCTestCase {
         XCTAssertEqual(saved.note, "Lunch")
     }
 
-    func testSaveExpenseDoesNotResetFormInline() async throws {
+    func testSaveExpenseDoesNotResetFormInline() async {
         let (viewModel, _, _, _, _, _) = makeSUT()
         viewModel.amountInBaht = 5000
         viewModel.selectedCategoryID = UUID()
         viewModel.noteText = "Test note"
 
-        try await viewModel.saveExpense()
+        await viewModel.saveExpense()
 
         XCTAssertEqual(viewModel.amountInBaht, 5000, "Amount should NOT reset inline — View calls resetForm() after save")
         XCTAssertEqual(viewModel.noteText, "Test note", "noteText should NOT reset inline — View calls resetForm() after save")
@@ -196,22 +196,22 @@ final class ExpenseEntryViewModelTests: XCTestCase {
         XCTAssertEqual(viewModel.selectedCategoryID, categoryID, "selectedCategoryID should stay — MRU principle")
     }
 
-    func testSaveExpenseDoesNotSaveWhenAmountIsZero() async throws {
+    func testSaveExpenseDoesNotSaveWhenAmountIsZero() async {
         let (viewModel, expenseRepo, _, _, _, _) = makeSUT()
         viewModel.amountInBaht = 0
         viewModel.selectedCategoryID = UUID()
 
-        try await viewModel.saveExpense()
+        await viewModel.saveExpense()
 
         XCTAssertFalse(expenseRepo.saveExpenseCalled, "Should not save when amount is zero")
     }
 
-    func testSaveExpenseDoesNotSaveWhenCategoryIsNil() async throws {
+    func testSaveExpenseDoesNotSaveWhenCategoryIsNil() async {
         let (viewModel, expenseRepo, _, _, _, _) = makeSUT()
         viewModel.amountInBaht = 1000
         viewModel.selectedCategoryID = nil
 
-        try await viewModel.saveExpense()
+        await viewModel.saveExpense()
 
         XCTAssertFalse(expenseRepo.saveExpenseCalled, "Should not save when no category selected")
     }
@@ -246,13 +246,13 @@ final class ExpenseEntryViewModelTests: XCTestCase {
         XCTAssertEqual(viewModel.selectedCategoryID, mruID, "Should restore MRU category from UserDefaults")
     }
 
-    func testSaveExpensePersistsMRUToUserDefaults() async throws {
+    func testSaveExpensePersistsMRUToUserDefaults() async {
         let categoryID = UUID()
         let (viewModel, _, _, _, defaults, _) = makeSUT()
         viewModel.amountInBaht = 1000
         viewModel.selectedCategoryID = categoryID
 
-        try await viewModel.saveExpense()
+        await viewModel.saveExpense()
 
         let stored = defaults.string(forKey: "lastUsedCategoryID")
         XCTAssertEqual(stored, categoryID.uuidString, "Should persist categoryID as MRU to UserDefaults")
@@ -271,13 +271,13 @@ final class ExpenseEntryViewModelTests: XCTestCase {
 
     // MARK: - Double-tap Guard Test
 
-    func testDoubleTapGuardPreventsSecondSave() async throws {
+    func testDoubleTapGuardPreventsSecondSave() async {
         let (viewModel, expenseRepo, _, _, _, _) = makeSUT()
         viewModel.amountInBaht = 1000
         viewModel.selectedCategoryID = UUID()
         viewModel.isSaving = true
 
-        try await viewModel.saveExpense()
+        await viewModel.saveExpense()
 
         XCTAssertTrue(viewModel.isSaving, "isSaving should stay true (guard returned early, not this call's responsibility)")
         XCTAssertFalse(expenseRepo.saveExpenseCalled, "Should not save when already saving")
@@ -285,34 +285,26 @@ final class ExpenseEntryViewModelTests: XCTestCase {
 
     // MARK: - Error Handling Tests
 
-    func testSaveExpenseResetsIsSavingOnThrow() async {
+    func testSaveExpenseResetsIsSavingOnRepoFailure() async {
         let (viewModel, _, _, _, _, hapticService) = makeSUT(expenseRepoShouldThrow: true)
         viewModel.amountInBaht = 1000
         viewModel.selectedCategoryID = UUID()
 
-        do {
-            try await viewModel.saveExpense()
-            XCTFail("Should have thrown")
-        } catch {
-            // Expected
-        }
+        await viewModel.saveExpense()
 
         XCTAssertFalse(viewModel.isSaving, "isSaving must reset to false even when repository throws")
+        XCTAssertNotNil(viewModel.saveError, "Should set saveError when repository throws")
         XCTAssertNil(hapticService.lastEvent, "Should NOT trigger .saveTap haptic when repository throws")
     }
 
-    func testSaveExpenseThrowsWhenNotAuthenticated() async {
+    func testSaveExpenseSetsErrorWhenNotAuthenticated() async {
         let (viewModel, expenseRepo, _, _, _, _) = makeSUT(currentUserID: nil)
         viewModel.amountInBaht = 1000
         viewModel.selectedCategoryID = UUID()
 
-        do {
-            try await viewModel.saveExpense()
-            XCTFail("Should throw when currentUserID is nil")
-        } catch {
-            XCTAssertTrue(error is ExpenseEntryError, "Should throw ExpenseEntryError.notAuthenticated")
-        }
+        await viewModel.saveExpense()
 
+        XCTAssertNotNil(viewModel.saveError, "Should set saveError when not authenticated")
         XCTAssertFalse(expenseRepo.saveExpenseCalled, "Should NOT call repository when not authenticated")
     }
 
@@ -345,33 +337,33 @@ final class ExpenseEntryViewModelTests: XCTestCase {
         XCTAssertEqual(hapticService.lastEvent, .categorySelect, "Should trigger .categorySelect haptic")
     }
 
-    func testSaveExpenseDoesNotTriggerSaveTapHaptic() async throws {
+    func testSaveExpenseDoesNotTriggerSaveTapHaptic() async {
         // .saveTap moved to View layer for animation synchronization
         let (viewModel, _, _, _, _, hapticService) = makeSUT()
         viewModel.amountInBaht = 1250
         viewModel.selectedCategoryID = UUID()
 
-        try await viewModel.saveExpense()
+        await viewModel.saveExpense()
 
         XCTAssertTrue(hapticService.triggeredEvents.isEmpty, "ViewModel should NOT trigger .saveTap — moved to View layer")
     }
 
-    func testSaveExpenseWithZeroAmountDoesNotTriggerSaveTapHaptic() async throws {
+    func testSaveExpenseWithZeroAmountDoesNotTriggerSaveTapHaptic() async {
         let (viewModel, _, _, _, _, hapticService) = makeSUT()
         viewModel.amountInBaht = 0
         viewModel.selectedCategoryID = UUID()
 
-        try await viewModel.saveExpense()
+        await viewModel.saveExpense()
 
         XCTAssertNil(hapticService.lastEvent, "Should NOT trigger .saveTap when amount is zero")
     }
 
-    func testSaveExpenseWithNilCategoryDoesNotTriggerSaveTapHaptic() async throws {
+    func testSaveExpenseWithNilCategoryDoesNotTriggerSaveTapHaptic() async {
         let (viewModel, _, _, _, _, hapticService) = makeSUT()
         viewModel.amountInBaht = 1000
         viewModel.selectedCategoryID = nil
 
-        try await viewModel.saveExpense()
+        await viewModel.saveExpense()
 
         XCTAssertNil(hapticService.lastEvent, "Should NOT trigger .saveTap when no category selected")
     }

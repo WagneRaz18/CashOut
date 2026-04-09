@@ -77,26 +77,17 @@ struct EditExpenseSheet: View {
 
                     saveTask?.cancel()
                     saveTask = Task {
-                        // Save runs in parallel with animation
-                        async let save: Void = viewModel.saveExpense()
-
                         // Wait for animation to complete
                         do {
                             try await Task.sleep(for: .milliseconds(400))
-                        } catch is CancellationError { return }
+                        } catch { return }
                         guard !Task.isCancelled else { return }
 
-                        // Collect save result
-                        do {
-                            try await save
-                        } catch {
-                            guard !Task.isCancelled else { return }
-                            logger.error("Edit save failed: \(error.localizedDescription, privacy: .public)")
-                            viewModel.saveError = "Could not save changes. Please try again."
-                            return
-                        }
+                        // Save expense
+                        await viewModel.saveExpense()
+                        guard !Task.isCancelled else { return }
+                        guard viewModel.saveError == nil else { return }
 
-                        // Save succeeded — cleanup must always run
                         logger.info("Edit save succeeded — dismissing sheet")
                         UIAccessibility.post(notification: .announcement, argument: "Changes saved")
                         onSaveComplete?()

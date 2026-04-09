@@ -8,6 +8,11 @@ struct FeedRowView: View {
 
     @Environment(\.colorScheme) private var colorScheme
 
+    @ScaledMetric(relativeTo: .body) private var badgeSize: CGFloat = 28
+    @ScaledMetric(relativeTo: .body) private var badgeIconSize: CGFloat = 14
+    @ScaledMetric(relativeTo: .caption2) private var partnerCircleSize: CGFloat = 24
+    @ScaledMetric(relativeTo: .caption2) private var partnerFontSize: CGFloat = 10
+
     private static let maxNoteLength = 20
 
     private var truncatedNote: String? {
@@ -85,18 +90,18 @@ struct FeedRowView: View {
     private var categoryBadge: some View {
         let color = CategoryColor(from: category?.colorName ?? "CoolGray")?.color ?? .gray
         return Image(systemName: category?.iconName ?? "ellipsis.circle.fill")
-            .font(.system(size: 14))
+            .font(.system(size: badgeIconSize))
             .foregroundStyle(.white)
-            .frame(width: 28, height: 28)
+            .frame(width: badgeSize, height: badgeSize)
             .background(color, in: Circle())
     }
 
     private var partnerCircle: some View {
         let color = PartnerColor.color(isCurrentUser: isCurrentUser, colorScheme: colorScheme)
         return Text(partnerInitials)
-            .font(.system(size: 10, weight: .medium))
+            .font(.system(size: partnerFontSize, weight: .medium))
             .foregroundStyle(.white)
-            .frame(width: 24, height: 24)
+            .frame(width: partnerCircleSize, height: partnerCircleSize)
             .background(color, in: Circle())
     }
 }

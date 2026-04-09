@@ -9,6 +9,7 @@ struct EntryView: View {
     @State private var viewModel = ExpenseEntryViewModel()
     @State private var showingNoteSheet = false
     @State private var saveTask: Task<Void, Never>?
+    @State private var retryTask: Task<Void, Never>?
     @State private var saveTrigger: Int = 0
     @Environment(\.accessibilityReduceTransparency) private var reduceTransparency
 
@@ -49,7 +50,8 @@ struct EntryView: View {
             if viewModel.categoryLoadFailed {
                 Button {
                     logger.info("Category retry tapped")
-                    Task { await viewModel.retryLoadCategories() }
+                    retryTask?.cancel()
+                    retryTask = Task { await viewModel.retryLoadCategories() }
                 } label: {
                     Label("Categories unavailable — tap to retry", systemImage: "arrow.clockwise")
                         .font(.subheadline)
@@ -95,20 +97,13 @@ struct EntryView: View {
                         // Wait for animation to complete
                         do {
                             try await Task.sleep(for: .milliseconds(400))
-                        } catch is CancellationError { return }
+                        } catch { return }
                         guard !Task.isCancelled else { return }
 
-                        // Collect save result
-                        do {
-                            try await save
-                        } catch {
-                            guard !Task.isCancelled else { return }
-                            logger.error("Save failed in EntryView: \(error.localizedDescription, privacy: .public)")
-                            viewModel.saveError = "Could not save entry. Please try again."
-                            return
-                        }
+                        await save
+                        guard !Task.isCancelled else { return }
+                        guard viewModel.saveError == nil else { return }
 
-                        // Save succeeded — cleanup must always run
                         let tapElapsed = (CFAbsoluteTimeGetCurrent() - tapStart) * 1000
                         logger.info("Save success — navigating — \(tapElapsed, format: .fixed(precision: 1))ms since tap")
                         UIAccessibility.post(notification: .announcement, argument: "Expense saved")
@@ -154,6 +149,7 @@ struct EntryView: View {
         .onDisappear {
             logger.debug("EntryView.onDisappear — cancelling tasks")
             saveTask?.cancel()
+            retryTask?.cancel()
             viewModel.cancelPendingShare()
         }
     }

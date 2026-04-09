@@ -110,7 +110,7 @@ final class EditExpenseViewModel {
 
     // MARK: - Save Action
 
-    func saveExpense() async throws {
+    func saveExpense() async {
         guard !isSaving else {
             logger.debug("saveExpense: already saving — skipped")
             return
@@ -140,10 +140,14 @@ final class EditExpenseViewModel {
             modifiedAt: Date()
         )
 
-        try await expenseRepository.saveExpense(updatedExpense)
-        guard !Task.isCancelled else { return }
-
-        logger.info("saveExpense: update saved successfully")
-        // No form reset, no MRU update — sheet dismisses after save
+        do {
+            try await expenseRepository.saveExpense(updatedExpense)
+            guard !Task.isCancelled else { return }
+            logger.info("saveExpense: update saved successfully")
+        } catch {
+            guard !Task.isCancelled else { return }
+            logger.error("saveExpense: failed — \(error.localizedDescription, privacy: .public)")
+            saveError = "Could not save changes. Please try again."
+        }
     }
 }
