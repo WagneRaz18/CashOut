@@ -170,14 +170,53 @@ final class CloudSharingService: CloudSharingServiceProtocol {
         let checkStart = CFAbsoluteTimeGetCurrent()
 
         if let share = fetchActiveShare(from: persistenceController.privatePersistentStore, label: "private") {
+            // Capture the session-boundary signal BEFORE any state mutation.
+            // `currentShare` is only ever set by in-session code paths (`createShare`,
+            // this method, `apply`, `finalizeShareOutcome`) and reset by
+            // `transitionToSolo`/`cancelShare`/`resetState`. At service init it is nil.
+            // If we find a share that classifies as `.draft` and `currentShare` was nil
+            // on entry, no in-session code created it — it's an orphan from a previous
+            // session (crash, force-quit, or pre-fix buggy code). Clean it up rather
+            // than preserving stale `.draft` state across session boundaries.
+            let wasCurrentShareNil = (currentShare == nil)
+            let classified = classify(share: share, isOwner: true)
+
+            if classified == .draft && wasCurrentShareNil {
+                logger.warning("checkSharingStatus: startup orphan .draft detected — cleaning up server-side")
+                // Point `cancelShare` at the orphan: it reads `currentShare` as its target.
+                // On success, cancelShare sets the sentinel and routes through
+                // `transitionToSolo(clearSentinel: false)` to reset state atomically.
+                isShareOwner = true
+                currentShare = share
+                do {
+                    try await cancelShare()
+                } catch {
+                    logger.fault("checkSharingStatus: startup orphan cleanup FAILED — \(error.localizedDescription)")
+                    // cancelShare threw before reaching its state reset, so we're now
+                    // holding stale `currentShare`/`isShareOwner` values pointing at the
+                    // orphan. Restore the session invariant — `state == .solo` implies
+                    // `currentShare == nil` and `isShareOwner == false` — so a subsequent
+                    // checkSharingStatus in the same session (e.g., triggered by a remote
+                    // change notification) can re-attempt the orphan cleanup via the
+                    // `wasCurrentShareNil` path. `clearSentinel: false` because the
+                    // sentinel state is whatever cancelShare left it — don't touch it.
+                    transitionToSolo(clearSentinel: false)
+                }
+                return
+            }
+
             isShareOwner = true
             currentShare = share
-            state = classify(share: share, isOwner: true)
+            state = classified
             // Back-fill pre-invite expenses into the shared zone exactly once per
-            // unique share. Guarded by recordName comparison so debounce storms
-            // and app relaunches don't re-run the work, but a fresh share after
-            // a cancel (different recordName) does trigger a new back-fill.
-            scheduleBackfillIfNeeded(for: share)
+            // unique share. Gate on `hasCommittedShare` (.pending or .connected) —
+            // running backfill for a `.draft` would move expenses into a zone attached
+            // to an uncommitted share, orphaning them if the user cancels.
+            if hasCommittedShare {
+                scheduleBackfillIfNeeded(for: share)
+            } else {
+                logger.debug("checkSharingStatus: draft share — skipping backfill until committed")
+            }
             let elapsed = (CFAbsoluteTimeGetCurrent() - checkStart) * 1000
             logger.info("checkSharingStatus: found share in private store (owner, state=\(String(describing: self.state))) — \(elapsed, format: .fixed(precision: 1))ms")
             return
@@ -340,9 +379,10 @@ final class CloudSharingService: CloudSharingServiceProtocol {
         logger.info("cancelShare: share deleted from CloudKit")
         setCanceledShareSentinel(recordName: share.recordID.recordName)
         logger.debug("cancelShare: set sentinel for recordName=\(share.recordID.recordName)")
-        state = .solo
-        isShareOwner = false
-        currentShare = nil
+        // Route through the centralized helper so every `.solo` transition resets
+        // state/isShareOwner/currentShare in lockstep. `clearSentinel: false` because
+        // we just set it above — clearing it would defeat the purpose of the TTL guard.
+        transitionToSolo(clearSentinel: false)
     }
 
     // MARK: - Private
