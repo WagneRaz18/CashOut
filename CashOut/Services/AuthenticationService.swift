@@ -229,7 +229,7 @@ final class AuthenticationService: NSObject, AuthenticationServiceProtocol {
                 self?.clearProfileKeychain()
                 self?.currentUserID = nil
                 self?.onSessionInvalidated.forEach { $0() }
-                // NOTE: PersistenceController independently observes CKAccountChanged
+                // NOTE: PersistenceController.observeAccountChanges() runs in parallel
                 // for persistence-side handling. No ordering guarantee between the two.
             }
         }

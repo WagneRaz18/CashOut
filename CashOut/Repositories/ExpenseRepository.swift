@@ -241,8 +241,25 @@ final class ExpenseRepository: ExpenseRepositoryProtocol {
         request.predicate = NSPredicate(format: "id == %@", id as CVarArg)
         request.fetchLimit = 1
 
+        // Scope the fetch to the user's primary store so we delete the authoritative
+        // copy and NSPersistentCloudKitContainer generates a correct tombstone via
+        // history tracking. Participants write expenses to the shared store via
+        // prepareObjectForSharedSave, so their deletes must target sharedPersistentStore.
+        // Owner and solo mode target privatePersistentStore (owned shared zones live there).
+        let targetStore: NSPersistentStore?
+        if let svc = cloudSharingService, svc.isShared, !svc.isShareOwner {
+            targetStore = persistence.sharedPersistentStore
+        } else {
+            targetStore = persistence.privatePersistentStore
+        }
+        guard let targetStore else {
+            logger.error("deleteExpense: no persistent store available — aborting")
+            return
+        }
+        request.affectedStores = [targetStore]
+
         guard let expense = try context.fetch(request).first else {
-            logger.warning("deleteExpense: not found in store — already deleted?")
+            logger.warning("deleteExpense: id=\(id) not found in target store — already deleted or in wrong store")
             return
         }
         context.delete(expense)

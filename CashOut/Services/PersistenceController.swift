@@ -4,7 +4,8 @@ import os.log
 
 private let logger = Logger(subsystem: "com.wagneraz.CashOut", category: "PersistenceController")
 
-final class PersistenceController: @unchecked Sendable {
+@MainActor
+final class PersistenceController {
     static let shared = PersistenceController()
 
     static let preview = PersistenceController(inMemory: true)
@@ -15,6 +16,10 @@ final class PersistenceController: @unchecked Sendable {
     private(set) var privatePersistentStore: NSPersistentStore?
     private(set) var sharedPersistentStore: NSPersistentStore?
     private(set) var storeLoadError: Error?
+
+    /// Key for the UserDefaults sentinel that records which Core Data model version
+    /// has already had its CloudKit schema deployed via `initializeCloudKitSchema`.
+    private static let schemaInitializedVersionKey = "ckSchemaInitializedForModelVersion"
 
     init(inMemory: Bool = false) {
         logger.info("PersistenceController.init — inMemory=\(inMemory)")
@@ -54,24 +59,9 @@ final class PersistenceController: @unchecked Sendable {
         container.viewContext.automaticallyMergesChangesFromParent = true
         container.viewContext.mergePolicy = NSMergeByPropertyStoreTrumpMergePolicy
 
-        // History purge — MUST be after loadPersistentStores, not inside callback
-        purgeOldHistory()
-
-        // Observe iCloud account changes
-        NotificationCenter.default.addObserver(
-            self,
-            selector: #selector(handleAccountChange),
-            name: .CKAccountChanged,
-            object: nil
-        )
-
         #if DEBUG
         if !inMemory, storeLoadError == nil {
-            do {
-                try container.initializeCloudKitSchema(options: [])
-            } catch {
-                logger.error("CloudKit schema init failed: \(error.localizedDescription)")
-            }
+            deploySchemaIfModelChanged()
         }
         #endif
     }
@@ -104,6 +94,8 @@ final class PersistenceController: @unchecked Sendable {
         // Lightweight migration support
         privateDesc.shouldMigrateStoreAutomatically = true
         privateDesc.shouldInferMappingModelAutomatically = true
+        // Explicit: the loadStores callback timing contract depends on this being false.
+        privateDesc.shouldAddStoreAsynchronously = false
 
         if !inMemory {
             // Explicitly set CloudKit container on private store
@@ -118,16 +110,28 @@ final class PersistenceController: @unchecked Sendable {
             }
 
             // Shared store — MUST use a separate SQLite file
-            let storeURL = privateDesc.url!
-            let sharedStoreURL = storeURL.deletingLastPathComponent()
+            guard let privateURL = privateDesc.url else {
+                fatalError("Private store description has no URL — verify Core Data model 'CashOut' exists")
+            }
+            let sharedStoreURL = privateURL.deletingLastPathComponent()
                 .appendingPathComponent("CashOut-shared.sqlite")
 
             let sharedDesc = NSPersistentStoreDescription(url: sharedStoreURL)
             if iCloudAvailable {
-                sharedDesc.cloudKitContainerOptions = NSPersistentCloudKitContainerOptions(
+                // Build the options object fully BEFORE assigning it to the description.
+                // Avoids the fragile `desc.options?.databaseScope = ...` optional-chain
+                // mutation, which depends on the property returning the same reference on get.
+                let sharedOptions = NSPersistentCloudKitContainerOptions(
                     containerIdentifier: "iCloud.com.wagneraz.CashOut"
                 )
-                sharedDesc.cloudKitContainerOptions?.databaseScope = .shared
+                sharedOptions.databaseScope = .shared
+                sharedDesc.cloudKitContainerOptions = sharedOptions
+            } else {
+                // Match the private-store iOS 18 guard — explicit nil even though a
+                // freshly-constructed description defaults to nil, so a future refactor
+                // that hoists construction above the iCloud check can't silently
+                // reintroduce the data-loss bug.
+                sharedDesc.cloudKitContainerOptions = nil
             }
             sharedDesc.setOption(true as NSNumber, forKey: NSPersistentHistoryTrackingKey)
             sharedDesc.setOption(
@@ -136,6 +140,7 @@ final class PersistenceController: @unchecked Sendable {
             )
             sharedDesc.shouldMigrateStoreAutomatically = true
             sharedDesc.shouldInferMappingModelAutomatically = true
+            sharedDesc.shouldAddStoreAsynchronously = false
 
             container.persistentStoreDescriptions = [privateDesc, sharedDesc]
         }
@@ -148,44 +153,52 @@ final class PersistenceController: @unchecked Sendable {
     /// Calls `loadPersistentStores` and populates `privatePersistentStore`,
     /// `sharedPersistentStore`, and `storeLoadError`.
     ///
-    /// `loadPersistentStores` fires its completion handler synchronously (on the calling
-    /// thread) for on-disk SQLite stores. All properties are set by the time this method
-    /// returns. The `[weak self]` capture is intentional — it is safe here because `self`
-    /// is retained by the caller (init or the static let assignment) for the duration of
-    /// the synchronous callback.
+    /// Contract: `shouldAddStoreAsynchronously = false` is set on every description, so
+    /// the completion handler fires synchronously on the calling thread. Since this
+    /// type is `@MainActor` and `init` runs on main, the callback also runs on main —
+    /// `MainActor.assumeIsolated` is therefore sound for the mutations below.
     private func loadStores(inMemory: Bool) {
+        // Machine-verify the MainActor.assumeIsolated contract below.
+        for desc in container.persistentStoreDescriptions {
+            precondition(
+                desc.shouldAddStoreAsynchronously == false,
+                "shouldAddStoreAsynchronously must be false — loadStores relies on synchronous callback"
+            )
+        }
+
         let sharedStoreURL: URL? = {
             guard !inMemory, container.persistentStoreDescriptions.count > 1 else { return nil }
             return container.persistentStoreDescriptions[1].url
         }()
 
         let loadStart = CFAbsoluteTimeGetCurrent()
-        container.loadPersistentStores { [weak self] desc, error in
-            let elapsed = (CFAbsoluteTimeGetCurrent() - loadStart) * 1000
-            if let error {
-                logger.fault("Store load FAILED in \(elapsed, format: .fixed(precision: 1))ms: \(error.localizedDescription)")
-                Self.logUnderlyingErrors(error)
-                // First-error-wins: preserve the private store's error (loaded first)
-                // rather than letting the shared store's error overwrite it.
-                if self?.storeLoadError == nil {
-                    self?.storeLoadError = error
+        container.loadPersistentStores { desc, error in
+            MainActor.assumeIsolated {
+                let elapsed = (CFAbsoluteTimeGetCurrent() - loadStart) * 1000
+                if let error {
+                    logger.fault("Store load FAILED in \(elapsed, format: .fixed(precision: 1))ms: \(error.localizedDescription)")
+                    Self.logUnderlyingErrors(error)
+                    // First-error-wins: preserve the private store's error (loaded first)
+                    // rather than letting the shared store's error overwrite it.
+                    if self.storeLoadError == nil {
+                        self.storeLoadError = error
+                    }
+                    return
                 }
-                return
-            }
-            guard let self else { return }
-            if inMemory {
-                // Single in-memory store acts as private store for seeding/tests
-                self.privatePersistentStore = self.container.persistentStoreCoordinator.persistentStores.first
-                return
-            }
-            guard let storeURL = desc.url else { return }
-            let store = self.container.persistentStoreCoordinator.persistentStore(for: storeURL)
-            if storeURL == sharedStoreURL {
-                self.sharedPersistentStore = store
-                logger.info("Shared store loaded in \(elapsed, format: .fixed(precision: 1))ms")
-            } else {
-                self.privatePersistentStore = store
-                logger.info("Private store loaded in \(elapsed, format: .fixed(precision: 1))ms")
+                if inMemory {
+                    // Single in-memory store acts as private store for seeding/tests
+                    self.privatePersistentStore = self.container.persistentStoreCoordinator.persistentStores.first
+                    return
+                }
+                guard let storeURL = desc.url else { return }
+                let store = self.container.persistentStoreCoordinator.persistentStore(for: storeURL)
+                if storeURL == sharedStoreURL {
+                    self.sharedPersistentStore = store
+                    logger.info("Shared store loaded in \(elapsed, format: .fixed(precision: 1))ms")
+                } else {
+                    self.privatePersistentStore = store
+                    logger.info("Private store loaded in \(elapsed, format: .fixed(precision: 1))ms")
+                }
             }
         }
     }
@@ -226,38 +239,85 @@ final class PersistenceController: @unchecked Sendable {
             }
         }
     }
+
+    /// Pushes the Core Data model to CloudKit Development schema only when the model's
+    /// version identifier changes — avoids a network round-trip on every DEBUG launch.
+    private func deploySchemaIfModelChanged() {
+        // Deterministic version string — sort + join to survive non-deterministic
+        // Set<AnyHashable> ordering and multi-identifier models.
+        let stringIdentifiers = container.managedObjectModel.versionIdentifiers
+            .compactMap { $0 as? String }
+            .sorted()
+        let currentVersion = stringIdentifiers.isEmpty
+            ? container.managedObjectModel.entityVersionHashesByName.keys.sorted().joined(separator: "|")
+            : stringIdentifiers.joined(separator: "|")
+        let lastDeployed = UserDefaults.standard.string(forKey: Self.schemaInitializedVersionKey)
+        guard lastDeployed != currentVersion else {
+            logger.debug("initializeCloudKitSchema: skipped — version '\(currentVersion, privacy: .public)' already deployed")
+            return
+        }
+        do {
+            try container.initializeCloudKitSchema(options: [])
+            UserDefaults.standard.set(currentVersion, forKey: Self.schemaInitializedVersionKey)
+            logger.info("initializeCloudKitSchema: deployed for model version '\(currentVersion, privacy: .public)'")
+        } catch {
+            logger.error("CloudKit schema init failed: \(error.localizedDescription)")
+        }
+    }
     #endif
 
     // MARK: - Account Changes
 
     static let accountDidChange = Notification.Name("PersistenceController.accountDidChange")
 
-    @objc private func handleAccountChange() {
-        // CKAccountChanged may fire on an arbitrary thread — dispatch to main for thread safety
-        DispatchQueue.main.async { [weak self] in
-            guard let self else { return }
-            logger.info("iCloud account changed — clearing shared store reference")
-            self.sharedPersistentStore = nil
+    /// Observes `CKAccountChanged` as an async sequence. Call this once from the
+    /// root view's `.task {}` — it runs for the lifetime of the task.
+    ///
+    /// On account change this tears down BOTH store references and posts
+    /// `accountDidChange` so consumers can trigger a full state reset. The
+    /// container itself cannot be mutated at runtime — consumers should treat
+    /// `accountDidChange` as a hint to prompt the user to relaunch.
+    func observeAccountChanges() async {
+        for await _ in NotificationCenter.default.notifications(named: .CKAccountChanged) {
+            if Task.isCancelled { break }
+            logger.info("iCloud account changed — clearing store references")
+            sharedPersistentStore = nil
+            privatePersistentStore = nil
+            // Reset error state alongside store nil-outs so downstream gates
+            // (purgeOldHistory, deploySchemaIfModelChanged) don't stay blocked
+            // on an error from the prior account's session.
+            storeLoadError = nil
             NotificationCenter.default.post(name: Self.accountDidChange, object: self)
         }
     }
 
     // MARK: - History Management
 
-    private func purgeOldHistory() {
+    /// Purges history older than 7 days from the private store. Run from app
+    /// startup `.task {}` — not `init` — so the main thread isn't blocked on launch.
+    ///
+    /// Scoped to the private store only: the shared store's history is managed by
+    /// `NSPersistentCloudKitContainer`'s own export-tracking machinery, and
+    /// client-side purges there can trigger phantom re-exports.
+    func purgeOldHistory() async {
         guard storeLoadError == nil else {
             logger.debug("purgeOldHistory: skipped — store load error present")
+            return
+        }
+        guard let privateStore = privatePersistentStore else {
+            logger.debug("purgeOldHistory: skipped — private store unavailable")
             return
         }
         let sevenDaysAgo = Calendar(identifier: .gregorian)
             .date(byAdding: .day, value: -7, to: Date()) ?? Date()
         let purgeRequest = NSPersistentHistoryChangeRequest.deleteHistory(before: sevenDaysAgo)
+        purgeRequest.affectedStores = [privateStore]
 
         let context = container.newBackgroundContext()
-        context.performAndWait {
+        await context.perform {
             do {
                 try context.execute(purgeRequest)
-                logger.debug("purgeOldHistory: purged history older than 7 days")
+                logger.debug("purgeOldHistory: purged private-store history older than 7 days")
             } catch {
                 logger.error("History purge failed: \(error.localizedDescription)")
             }

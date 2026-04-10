@@ -43,6 +43,14 @@ final class CloudSharingService: CloudSharingServiceProtocol {
     /// The mirror typically catches up within 5–15s on a live connection.
     private static let canceledShareTTL: TimeInterval = 120
 
+    /// Record name of the share whose pre-invite expenses were already back-filled
+    /// into the shared zone. Persisted to UserDefaults so we don't re-run the
+    /// back-fill on every `checkSharingStatus` debounce or app relaunch. Resets
+    /// when a different share is created (new invite after cancel).
+    @ObservationIgnored private var backfilledShareRecordName: String? = nil
+    @ObservationIgnored private var backfillTask: Task<Void, Never>? = nil
+    private static let backfilledShareKey = "CashOut.backfilledShareRecordName"
+
     private let persistenceController: PersistenceController
     private static let containerIdentifier = "iCloud.com.wagneraz.CashOut"
 
@@ -58,6 +66,7 @@ final class CloudSharingService: CloudSharingServiceProtocol {
         } else {
             clearCanceledShareSentinel()
         }
+        backfilledShareRecordName = UserDefaults.standard.string(forKey: Self.backfilledShareKey)
         logger.debug("CloudSharingService.init")
     }
 
@@ -122,6 +131,9 @@ final class CloudSharingService: CloudSharingServiceProtocol {
         logger.info("createShare: creating new CloudKit share")
         let (_, share, _) = try await persistenceController.container.share(objects, to: nil)
         clearCanceledShareSentinel()
+        // Fresh share — reset the back-fill marker so pre-invite expenses get
+        // moved into the new shared zone the next time checkSharingStatus runs.
+        clearBackfillMarker()
         currentShare = share
         share[CKShare.SystemFieldKey.title] = "CashOut Household"
         logger.info("createShare: new share created successfully")
@@ -137,6 +149,11 @@ final class CloudSharingService: CloudSharingServiceProtocol {
             isShareOwner = true
             currentShare = share
             extractPartnerInfo(from: share)
+            // Back-fill pre-invite expenses into the shared zone exactly once per
+            // unique share. Guarded by recordName comparison so debounce storms
+            // and app relaunches don't re-run the work, but a fresh share after
+            // a cancel (different recordName) does trigger a new back-fill.
+            scheduleBackfillIfNeeded(for: share)
             let elapsed = (CFAbsoluteTimeGetCurrent() - checkStart) * 1000
             logger.info("checkSharingStatus: found share in private store (owner) — \(elapsed, format: .fixed(precision: 1))ms")
             return
@@ -225,7 +242,10 @@ final class CloudSharingService: CloudSharingServiceProtocol {
         isShareOwner = false
         partnerName = nil
         currentShare = nil
+        backfillTask?.cancel()
+        backfillTask = nil
         clearCanceledShareSentinel()
+        clearBackfillMarker()
     }
 
     func cancelShare() async throws {
@@ -302,7 +322,144 @@ final class CloudSharingService: CloudSharingServiceProtocol {
         UserDefaults.standard.removeObject(forKey: Self.canceledShareTimestampKey)
     }
 
+    private func clearBackfillMarker() {
+        backfilledShareRecordName = nil
+        UserDefaults.standard.removeObject(forKey: Self.backfilledShareKey)
+    }
+
+    private func markBackfillComplete(for recordName: String) {
+        backfilledShareRecordName = recordName
+        UserDefaults.standard.set(recordName, forKey: Self.backfilledShareKey)
+    }
+
+    /// Schedules a background task to back-fill pre-invite expenses from the private
+    /// default zone into the shared zone. Runs at most once per *successful*
+    /// completion — failures leave both the in-memory and UserDefaults markers
+    /// unset so the next `checkSharingStatus` call retries. A fresh share (different
+    /// `recordName`) clears the marker via `clearBackfillMarker` in `createShare`.
+    ///
+    /// Runs at `.utility` priority because `container.share(_:to:)` holds the calling
+    /// actor during a network round-trip — running it at the inherited `.userInteractive`
+    /// priority would contend with UI rendering on large histories.
+    private func scheduleBackfillIfNeeded(for share: CKShare) {
+        let recordName = share.recordID.recordName
+        guard backfilledShareRecordName != recordName else { return }
+        guard backfillTask == nil else { return }
+        logger.info("backfill: scheduling pre-invite expense back-fill for share=\(recordName)")
+        backfillTask = Task(priority: .utility) { [weak self] in
+            await self?.runBackfill(for: recordName)
+        }
+    }
+
+    private func runBackfill(for recordName: String) async {
+        defer { backfillTask = nil }
+        guard let privateStore = persistenceController.privatePersistentStore else {
+            logger.warning("backfill: private store unavailable — aborting")
+            return
+        }
+        guard let share = currentShare, share.recordID.recordName == recordName else {
+            logger.debug("backfill: share changed before run — aborting")
+            return
+        }
+
+        let objectIDs: [NSManagedObjectID]
+        do {
+            objectIDs = try await fetchPrivateExpenseIDs(in: privateStore)
+        } catch {
+            // Core Data fetch errors surface as generic NSError with no retryability
+            // signal — treat as permanent so checkSharingStatus doesn't spam retries.
+            logger.error("backfill: fetch FAILED — marking complete to prevent retry storm — \(error.localizedDescription)")
+            markBackfillComplete(for: recordName)
+            return
+        }
+
+        guard !Task.isCancelled else {
+            logger.debug("backfill: cancelled after fetch — aborting")
+            return
+        }
+
+        let expensesToShare = hydrateDefaultZoneExpenses(ids: objectIDs, privateStore: privateStore)
+        guard !expensesToShare.isEmpty else {
+            logger.info("backfill: no default-zone expenses to share — marking complete")
+            markBackfillComplete(for: recordName)
+            return
+        }
+
+        logger.info("backfill: sharing \(expensesToShare.count) pre-invite expenses to household")
+        let opStart = CFAbsoluteTimeGetCurrent()
+        do {
+            _ = try await persistenceController.container.share(expensesToShare, to: share)
+            let elapsed = (CFAbsoluteTimeGetCurrent() - opStart) * 1000
+            logger.info("backfill: success — \(elapsed, format: .fixed(precision: 1))ms")
+            markBackfillComplete(for: recordName)
+        } catch {
+            handleBackfillShareError(error, recordName: recordName)
+        }
+    }
+
+    /// Fetches Expense ObjectIDs on a background context so a large history doesn't
+    /// block the main actor. ObjectIDs are `Sendable` and can safely cross the
+    /// background → main boundary for re-hydration in `hydrateDefaultZoneExpenses`.
+    private func fetchPrivateExpenseIDs(
+        in privateStore: NSPersistentStore
+    ) async throws -> [NSManagedObjectID] {
+        let bgContext = persistenceController.container.newBackgroundContext()
+        return try await bgContext.perform {
+            let request = NSFetchRequest<NSManagedObjectID>(entityName: "Expense")
+            request.resultType = .managedObjectIDResultType
+            request.affectedStores = [privateStore]
+            return try bgContext.fetch(request)
+        }
+    }
+
+    /// Re-hydrates ObjectIDs on the main viewContext and filters to objects still in
+    /// the private default zone. Objects already migrated to the shared zone are
+    /// skipped — re-sharing races the CloudKit export cycle and produces
+    /// "Missing metadata for recordID" warnings per cloudkit-sync.md:94.
+    private func hydrateDefaultZoneExpenses(
+        ids: [NSManagedObjectID],
+        privateStore: NSPersistentStore
+    ) -> [NSManagedObject] {
+        let viewContext = persistenceController.container.viewContext
+        return ids.compactMap { id in
+            guard let object = try? viewContext.existingObject(with: id) else { return nil }
+            return object.objectID.persistentStore == privateStore ? object : nil
+        }
+    }
+
+    /// Classifies a back-fill share error and decides whether to retry or give up.
+    /// Transient CKErrors (network/throttling) leave the marker unset so the next
+    /// `checkSharingStatus` retries. Permanent CKErrors (quota, permissions, schema)
+    /// mark complete to stop the retry storm — the underlying issue must be resolved
+    /// by the user. Non-CKError exceptions also mark complete: infinite retries on
+    /// an unidentified error are worse than silent failure, and the log gives the
+    /// user visibility via Console.app.
+    private func handleBackfillShareError(_ error: Error, recordName: String) {
+        if let ckError = error as? CKError, Self.isTransientBackfillError(ckError) {
+            logger.error("backfill: share FAILED (transient, will retry) — code=\(ckError.code.rawValue) — \(error.localizedDescription)")
+            return
+        }
+        logger.error("backfill: share FAILED (permanent, marking complete to prevent retry storm) — \(error.localizedDescription)")
+        markBackfillComplete(for: recordName)
+    }
+
+    /// CKError codes that justify a retry on the next `checkSharingStatus` call.
+    /// Everything else — `.quotaExceeded`, `.permissionFailure`, `.serverRejectedRequest`,
+    /// `.badContainer`, `.notAuthenticated`, etc. — is treated as permanent so the
+    /// retry loop terminates instead of spamming CloudKit on every sync notification.
+    private static func isTransientBackfillError(_ error: CKError) -> Bool {
+        switch error.code {
+        case .networkUnavailable, .networkFailure, .serviceUnavailable,
+             .requestRateLimited, .zoneBusy:
+            return true
+        default:
+            return false
+        }
+    }
+
     /// Fetches the first non-canceled CKShare from a persistent store, or nil.
+    /// Iterates past sentinel-suppressed entries so a stale canceled share at index 0
+    /// cannot mask a valid new share at index 1 during the mirror catch-up window.
     private func fetchActiveShare(from store: NSPersistentStore?, label: String) -> CKShare? {
         guard let store else {
             logger.debug("checkSharingStatus: \(label) store is nil")
@@ -311,12 +468,14 @@ final class CloudSharingService: CloudSharingServiceProtocol {
         do {
             let shares = try persistenceController.container.fetchShares(in: store)
             logger.debug("checkSharingStatus: \(shares.count) shares in \(label) store")
-            guard let share = shares.first else { return nil }
-            if isRecentlyCanceled(recordName: share.recordID.recordName) {
-                logger.info("checkSharingStatus: ignoring stale canceled share in \(label) store")
-                return nil
+            for share in shares {
+                if isRecentlyCanceled(recordName: share.recordID.recordName) {
+                    logger.info("checkSharingStatus: ignoring stale canceled share in \(label) store")
+                    continue
+                }
+                return share
             }
-            return share
+            return nil
         } catch {
             logger.error("checkSharingStatus: failed to fetch from \(label) store — \(error.localizedDescription)")
             return nil

@@ -5,14 +5,47 @@ import os.log
 private let logger = Logger(subsystem: "com.wagneraz.CashOut", category: "SettingsView")
 
 struct SettingsView: View {
+    // Lazy viewModel — the nil default keeps the @State initializer cheap so SwiftUI's
+    // unavoidable re-evaluation of this view inside parent .navigationDestination
+    // closures does not allocate a SettingsViewModel. Real construction happens in
+    // .task, which only fires when the view is actually on screen.
+    @State private var viewModel: SettingsViewModel?
+
+    var body: some View {
+        Group {
+            if let viewModel {
+                SettingsContent(viewModel: viewModel)
+            } else {
+                Color.clear
+            }
+        }
+        .navigationTitle("Settings")
+        .task {
+            if viewModel == nil {
+                viewModel = SettingsViewModel()
+            }
+            await viewModel?.refreshSharingStatus()
+            await viewModel?.loadCategories()
+        }
+    }
+}
+
+// MARK: - Settings Content (owns all transient tasks)
+
+private struct SettingsContent: View {
     @Environment(AuthenticationViewModel.self) private var authViewModel
-    @State private var viewModel = SettingsViewModel()
+    @Bindable var viewModel: SettingsViewModel
     @State private var isShowingAddCategory = false
     @State private var isShowingSignOutAlert = false
     @State private var categoryToDelete: CategoryData?
     @State private var deleteTask: Task<Void, Never>?
     @State private var cancelInviteTask: Task<Void, Never>?
-
+    // Invite/resend tasks live here, not inside HouseholdSectionView — the section
+    // view sits underneath the share sheet, so its onDisappear would cancel an
+    // in-flight invite the moment the sheet presents. Scoping tasks to the full
+    // Settings screen ensures they survive sheet presentation.
+    @State private var inviteTask: Task<Void, Never>?
+    @State private var resendTask: Task<Void, Never>?
     @State private var editMode: EditMode = .inactive
 
     var body: some View {
@@ -56,7 +89,17 @@ struct SettingsView: View {
             }
 
             Section("Household") {
-                HouseholdSectionView(viewModel: viewModel)
+                HouseholdSectionView(
+                    viewModel: viewModel,
+                    onInvite: {
+                        inviteTask?.cancel()
+                        inviteTask = Task { await viewModel.invitePartner() }
+                    },
+                    onResend: {
+                        resendTask?.cancel()
+                        resendTask = Task { await viewModel.resendInvitation() }
+                    }
+                )
             }
 
             Section("Account") {
@@ -79,7 +122,6 @@ struct SettingsView: View {
         .navigationDestination(isPresented: $isShowingAddCategory) {
             CategoryManagementView(category: nil, viewModel: viewModel)
         }
-        .navigationTitle("Settings")
         .toolbar {
             ToolbarItem(placement: .topBarTrailing) {
                 Button(editMode == .active ? "Done" : "Edit") {
@@ -90,16 +132,11 @@ struct SettingsView: View {
             }
         }
         .onDisappear {
-            logger.debug("SettingsView.onDisappear — cancelling tasks")
+            logger.debug("SettingsContent.onDisappear — cancelling tasks")
             deleteTask?.cancel()
             cancelInviteTask?.cancel()
-        }
-        // Both calls re-fire on every NavigationStack appear — intentional.
-        // Categories list is small, re-fetch ensures partner-added custom categories
-        // appear immediately via NSPersistentCloudKitContainer auto-merge.
-        .task {
-            await viewModel.refreshSharingStatus()
-            await viewModel.loadCategories()
+            inviteTask?.cancel()
+            resendTask?.cancel()
         }
         .alert("Cancel Invitation", isPresented: Bindable(viewModel).isShowingCancelAlert) {
             Button("Cancel Invitation", role: .destructive) {
@@ -173,8 +210,8 @@ struct SettingsView: View {
 
 private struct HouseholdSectionView: View {
     @Bindable var viewModel: SettingsViewModel
-    @State private var inviteTask: Task<Void, Never>?
-    @State private var resendTask: Task<Void, Never>?
+    let onInvite: () -> Void
+    let onResend: () -> Void
 
     var body: some View {
         Group {
@@ -205,11 +242,8 @@ private struct HouseholdSectionView: View {
                 }
                 .accessibilityElement(children: .combine)
 
-                Button("Resend Invitation") {
-                    resendTask?.cancel()
-                    resendTask = Task { await viewModel.resendInvitation() }
-                }
-                .disabled(viewModel.isInviting)
+                Button("Resend Invitation", action: onResend)
+                    .disabled(viewModel.isInviting)
 
                 Button("Cancel Invitation", role: .destructive) {
                     viewModel.isShowingCancelAlert = true
@@ -222,11 +256,8 @@ private struct HouseholdSectionView: View {
                         .foregroundStyle(.red)
                 }
             } else {
-                Button("Invite Partner") {
-                    inviteTask?.cancel()
-                    inviteTask = Task { await viewModel.invitePartner() }
-                }
-                .disabled(viewModel.isInviting)
+                Button("Invite Partner", action: onInvite)
+                    .disabled(viewModel.isInviting)
 
                 if let error = viewModel.errorMessage {
                     Text(error)
@@ -234,11 +265,6 @@ private struct HouseholdSectionView: View {
                         .foregroundStyle(.red)
                 }
             }
-        }
-        .onDisappear {
-            logger.debug("HouseholdSectionView.onDisappear — cancelling tasks")
-            inviteTask?.cancel()
-            resendTask?.cancel()
         }
     }
 

@@ -51,17 +51,25 @@ struct CashOutApp: App {
                 persistenceController.container.viewContext
             )
             .task {
+                // Defer guarantees the splash dismisses even if the task is
+                // cancelled mid-startup (e.g., app backgrounded during launch).
+                defer { showSplash = false }
                 logger.info("App startup task: seeding categories + checking auth")
 
-                // Run splash timer, category seeding, and auth check concurrently.
-                // Splash stays visible until all three complete.
+                // Run splash timer, category seeding, auth check, and history purge concurrently.
+                // Splash stays visible until all complete.
                 async let splash: Void = Task.sleep(nanoseconds: Self.splashDuration)
                 async let seeding: Void = Self.seedCategories()
                 async let auth: Void = authViewModel.checkAuth()
-                _ = try? await (splash, seeding, auth)
+                async let purge: Void = persistenceController.purgeOldHistory()
+                _ = try? await (splash, seeding, auth, purge)
 
                 logger.info("App startup task complete — authenticated: \(self.authViewModel.isAuthenticated)")
-                showSplash = false
+            }
+            .task {
+                // Long-lived iCloud account-change observer. Runs for the app's lifetime;
+                // SwiftUI cancels the task when the window group is torn down.
+                await persistenceController.observeAccountChanges()
             }
         }
     }
