@@ -51,6 +51,19 @@ final class CloudSharingService: CloudSharingServiceProtocol {
 
     @ObservationIgnored private var currentShare: CKShare? = nil
 
+    /// Re-entry guard for the startup-orphan cleanup path. While an orphan cleanup
+    /// is in flight (inside the `await cancelShare()` suspension), a concurrent
+    /// `checkSharingStatus` call — e.g., from a remote-change debounce — must NOT
+    /// re-enter the orphan branch. Without this guard, the concurrent call sees
+    /// `currentShare` set (by the outer call's preparatory assignment), so
+    /// `wasCurrentShareNil` is false, the orphan guard skips, and the fall-through
+    /// path briefly sets `state = .draft` during the cleanup window. Final state
+    /// is still correct (`transitionToSolo` inside `cancelShare` wins), but the
+    /// flicker is semantically wrong and would break any future code path that
+    /// observes `state` between the outer call's preparation and `cancelShare`
+    /// completion.
+    @ObservationIgnored private var isCleaningUpOrphan: Bool = false
+
     /// Tracks a recently-canceled share's recordName so `checkSharingStatus()` and
     /// `createShare()` skip the stale CKShare that remains in the local Core Data
     /// mirror until NSPersistentCloudKitContainer processes the CloudKit deletion.
@@ -60,8 +73,11 @@ final class CloudSharingService: CloudSharingServiceProtocol {
     private static let canceledShareKey = "CashOut.canceledShareRecordName"
     private static let canceledShareTimestampKey = "CashOut.canceledShareTimestamp"
     /// How long to suppress a stale share after cancellation (seconds).
-    /// The mirror typically catches up within 5–15s on a live connection.
-    private static let canceledShareTTL: TimeInterval = 120
+    /// The mirror typically catches up within 5–15s on a live connection, but
+    /// slow or flaky networks (e.g., travel wifi) have been observed to exceed
+    /// 120s. 300s is belt-and-suspenders — the sentinel is pure suppression
+    /// state with zero cost to leave in place longer than strictly needed.
+    private static let canceledShareTTL: TimeInterval = 300
 
     /// Record name of the share whose pre-invite expenses were already back-filled
     /// into the shared zone. Persisted to UserDefaults so we don't re-run the
@@ -182,6 +198,17 @@ final class CloudSharingService: CloudSharingServiceProtocol {
             let classified = classify(share: share, isOwner: true)
 
             if classified == .draft && wasCurrentShareNil {
+                // Re-entry guard: if a previous call is already cleaning up the orphan
+                // (awaiting cancelShare), a concurrent checkSharingStatus from a remote-
+                // change debounce must not re-enter the orphan branch. The outer call
+                // will finalize the state when its cancelShare completes.
+                guard !isCleaningUpOrphan else {
+                    logger.debug("checkSharingStatus: orphan cleanup already in flight — skipping re-entry")
+                    return
+                }
+                isCleaningUpOrphan = true
+                defer { isCleaningUpOrphan = false }
+
                 logger.warning("checkSharingStatus: startup orphan .draft detected — cleaning up server-side")
                 // Point `cancelShare` at the orphan: it reads `currentShare` as its target.
                 // On success, cancelShare sets the sentinel and routes through
@@ -248,7 +275,19 @@ final class CloudSharingService: CloudSharingServiceProtocol {
             return
         }
 
-        clearCanceledShareSentinel()
+        // DO NOT clear the canceled-share sentinel here. The solo-mode fallthrough is
+        // NOT a server-authoritative confirmation that the share is gone — it only
+        // means "at this instant, fetchActiveShare returned nil (possibly because the
+        // sentinel itself was suppressing a stale mirror entry)." Clearing the sentinel
+        // here races the NSPersistentCloudKitContainer mirror reconciliation window:
+        // after cancelShare's CKModifyRecordsOperation deletes the share server-side,
+        // the local Core Data mirror may still return the stale entry for seconds to
+        // minutes until its own recovery path reconciles. If we clear the sentinel
+        // prematurely, the next remote-change refresh re-detects the stale mirror
+        // entry, triggers another orphan cleanup, and emits redundant log noise plus
+        // a Core Data "Unknown Item" export error. The sentinel self-expires via its
+        // TTL; only `createShare` on new-share success and `transitionToSolo(
+        // clearSentinel: true)` on `.unknownItem`-confirmed paths should clear it.
         let elapsed = (CFAbsoluteTimeGetCurrent() - checkStart) * 1000
         logger.info("checkSharingStatus: no shares found — solo mode — \(elapsed, format: .fixed(precision: 1))ms")
         state = .solo
