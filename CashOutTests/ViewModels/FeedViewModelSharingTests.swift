@@ -8,8 +8,7 @@ final class FeedViewModelSharingTests: XCTestCase {
 
     private func makeSUT(
         currentUserID: String? = "test-user",
-        partnerName: String? = nil,
-        isShared: Bool = false
+        state: SharingState = .solo
     ) -> (
         viewModel: FeedViewModel,
         cloudSharingService: MockCloudSharingService
@@ -21,8 +20,7 @@ final class FeedViewModelSharingTests: XCTestCase {
         let hapticService = MockHapticService()
 
         authService.currentUserID = currentUserID
-        cloudSharingService.partnerName = partnerName
-        cloudSharingService.isShared = isShared
+        cloudSharingService.state = state
 
         let viewModel = FeedViewModel(
             repository: expenseRepo,
@@ -64,7 +62,7 @@ final class FeedViewModelSharingTests: XCTestCase {
     func testPartnerInitialsReturnsFirstInitialOfPartnerName() {
         let (viewModel, _) = makeSUT(
             currentUserID: "user-123",
-            partnerName: "Sarah"
+            state: .connected(partnerName: "Sarah")
         )
         let expense = makeExpense(createdByUserID: "partner-456")
 
@@ -74,36 +72,60 @@ final class FeedViewModelSharingTests: XCTestCase {
         )
     }
 
-    func testPartnerInitialsReturnsPWhenPartnerNameIsNil() {
+    func testPartnerInitialsReturnsPWhenConnectedWithNilName() {
+        // Connected state but partner's name couldn't be resolved from userIdentity.
+        // The view-layer fallback "P" kicks in.
         let (viewModel, _) = makeSUT(
             currentUserID: "user-123",
-            partnerName: nil
+            state: .connected(partnerName: nil)
         )
         let expense = makeExpense(createdByUserID: "partner-456")
 
         XCTAssertEqual(
             viewModel.partnerInitials(for: expense), "P",
-            "partnerInitials should return 'P' when partnerName is nil"
+            "partnerInitials should return 'P' when connected but name is nil"
+        )
+    }
+
+    func testPartnerInitialsReturnsPWhenSolo() {
+        let (viewModel, _) = makeSUT(
+            currentUserID: "user-123",
+            state: .solo
+        )
+        let expense = makeExpense(createdByUserID: "partner-456")
+
+        XCTAssertEqual(
+            viewModel.partnerInitials(for: expense), "P",
+            "partnerInitials should return 'P' when not connected"
         )
     }
 
     // MARK: - partnerDisplayName Tests
 
-    func testPartnerDisplayNameReturnsRealNameWhenAvailable() {
-        let (viewModel, _) = makeSUT(partnerName: "Sarah")
+    func testPartnerDisplayNameReturnsRealNameWhenConnected() {
+        let (viewModel, _) = makeSUT(state: .connected(partnerName: "Sarah"))
 
         XCTAssertEqual(
             viewModel.partnerDisplayName, "Sarah",
-            "partnerDisplayName should return real name when available"
+            "partnerDisplayName should return real name when connected"
         )
     }
 
-    func testPartnerDisplayNameReturnsPartnerWhenNameIsNil() {
-        let (viewModel, _) = makeSUT(partnerName: nil)
+    func testPartnerDisplayNameReturnsPartnerWhenConnectedWithNilName() {
+        let (viewModel, _) = makeSUT(state: .connected(partnerName: nil))
 
         XCTAssertEqual(
             viewModel.partnerDisplayName, "Partner",
-            "partnerDisplayName should return 'Partner' when name is nil"
+            "partnerDisplayName should return fallback 'Partner' when name is nil"
+        )
+    }
+
+    func testPartnerDisplayNameReturnsPartnerWhenSolo() {
+        let (viewModel, _) = makeSUT(state: .solo)
+
+        XCTAssertEqual(
+            viewModel.partnerDisplayName, "Partner",
+            "partnerDisplayName should return fallback 'Partner' in solo mode"
         )
     }
 }

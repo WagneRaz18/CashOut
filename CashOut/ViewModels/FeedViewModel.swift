@@ -126,8 +126,8 @@ final class FeedViewModel {
         if isCurrentUser(expense) {
             return "Me"
         }
-        // Use real partner name from CloudSharingService
-        if let name = cloudSharingService.partnerName {
+        // Partner name is only meaningful in the `.connected` state.
+        if case .connected(let name?) = cloudSharingService.state {
             let initial = name.prefix(1).uppercased()
             return initial.isEmpty ? "P" : initial
         }
@@ -135,7 +135,10 @@ final class FeedViewModel {
     }
 
     var partnerDisplayName: String {
-        cloudSharingService.partnerName ?? "Partner"
+        if case .connected(let name?) = cloudSharingService.state {
+            return name
+        }
+        return "Partner"
     }
 
     // MARK: - Delete

@@ -27,11 +27,11 @@ final class ExpenseRepositorySharingTests: XCTestCase {
         )
     }
 
-    // MARK: - Solo Mode (isShared = false)
+    // MARK: - Solo Mode (state = .solo)
 
     func testSaveInSoloModeCallsPrepareButNotShare() async throws {
         let mock = MockCloudSharingService()
-        mock.isShared = false
+        mock.state = .solo
         let repository = ExpenseRepository(
             persistence: persistence,
             cloudSharingService: mock
@@ -41,10 +41,10 @@ final class ExpenseRepositorySharingTests: XCTestCase {
         try await repository.saveExpense(expense)
 
         // Pre-save routing is called for new objects; the service's
-        // guard clauses (isShared check) handle the no-op in solo mode.
+        // guard clauses (state check) handle the no-op in solo mode.
         XCTAssertTrue(
             mock.prepareObjectForSharedSaveCalled,
-            "prepareObjectForSharedSave should be called (service guards on isShared)"
+            "prepareObjectForSharedSave should be called (service guards on state)"
         )
         // Sharing is now a separate call — saveExpense should NOT trigger it
         XCTAssertFalse(
@@ -55,7 +55,7 @@ final class ExpenseRepositorySharingTests: XCTestCase {
 
     func testShareNewExpenseCallsShareObjectsToHousehold() async throws {
         let mock = MockCloudSharingService()
-        mock.isShared = true
+        mock.state = .pending
         mock.isShareOwner = true
         let repository = ExpenseRepository(
             persistence: persistence,
@@ -72,11 +72,11 @@ final class ExpenseRepositorySharingTests: XCTestCase {
         )
     }
 
-    // MARK: - Participant Mode (isShared = true, isShareOwner = false)
+    // MARK: - Participant Mode (state = .connected, isShareOwner = false)
 
     func testSaveAsParticipantCallsPrepareObjectForSharedSave() async throws {
         let mock = MockCloudSharingService()
-        mock.isShared = true
+        mock.state = .connected(partnerName: nil)
         mock.isShareOwner = false
         let repository = ExpenseRepository(
             persistence: persistence,
@@ -96,7 +96,7 @@ final class ExpenseRepositorySharingTests: XCTestCase {
 
     func testEditExistingExpenseDoesNotCallSharingMethods() async throws {
         let mock = MockCloudSharingService()
-        mock.isShared = true
+        mock.state = .connected(partnerName: "Partner")
         mock.isShareOwner = true
         let repository = ExpenseRepository(
             persistence: persistence,

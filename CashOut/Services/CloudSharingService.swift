@@ -5,11 +5,31 @@ import os.log
 
 private let logger = Logger(subsystem: "com.wagneraz.CashOut", category: "CloudSharingService")
 
+/// Canonical state of the household sharing relationship.
+///
+/// The four cases map to the four user-perceivable phases of CloudKit sharing:
+/// - `.solo`: no CKShare exists in either store.
+/// - `.draft`: a CKShare exists locally (created by `container.share(objects, to: nil)`),
+///   but no invitation has been dispatched yet. This is the window between `createShare()`
+///   success and either invite dispatch (→ `.pending`) or sheet cancellation (→ `.solo`).
+/// - `.pending`: the owner sent an invitation (`participants.count > 1`) but no partner
+///   has accepted yet.
+/// - `.connected`: at least one partner has accepted the invitation.
+///
+/// The associated value on `.connected` makes `partnerName` type-safely inaccessible
+/// in any other state, eliminating the class of bugs where a draft or pending share
+/// could be mistaken for a connected one.
+enum SharingState: Equatable {
+    case solo
+    case draft
+    case pending
+    case connected(partnerName: String?)
+}
+
 @MainActor
 protocol CloudSharingServiceProtocol {
-    var isShared: Bool { get }
+    var state: SharingState { get }
     var isShareOwner: Bool { get }
-    var partnerName: String? { get }
     func createShare(for objects: [NSManagedObject]) async throws -> (CKShare, CKContainer)
     func checkSharingStatus() async
     func persistUpdatedShare(_ share: CKShare)
@@ -17,6 +37,7 @@ protocol CloudSharingServiceProtocol {
     func shareObjectsToHouseholdIfNeeded(_ objects: [NSManagedObject]) async throws
     func resetState()
     func cancelShare() async throws
+    func finalizeShareOutcome(_ updatedShare: CKShare?) async
 }
 
 @MainActor
@@ -24,8 +45,7 @@ protocol CloudSharingServiceProtocol {
 final class CloudSharingService: CloudSharingServiceProtocol {
     static let shared = CloudSharingService()
 
-    var isShared: Bool = false
-    var partnerName: String? = nil
+    var state: SharingState = .solo
 
     var isShareOwner: Bool = false
 
@@ -135,8 +155,13 @@ final class CloudSharingService: CloudSharingServiceProtocol {
         // moved into the new shared zone the next time checkSharingStatus runs.
         clearBackfillMarker()
         currentShare = share
+        isShareOwner = true
         share[CKShare.SystemFieldKey.title] = "CashOut Household"
-        logger.info("createShare: new share created successfully")
+        // Transition to .draft. The share exists in CloudKit but no invite has been
+        // dispatched yet. `finalizeShareOutcome` will transition to `.pending` on
+        // successful invite, or back to `.solo` with orphan cleanup on cancel.
+        state = .draft
+        logger.info("createShare: new share created successfully (state=.draft)")
         return (share, CKContainer(identifier: Self.containerIdentifier))
     }
 
@@ -145,42 +170,50 @@ final class CloudSharingService: CloudSharingServiceProtocol {
         let checkStart = CFAbsoluteTimeGetCurrent()
 
         if let share = fetchActiveShare(from: persistenceController.privatePersistentStore, label: "private") {
-            isShared = true
             isShareOwner = true
             currentShare = share
-            extractPartnerInfo(from: share)
+            state = classify(share: share, isOwner: true)
             // Back-fill pre-invite expenses into the shared zone exactly once per
             // unique share. Guarded by recordName comparison so debounce storms
             // and app relaunches don't re-run the work, but a fresh share after
             // a cancel (different recordName) does trigger a new back-fill.
             scheduleBackfillIfNeeded(for: share)
             let elapsed = (CFAbsoluteTimeGetCurrent() - checkStart) * 1000
-            logger.info("checkSharingStatus: found share in private store (owner) — \(elapsed, format: .fixed(precision: 1))ms")
+            logger.info("checkSharingStatus: found share in private store (owner, state=\(String(describing: self.state))) — \(elapsed, format: .fixed(precision: 1))ms")
             return
         }
 
         if let share = fetchActiveShare(from: persistenceController.sharedPersistentStore, label: "shared") {
-            isShared = true
             isShareOwner = false
             currentShare = share
-            extractPartnerInfo(from: share)
+            state = classify(share: share, isOwner: false)
             let elapsed = (CFAbsoluteTimeGetCurrent() - checkStart) * 1000
-            logger.info("checkSharingStatus: found share in shared store (participant) — \(elapsed, format: .fixed(precision: 1))ms")
+            logger.info("checkSharingStatus: found share in shared store (participant, state=\(String(describing: self.state))) — \(elapsed, format: .fixed(precision: 1))ms")
             return
         }
 
-        // No shares found (or only stale canceled shares) — solo mode
+        // No shares found (or only stale canceled shares).
         guard persistenceController.privatePersistentStore != nil ||
               persistenceController.sharedPersistentStore != nil else {
             logger.warning("checkSharingStatus: both stores nil — skipping state reset (mid-account-change?)")
             return
         }
+
+        // Mid-sheet guard: if the user is currently composing an invite (state == .draft)
+        // and a remote change notification triggered this refresh before the fresh share
+        // replicated back from CloudKit, preserve .draft so we don't nuke the in-progress
+        // draft and force a duplicate share on re-present. The draft is protected by
+        // explicit transitions in createShare / finalizeShareOutcome only.
+        if state == .draft {
+            logger.debug("checkSharingStatus: preserving .draft during mid-sheet refresh")
+            return
+        }
+
         clearCanceledShareSentinel()
         let elapsed = (CFAbsoluteTimeGetCurrent() - checkStart) * 1000
         logger.info("checkSharingStatus: no shares found — solo mode — \(elapsed, format: .fixed(precision: 1))ms")
-        isShared = false
+        state = .solo
         isShareOwner = false
-        partnerName = nil
         currentShare = nil
     }
 
@@ -207,12 +240,14 @@ final class CloudSharingService: CloudSharingServiceProtocol {
     }
 
     func prepareObjectForSharedSave(_ object: NSManagedObject) {
-        guard isShared, !isShareOwner else { return }
+        // Participant path only: the participant accepted the owner's share and
+        // is in `.connected`. Route new objects through the shared store so they
+        // land in the shared zone. Owner-side state does not affect this guard.
+        guard !isShareOwner, case .connected = state else { return }
         guard object.managedObjectContext != nil else {
             logger.error("prepareObjectForSharedSave: nil managedObjectContext")
             return
         }
-        // Participant: assign to shared store so save goes to shared zone
         guard let sharedStore = persistenceController.sharedPersistentStore else {
             logger.warning("prepareObjectForSharedSave: shared store is nil")
             return
@@ -222,7 +257,11 @@ final class CloudSharingService: CloudSharingServiceProtocol {
     }
 
     func shareObjectsToHouseholdIfNeeded(_ objects: [NSManagedObject]) async throws {
-        guard isShared, isShareOwner, let share = currentShare else { return }
+        // Owner path only, and only after the invitation is committed (pending or
+        // connected). While in `.draft` we deliberately do NOT route new expenses
+        // into the shared zone — a user cancelling the invite would otherwise leak
+        // expenses into a zone that is about to be deleted.
+        guard isShareOwner, hasCommittedShare, let share = currentShare else { return }
         guard !objects.isEmpty else { return }
         // Guard: iCloud must be available
         guard FileManager.default.ubiquityIdentityToken != nil else {
@@ -238,14 +277,24 @@ final class CloudSharingService: CloudSharingServiceProtocol {
 
     func resetState() {
         logger.info("resetState: clearing cached sharing state")
-        isShared = false
+        state = .solo
         isShareOwner = false
-        partnerName = nil
         currentShare = nil
         backfillTask?.cancel()
         backfillTask = nil
         clearCanceledShareSentinel()
         clearBackfillMarker()
+    }
+
+    /// True when there is a committed, sent invitation: the owner has dispatched an
+    /// invite (`.pending`) or a partner has accepted (`.connected`). Explicitly false
+    /// for `.draft` — expenses must not be routed into the shared zone while the user
+    /// is still composing an invitation that may yet be cancelled.
+    var hasCommittedShare: Bool {
+        switch state {
+        case .pending, .connected: return true
+        case .solo, .draft: return false
+        }
     }
 
     func cancelShare() async throws {
@@ -291,9 +340,8 @@ final class CloudSharingService: CloudSharingServiceProtocol {
         logger.info("cancelShare: share deleted from CloudKit")
         setCanceledShareSentinel(recordName: share.recordID.recordName)
         logger.debug("cancelShare: set sentinel for recordName=\(share.recordID.recordName)")
-        isShared = false
+        state = .solo
         isShareOwner = false
-        partnerName = nil
         currentShare = nil
     }
 
@@ -482,47 +530,239 @@ final class CloudSharingService: CloudSharingServiceProtocol {
         }
     }
 
-    private func extractPartnerInfo(from share: CKShare) {
-        if !isShareOwner {
-            // Participant path: we accepted the owner's share — the owner IS our partner.
-            // share.owner is populated from the accepted share metadata and is more reliable
-            // than iterating share.participants, which may be incomplete in cached CKShares.
+    /// Pure classification of a CKShare into a `SharingState`. No side effects — the
+    /// caller is responsible for assigning the result to `self.state`.
+    ///
+    /// - Participant side: the presence of the share in the shared store implies we
+    ///   accepted it, so we are always in `.connected` with the owner as the partner.
+    /// - Owner side: `.draft` if there are no invited participants, `.connected` if at
+    ///   least one has `.accepted`, `.pending` otherwise.
+    ///
+    /// The owner-side nil guard on `share.owner.userIdentity.userRecordID` is
+    /// critical: if the identity is unresolved, `nil != nil` would pass the owner
+    /// through the filter and the owner could end up as its own partner. In that
+    /// defensive case we return `.draft` rather than committing to a `.pending` or
+    /// `.connected` state we can't verify.
+    private func classify(share: CKShare, isOwner: Bool) -> SharingState {
+        if !isOwner {
+            // Participant path: we accepted the owner's share. The partner IS the owner.
+            let name: String?
             if let nameComponents = share.owner.userIdentity.nameComponents {
-                partnerName = PersonNameComponentsFormatter.localizedString(
+                name = PersonNameComponentsFormatter.localizedString(
                     from: nameComponents, style: .short, options: []
                 )
             } else {
-                partnerName = "Partner"
+                name = nil
             }
-            logger.info("extractPartnerInfo: participant mode — partner resolved=\(self.partnerName != nil)")
-            return
+            return .connected(partnerName: name)
         }
 
-        // Owner path: look for accepted participants (excluding ourselves).
-        // Guard against nil ownerRecordID — identity may not be resolved yet in cached CKShares.
-        // Without this guard, nil == nil passes all participants through the filter,
-        // potentially returning the owner as their own partner.
+        // Owner path — nil-guard the identity resolution
         guard let ownerRecordID = share.owner.userIdentity.userRecordID else {
-            logger.warning("extractPartnerInfo: owner userRecordID not yet resolved — deferring")
-            partnerName = nil
-            return
+            logger.warning("classify: owner userRecordID unresolved — returning .draft")
+            return .draft
         }
-        let otherParticipants = share.participants.filter { participant in
+
+        let others = share.participants.filter { participant in
             participant.userIdentity.userRecordID != ownerRecordID
         }
 
-        if let partner = otherParticipants.first(where: { $0.acceptanceStatus == .accepted }) {
-            if let nameComponents = partner.userIdentity.nameComponents {
-                partnerName = PersonNameComponentsFormatter.localizedString(
+        guard !others.isEmpty else {
+            // Only owner — no invites dispatched.
+            return .draft
+        }
+
+        if let accepted = others.first(where: { $0.acceptanceStatus == .accepted }) {
+            let name: String?
+            if let nameComponents = accepted.userIdentity.nameComponents {
+                name = PersonNameComponentsFormatter.localizedString(
                     from: nameComponents, style: .short, options: []
                 )
             } else {
-                partnerName = "Partner"
+                name = nil
             }
-            logger.info("extractPartnerInfo: owner mode — partner resolved=\(self.partnerName != nil)")
-        } else {
-            logger.debug("extractPartnerInfo: owner mode — no accepted partner yet (\(otherParticipants.count) other participants)")
-            partnerName = nil
+            return .connected(partnerName: name)
+        }
+
+        return .pending
+    }
+
+    // MARK: - Share Outcome Finalization
+
+    /// Called from the ViewModel whenever the share sheet is dismissed, regardless of
+    /// which path (delegate callback or interactive dismiss). Owns all classification
+    /// and cleanup logic so the ViewModel stays agnostic of CloudKit details.
+    ///
+    /// **Path A — delegate handed us a share.** This fires on
+    /// `cloudSharingControllerDidSaveShare`, which per UIKit docs can trigger on
+    /// invitation dispatch AND on permission changes inside the sheet. We cannot
+    /// distinguish these from the callback alone, so we fetch the authoritative state
+    /// from CloudKit via `fetchFreshShare` and classify from that.
+    ///
+    /// If the fresh fetch fails with `CKError.unknownItem` the server is telling us
+    /// the share is gone — transition to `.solo`. For any other error (network,
+    /// throttling, freshly-created share that hasn't propagated yet) fall back to
+    /// classifying the delegate-provided share and do NOT trigger orphan cleanup.
+    /// Cancelling on a transient failure would delete a legitimately-created share
+    /// during the CloudKit propagation window.
+    ///
+    /// **Path B — nil share.** Either the user swipe-dismissed without taking any
+    /// action, or `didStopSharing`/`failedToSaveShareWithError` fired. We use the
+    /// current state to disambiguate: `.draft` means orphan cleanup, `.pending` or
+    /// `.connected` means UIKit already deleted the share remotely (Stop Sharing) so
+    /// we just refresh from stores.
+    func finalizeShareOutcome(_ updatedShare: CKShare?) async {
+        if let updatedShare {
+            do {
+                let fresh = try await fetchFreshShare(recordID: updatedShare.recordID)
+                let classified = classify(share: fresh, isOwner: isShareOwner)
+                logger.info("finalizeShareOutcome: fresh classification=\(String(describing: classified))")
+                await apply(classification: classified, authoritativeShare: fresh, delegateShare: updatedShare)
+            } catch let error where Self.isUnknownItemError(error) {
+                // Server confirms the share does not exist. Safe to transition to solo.
+                // Handles both the direct `.unknownItem` form and the `.partialFailure`
+                // envelope that some CKFetchRecordsOperation failure paths wrap it in.
+                logger.info("finalizeShareOutcome: server confirmed share absent (.unknownItem)")
+                transitionToSolo(clearSentinel: true)
+            } catch {
+                // Transient failure (network, propagation lag). Fall back to the delegate
+                // share — do NOT call cancelShare on transient errors.
+                logger.warning("finalizeShareOutcome: fresh fetch failed (\(error.localizedDescription)) — falling back to delegate share")
+                let classified = classify(share: updatedShare, isOwner: isShareOwner)
+                await apply(classification: classified, authoritativeShare: updatedShare, delegateShare: updatedShare)
+            }
+            return
+        }
+
+        // Path B: nil share
+        switch state {
+        case .draft:
+            logger.info("finalizeShareOutcome: draft state + nil share — cleaning up orphan")
+            do {
+                try await cancelShare()
+            } catch {
+                logger.fault("finalizeShareOutcome: draft cleanup FAILED — \(error.localizedDescription)")
+                // cancelShare didn't complete. Let checkSharingStatus re-derive on next refresh
+                // rather than forcing .solo and leaving a real orphan server-side.
+                await checkSharingStatus()
+            }
+        case .pending, .connected:
+            // Stop Sharing path — UIKit already deleted server-side. Refresh to derive solo.
+            logger.info("finalizeShareOutcome: stop-sharing path — refreshing state from stores")
+            await checkSharingStatus()
+        case .solo:
+            logger.debug("finalizeShareOutcome: already solo — no-op")
+        }
+    }
+
+    private func apply(
+        classification: SharingState,
+        authoritativeShare: CKShare,
+        delegateShare: CKShare
+    ) async {
+        switch classification {
+        case .draft:
+            // The delegate handed us a share but it has zero invited participants.
+            // This is an orphan — clean up.
+            logger.info("finalizeShareOutcome: classified .draft after delegate — cleaning up orphan")
+            do {
+                try await cancelShare()
+            } catch {
+                logger.fault("finalizeShareOutcome: orphan cleanup FAILED — \(error.localizedDescription)")
+                await checkSharingStatus()
+            }
+        case .pending, .connected:
+            // Persist whatever the delegate handed us (that's what UIKit last touched)
+            // and update cached state from the fresh authoritative share.
+            persistUpdatedShare(delegateShare)
+            currentShare = authoritativeShare
+            state = classification
+        case .solo:
+            // `classify` never returns `.solo` directly, but the enum switch must be
+            // exhaustive. If we do reach here, mirror the full solo-transition contract.
+            transitionToSolo(clearSentinel: true)
+        }
+    }
+
+    /// Full solo-state transition: clears `state`, `isShareOwner`, `currentShare`, and
+    /// (optionally) the canceled-share sentinel. Every `.solo` transition must go
+    /// through this helper to prevent stale `isShareOwner` or sentinel leakage across
+    /// paths — both were bugs caught in code review.
+    private func transitionToSolo(clearSentinel: Bool) {
+        state = .solo
+        isShareOwner = false
+        currentShare = nil
+        if clearSentinel {
+            clearCanceledShareSentinel()
+        }
+    }
+
+    /// Returns true if the error represents a server-confirmed "record does not exist"
+    /// condition — either a direct `CKError.unknownItem` or a `CKError.partialFailure`
+    /// envelope whose per-item errors are all `.unknownItem`. All other CKErrors
+    /// (network, throttling, propagation lag) must be treated as transient and must NOT
+    /// trigger a `.solo` transition, or we'll delete legitimately-created shares during
+    /// CloudKit's cache propagation window.
+    private static func isUnknownItemError(_ error: Error) -> Bool {
+        guard let ckError = error as? CKError else { return false }
+        if ckError.code == .unknownItem { return true }
+        if ckError.code == .partialFailure,
+           let partials = ckError.partialErrorsByItemID,
+           !partials.isEmpty,
+           partials.values.allSatisfy({ ($0 as? CKError)?.code == .unknownItem }) {
+            return true
+        }
+        return false
+    }
+
+    /// Fetches the authoritative CKShare from CloudKit (not the local Core Data mirror).
+    /// Routes to the correct database based on role.
+    ///
+    /// Continuation safety: the completion-block API for `CKFetchRecordsOperation` has
+    /// two result callbacks (`perRecordResultBlock` and `fetchRecordsResultBlock`).
+    /// This wrapper captures per-record results into locals and resumes the continuation
+    /// exactly once from `fetchRecordsResultBlock`. Double-resume or resume-never both
+    /// cause undefined behavior / hangs in Swift structured concurrency.
+    private func fetchFreshShare(recordID: CKRecord.ID) async throws -> CKShare {
+        let container = CKContainer(identifier: Self.containerIdentifier)
+        let database = isShareOwner ? container.privateCloudDatabase : container.sharedCloudDatabase
+
+        return try await withCheckedThrowingContinuation { (continuation: CheckedContinuation<CKShare, Error>) in
+            let op = CKFetchRecordsOperation(recordIDs: [recordID])
+            op.qualityOfService = .userInitiated
+
+            var fetchedShare: CKShare?
+            var perRecordError: Error?
+
+            op.perRecordResultBlock = { _, result in
+                switch result {
+                case .success(let record):
+                    if let share = record as? CKShare {
+                        fetchedShare = share
+                    } else {
+                        perRecordError = CKError(.internalError)
+                    }
+                case .failure(let error):
+                    perRecordError = error
+                }
+            }
+
+            op.fetchRecordsResultBlock = { result in
+                switch result {
+                case .success:
+                    if let share = fetchedShare {
+                        continuation.resume(returning: share)
+                    } else if let perRecordError {
+                        continuation.resume(throwing: perRecordError)
+                    } else {
+                        continuation.resume(throwing: CKError(.unknownItem))
+                    }
+                case .failure(let error):
+                    continuation.resume(throwing: error)
+                }
+            }
+
+            database.add(op)
         }
     }
 }

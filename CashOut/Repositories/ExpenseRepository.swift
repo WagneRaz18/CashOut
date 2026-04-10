@@ -247,7 +247,9 @@ final class ExpenseRepository: ExpenseRepositoryProtocol {
         // prepareObjectForSharedSave, so their deletes must target sharedPersistentStore.
         // Owner and solo mode target privatePersistentStore (owned shared zones live there).
         let targetStore: NSPersistentStore?
-        if let svc = cloudSharingService, svc.isShared, !svc.isShareOwner {
+        if let svc = cloudSharingService,
+           !svc.isShareOwner,
+           case .connected = svc.state {
             targetStore = persistence.sharedPersistentStore
         } else {
             targetStore = persistence.privatePersistentStore

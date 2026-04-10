@@ -9,13 +9,13 @@ final class SettingsViewModelTests: XCTestCase {
     // MARK: - Test Helpers
 
     private func makeSUT(
-        isShared: Bool = false,
-        partnerName: String? = nil,
+        state: SharingState = .solo,
+        isShareOwner: Bool = false,
         categories: [CategoryData] = []
     ) -> (viewModel: SettingsViewModel, mockService: MockCloudSharingService, mockCategories: MockCategoryRepository, mockHaptics: MockHapticService) {
         let mockService = MockCloudSharingService()
-        mockService.isShared = isShared
-        mockService.partnerName = partnerName
+        mockService.state = state
+        mockService.isShareOwner = isShareOwner
         let mockCategories = MockCategoryRepository()
         mockCategories.categoriesToReturn = categories
         let mockHaptics = MockHapticService()
@@ -58,47 +58,62 @@ final class SettingsViewModelTests: XCTestCase {
     // MARK: - Solo Mode Tests
 
     func testSoloModeHasPartnerIsFalse() {
-        let (viewModel, _, _, _) = makeSUT(isShared: false)
+        let (viewModel, _, _, _) = makeSUT(state: .solo)
         XCTAssertFalse(viewModel.hasPartner)
     }
 
     func testSoloModePartnerDisplayNameIsNil() {
-        let (viewModel, _, _, _) = makeSUT(isShared: false)
+        let (viewModel, _, _, _) = makeSUT(state: .solo)
         XCTAssertNil(viewModel.partnerDisplayName)
     }
 
     func testSoloModeIsPendingInvitationIsFalse() {
-        let (viewModel, _, _, _) = makeSUT(isShared: false)
+        let (viewModel, _, _, _) = makeSUT(state: .solo)
         XCTAssertFalse(viewModel.isPendingInvitation)
+    }
+
+    // MARK: - Draft State Tests
+
+    func testDraftStateIsNotPendingInvitation() {
+        // Critical: the original bug was .draft being surfaced as "Invitation Pending".
+        // A draft share (sheet open, no invite sent) must NOT render as pending in the UI.
+        let (viewModel, _, _, _) = makeSUT(state: .draft)
+        XCTAssertFalse(viewModel.isPendingInvitation)
+        XCTAssertFalse(viewModel.hasPartner)
+        XCTAssertNil(viewModel.partnerDisplayName)
     }
 
     // MARK: - Pending Invitation Tests
 
-    func testPendingInvitationWhenSharedButNoPartnerName() {
-        let (viewModel, _, _, _) = makeSUT(isShared: true, partnerName: nil)
-        XCTAssertTrue(viewModel.isPendingInvitation)
-    }
-
     func testPendingInvitationHasPartnerIsFalse() {
-        let (viewModel, _, _, _) = makeSUT(isShared: true, partnerName: nil)
+        let (viewModel, _, _, _) = makeSUT(state: .pending)
+        XCTAssertTrue(viewModel.isPendingInvitation)
         XCTAssertFalse(viewModel.hasPartner)
     }
 
     // MARK: - Partner Connected Tests
 
     func testPartnerConnectedHasPartnerIsTrue() {
-        let (viewModel, _, _, _) = makeSUT(isShared: true, partnerName: "Jane")
+        let (viewModel, _, _, _) = makeSUT(state: .connected(partnerName: "Jane"))
         XCTAssertTrue(viewModel.hasPartner)
     }
 
     func testPartnerConnectedIsPendingInvitationIsFalse() {
-        let (viewModel, _, _, _) = makeSUT(isShared: true, partnerName: "Jane")
+        let (viewModel, _, _, _) = makeSUT(state: .connected(partnerName: "Jane"))
         XCTAssertFalse(viewModel.isPendingInvitation)
     }
 
     func testPartnerConnectedDisplaysPartnerName() {
-        let (viewModel, _, _, _) = makeSUT(isShared: true, partnerName: "Jane Smith")
+        let (viewModel, _, _, _) = makeSUT(state: .connected(partnerName: "Jane Smith"))
         XCTAssertEqual(viewModel.partnerDisplayName, "Jane Smith")
+    }
+
+    func testPartnerConnectedWithNilNameDisplaysNil() {
+        // The fallback "Partner" string is a view-layer concern (FeedViewModel applies it).
+        // SettingsViewModel surfaces the raw nil from the .connected associated value.
+        let (viewModel, _, _, _) = makeSUT(state: .connected(partnerName: nil))
+        XCTAssertTrue(viewModel.hasPartner)
+        XCTAssertNil(viewModel.partnerDisplayName)
     }
 
     // MARK: - Invite Partner Tests
@@ -164,28 +179,41 @@ final class SettingsViewModelTests: XCTestCase {
 
     // MARK: - Handle Share Dismiss Tests
 
-    func testHandleDismissWithShareCallsPersistAndRefresh() {
+    /// The ViewModel's `handleShareDismiss` is a thin passthrough that delegates all
+    /// classification and cleanup to the service's `finalizeShareOutcome`. These tests
+    /// verify the passthrough contract; state-transition correctness is verified at
+    /// the service level in its own test suite.
+    func testHandleDismissWithShareDispatchesFinalize() async {
         let (viewModel, mockService, _, _) = makeSUT()
         viewModel.isShowingShareSheet = true
 
         let testShare = CKShare(recordZoneID: CKRecordZone.ID(zoneName: "test", ownerName: CKCurrentUserDefaultName))
         viewModel.handleShareDismiss(testShare)
 
-        XCTAssertTrue(mockService.persistUpdatedShareCalled)
+        // The finalize call is dispatched on a Task — yield to let it run.
+        await Task.yield()
+        await Task.yield()
+
+        XCTAssertTrue(mockService.finalizeShareOutcomeCalled)
+        XCTAssertEqual(mockService.lastFinalizedShare?.recordID, testShare.recordID)
         XCTAssertFalse(viewModel.isShowingShareSheet)
     }
 
-    func testHandleDismissWithNilDoesNotCallPersist() {
+    func testHandleDismissWithNilDispatchesFinalize() async {
         let (viewModel, mockService, _, _) = makeSUT()
         viewModel.isShowingShareSheet = true
 
         viewModel.handleShareDismiss(nil)
 
-        XCTAssertFalse(mockService.persistUpdatedShareCalled)
+        await Task.yield()
+        await Task.yield()
+
+        XCTAssertTrue(mockService.finalizeShareOutcomeCalled)
+        XCTAssertNil(mockService.lastFinalizedShare)
         XCTAssertFalse(viewModel.isShowingShareSheet)
     }
 
-    func testHandleDismissWithNilClearsActiveShareAndContainer() async {
+    func testHandleDismissClearsActiveShareAndContainerSynchronously() async {
         let (viewModel, mockService, persistence) = makeSUTWithPersistence()
         seedCategories(in: persistence)
 
@@ -200,9 +228,9 @@ final class SettingsViewModelTests: XCTestCase {
         viewModel.handleShareDismiss(nil)
 
         XCTAssertNil(viewModel.activeShare,
-            "Stop Sharing / swipe dismiss should clear activeShare")
+            "Any dismiss path must clear activeShare synchronously")
         XCTAssertNil(viewModel.activeContainer,
-            "Stop Sharing / swipe dismiss should clear activeContainer")
+            "Any dismiss path must clear activeContainer synchronously")
         XCTAssertFalse(viewModel.isShowingShareSheet)
     }
 
@@ -362,7 +390,7 @@ final class SettingsViewModelTests: XCTestCase {
     // MARK: - Cancel Invitation Tests
 
     func testCancelInvitationCallsCancelShareOnService() async {
-        let (viewModel, mockService, _, _) = makeSUT(isShared: true, partnerName: nil)
+        let (viewModel, mockService, _, _) = makeSUT(state: .pending)
 
         await viewModel.cancelInvitation()
 
@@ -370,7 +398,7 @@ final class SettingsViewModelTests: XCTestCase {
     }
 
     func testCancelInvitationOnSuccessClearsActiveShare() async {
-        let (viewModel, mockService, _, _) = makeSUT(isShared: true, partnerName: nil)
+        let (viewModel, mockService, _, _) = makeSUT(state: .pending)
         let testShare = CKShare(recordZoneID: CKRecordZone.ID(zoneName: "test", ownerName: CKCurrentUserDefaultName))
         viewModel.activeShare = testShare
         viewModel.activeContainer = CKContainer.default()
@@ -379,11 +407,11 @@ final class SettingsViewModelTests: XCTestCase {
 
         XCTAssertNil(viewModel.activeShare)
         XCTAssertNil(viewModel.activeContainer)
-        XCTAssertFalse(mockService.isShared)
+        XCTAssertEqual(mockService.state, .solo)
     }
 
     func testCancelInvitationOnErrorSetsErrorMessage() async {
-        let (viewModel, mockService, _, _) = makeSUT(isShared: true, partnerName: nil)
+        let (viewModel, mockService, _, _) = makeSUT(state: .pending)
         mockService.cancelShareShouldThrow = true
 
         await viewModel.cancelInvitation()
@@ -392,7 +420,7 @@ final class SettingsViewModelTests: XCTestCase {
     }
 
     func testCancelInvitationResetsPendingState() async {
-        let (viewModel, _, _, _) = makeSUT(isShared: true, partnerName: nil)
+        let (viewModel, _, _, _) = makeSUT(state: .pending)
         XCTAssertTrue(viewModel.isPendingInvitation)
 
         await viewModel.cancelInvitation()
@@ -405,7 +433,7 @@ final class SettingsViewModelTests: XCTestCase {
     func testResendInvitationCallsCreateShareAndShowsSheet() async {
         let (viewModel, mockService, persistence) = makeSUTWithPersistence()
         seedCategories(in: persistence)
-        mockService.isShared = true
+        mockService.state = .pending
 
         let testShare = CKShare(recordZoneID: CKRecordZone.ID(zoneName: "test", ownerName: CKCurrentUserDefaultName))
         mockService.createShareResult = .success((testShare, CKContainer.default()))
@@ -420,28 +448,13 @@ final class SettingsViewModelTests: XCTestCase {
     func testResendInvitationOnErrorSetsErrorMessage() async {
         let (viewModel, mockService, persistence) = makeSUTWithPersistence()
         seedCategories(in: persistence)
-        mockService.isShared = true
+        mockService.state = .pending
         // No handler set on mock — will throw default error
 
         await viewModel.resendInvitation()
 
         XCTAssertNotNil(viewModel.errorMessage)
         XCTAssertFalse(viewModel.isShowingShareSheet)
-    }
-
-    // MARK: - Handle Share Dismiss Idempotency Tests
-
-    func testHandleDismissIsIdempotent() {
-        let (viewModel, mockService, _, _) = makeSUT()
-        viewModel.isShowingShareSheet = true
-
-        let testShare = CKShare(recordZoneID: CKRecordZone.ID(zoneName: "test", ownerName: CKCurrentUserDefaultName))
-        viewModel.handleShareDismiss(testShare)
-        // Second call (simulating SwiftUI onDismiss after delegate)
-        viewModel.handleShareDismiss(nil)
-
-        XCTAssertTrue(mockService.persistUpdatedShareCalled)
-        XCTAssertEqual(mockService.lastPersistedShare?.recordID, testShare.recordID)
     }
 
     // MARK: - Delete Category Tests
@@ -573,6 +586,138 @@ final class SettingsViewModelTests: XCTestCase {
 
         // Clean up
         UserDefaults.standard.removeObject(forKey: "categoryDisplayOrder")
+    }
+
+    // MARK: - Bug Regression Tests — Orphan CKShare on Cancelled Invite
+    //
+    // These tests lock in the fix for the bug where dismissing the share sheet
+    // without sending an invitation left the app stuck showing "Invitation Pending".
+    // The structural fix replaced `isShared: Bool` with `SharingState` and moved all
+    // classification into `CloudSharingService.finalizeShareOutcome`. These tests
+    // verify the ViewModel-level contract: `handleShareDismiss` always routes to
+    // `finalizeShareOutcome`, and the computed properties correctly derive from
+    // `state` without ever surfacing `.draft` as "Invitation Pending".
+
+    func test_BugRegression_draftStateDoesNotSurfaceAsInvitationPending() {
+        // The exact bug: a draft CKShare (created before the user invited anyone)
+        // was being classified as "Invitation Pending" via the old boolean logic
+        // `isShared && partnerName == nil`. The new computed property is a direct
+        // state match against `.pending` and must return false for `.draft`.
+        let (viewModel, _, _, _) = makeSUT(state: .draft)
+        XCTAssertFalse(viewModel.isPendingInvitation,
+            "REGRESSION: .draft must never surface as 'Invitation Pending'")
+        XCTAssertFalse(viewModel.hasPartner)
+        XCTAssertNil(viewModel.partnerDisplayName)
+    }
+
+    func test_InvitePartnerTransitionsServiceToDraft() async {
+        // Verifies the contract: a successful createShare() leaves the service in .draft.
+        // This is the starting condition for the orphan-cleanup path in finalizeShareOutcome.
+        let (viewModel, mockService, persistence) = makeSUTWithPersistence()
+        seedCategories(in: persistence)
+
+        let testShare = CKShare(recordZoneID: CKRecordZone.ID(zoneName: "test", ownerName: CKCurrentUserDefaultName))
+        mockService.createShareResult = .success((testShare, CKContainer.default()))
+
+        XCTAssertEqual(mockService.state, .solo)
+
+        await viewModel.invitePartner()
+
+        XCTAssertEqual(mockService.state, .draft,
+            "createShare success must transition state to .draft")
+    }
+
+    func test_HandleDismissWithNilAfterDraft_delegatesCleanupToService() async {
+        // When the user dismisses the sheet without sending an invite, the VM must
+        // route to finalizeShareOutcome(nil). The service is responsible for the
+        // actual orphan cleanup; here we simulate the service's reaction via the
+        // mock's finalizeShareOutcomeResultState hook.
+        let (viewModel, mockService, _, _) = makeSUT(state: .draft)
+        mockService.finalizeShareOutcomeResultState = .solo
+
+        viewModel.handleShareDismiss(nil)
+        await Task.yield()
+        await Task.yield()
+
+        XCTAssertTrue(mockService.finalizeShareOutcomeCalled,
+            "handleShareDismiss(nil) must dispatch finalizeShareOutcome")
+        XCTAssertNil(mockService.lastFinalizedShare,
+            "finalizeShareOutcome must receive nil for swipe-dismiss path")
+        XCTAssertEqual(mockService.state, .solo,
+            "Simulated service cleanup must leave state at .solo")
+        XCTAssertFalse(viewModel.isPendingInvitation,
+            "After orphan cleanup the VM must not show 'Invitation Pending'")
+    }
+
+    func test_HandleDismissWithShare_delegatesToServiceAndReflectsPending() async {
+        // Happy path: user invited someone. The delegate hands back a share; the VM
+        // routes to finalizeShareOutcome(share); the service classifies as .pending.
+        let (viewModel, mockService, _, _) = makeSUT(state: .draft)
+        mockService.finalizeShareOutcomeResultState = .pending
+
+        let testShare = CKShare(recordZoneID: CKRecordZone.ID(zoneName: "test", ownerName: CKCurrentUserDefaultName))
+        viewModel.handleShareDismiss(testShare)
+        await Task.yield()
+        await Task.yield()
+
+        XCTAssertTrue(mockService.finalizeShareOutcomeCalled)
+        XCTAssertEqual(mockService.lastFinalizedShare?.recordID, testShare.recordID)
+        XCTAssertEqual(mockService.state, .pending)
+        XCTAssertTrue(viewModel.isPendingInvitation,
+            ".pending state must surface as 'Invitation Pending'")
+    }
+
+    func test_HandleDismissWithShare_acceptedPartner_reflectsConnected() async {
+        // Delegate fires on a share whose partner has already accepted.
+        // The service classifies as .connected; the VM surfaces the partner name.
+        let (viewModel, mockService, _, _) = makeSUT(state: .draft)
+        mockService.finalizeShareOutcomeResultState = .connected(partnerName: "Alex")
+
+        let testShare = CKShare(recordZoneID: CKRecordZone.ID(zoneName: "test", ownerName: CKCurrentUserDefaultName))
+        viewModel.handleShareDismiss(testShare)
+        await Task.yield()
+        await Task.yield()
+
+        XCTAssertTrue(viewModel.hasPartner)
+        XCTAssertEqual(viewModel.partnerDisplayName, "Alex")
+        XCTAssertFalse(viewModel.isPendingInvitation)
+    }
+
+    func test_HandleDismissAfterStopSharing_reflectsSolo() async {
+        // "Stop Sharing" path: service was in .connected, user tapped Stop Sharing,
+        // UIKit deleted the share server-side, the delegate fires with nil share.
+        // The service's finalizeShareOutcome runs its refresh path and lands at .solo.
+        let (viewModel, mockService, _, _) = makeSUT(state: .connected(partnerName: "Alex"))
+        XCTAssertTrue(viewModel.hasPartner)  // precondition
+
+        mockService.finalizeShareOutcomeResultState = .solo
+
+        viewModel.handleShareDismiss(nil)
+        await Task.yield()
+        await Task.yield()
+
+        XCTAssertEqual(mockService.state, .solo)
+        XCTAssertFalse(viewModel.hasPartner)
+        XCTAssertFalse(viewModel.isPendingInvitation)
+        XCTAssertNil(viewModel.partnerDisplayName)
+    }
+
+    func test_HandleDismiss_clearsActiveShareBeforeFinalize() async {
+        // The VM must clear activeShare/activeContainer SYNCHRONOUSLY on dismiss,
+        // before the async finalize task runs. This prevents the share sheet from
+        // re-surfacing a dead reference if the sheet is re-presented immediately.
+        let (viewModel, _, _, _) = makeSUT(state: .draft)
+        let testShare = CKShare(recordZoneID: CKRecordZone.ID(zoneName: "test", ownerName: CKCurrentUserDefaultName))
+        viewModel.activeShare = testShare
+        viewModel.activeContainer = CKContainer.default()
+        viewModel.isShowingShareSheet = true
+
+        viewModel.handleShareDismiss(testShare)
+
+        // Synchronously — no Task.yield needed:
+        XCTAssertNil(viewModel.activeShare)
+        XCTAssertNil(viewModel.activeContainer)
+        XCTAssertFalse(viewModel.isShowingShareSheet)
     }
 
     // MARK: - Category Test Helpers

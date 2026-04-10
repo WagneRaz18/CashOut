@@ -218,9 +218,8 @@ final class AuthenticationViewModelTests: XCTestCase {
 
     func testSignOutResetsCloudSharingState() {
         let mockSharing = MockCloudSharingService()
-        mockSharing.isShared = true
+        mockSharing.state = .connected(partnerName: "Partner")
         mockSharing.isShareOwner = true
-        mockSharing.partnerName = "Partner"
         let viewModel = AuthenticationViewModel(
             authService: MockAuthenticationService(),
             cloudSharingService: mockSharing
@@ -229,9 +228,8 @@ final class AuthenticationViewModelTests: XCTestCase {
         viewModel.signOut()
 
         XCTAssertTrue(mockSharing.resetStateCalled, "Should reset cloud sharing state on sign-out")
-        XCTAssertFalse(mockSharing.isShared, "Sharing state should be cleared")
+        XCTAssertEqual(mockSharing.state, .solo, "Sharing state should return to .solo")
         XCTAssertFalse(mockSharing.isShareOwner, "Share owner state should be cleared")
-        XCTAssertNil(mockSharing.partnerName, "Partner name should be cleared")
     }
 
     func testSignOutSetsIsAuthenticatedFalse() async {

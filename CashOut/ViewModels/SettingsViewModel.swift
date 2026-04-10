@@ -14,9 +14,27 @@ final class SettingsViewModel {
     private var categoryShareTask: Task<Void, Never>?
 
     var isShowingShareSheet = false
-    var hasPartner: Bool { cloudSharingService.isShared && cloudSharingService.partnerName != nil }
-    var isPendingInvitation: Bool { cloudSharingService.isShared && cloudSharingService.partnerName == nil }
-    var partnerDisplayName: String? { cloudSharingService.partnerName }
+
+    /// True iff a partner has accepted the invitation. Derived from `SharingState.connected`.
+    var hasPartner: Bool {
+        if case .connected = cloudSharingService.state { return true }
+        return false
+    }
+
+    /// True iff the owner has dispatched an invite that is awaiting acceptance.
+    /// Explicitly false for `.draft` (sheet open, no invite sent yet) — that was the
+    /// source of the original stuck "Invitation Pending" bug.
+    var isPendingInvitation: Bool {
+        if case .pending = cloudSharingService.state { return true }
+        return false
+    }
+
+    /// Partner's display name, only meaningful in the connected state.
+    var partnerDisplayName: String? {
+        if case .connected(let name) = cloudSharingService.state { return name }
+        return nil
+    }
+
     var errorMessage: String?
     var categories: [CategoryData] = []
     private(set) var isSavingCategory = false
@@ -29,9 +47,6 @@ final class SettingsViewModel {
     private(set) var isInviting = false
     private(set) var isCancelling = false
     var isShowingCancelAlert = false
-
-    @ObservationIgnored
-    private var hasHandledCurrentDismiss = false
 
     @ObservationIgnored
     private let cloudSharingService: CloudSharingServiceProtocol
@@ -78,7 +93,6 @@ final class SettingsViewModel {
             logger.info("invitePartner: share created successfully")
             activeShare = share
             activeContainer = container
-            hasHandledCurrentDismiss = false
             isShowingShareSheet = true
         } catch {
             guard !Task.isCancelled else { return }
@@ -167,29 +181,34 @@ final class SettingsViewModel {
     func refreshSharingStatus() async {
         logger.debug("refreshSharingStatus: checking")
         await cloudSharingService.checkSharingStatus()
-        logger.debug("refreshSharingStatus: done — isShared=\(self.cloudSharingService.isShared)")
+        logger.debug("refreshSharingStatus: done — state=\(String(describing: self.cloudSharingService.state))")
     }
 
+    /// Called by the CloudSharingSheet Coordinator on every dismissal path
+    /// (didSaveShare, didStopSharing, failedToSaveShareWithError, and interactive
+    /// swipe-dismiss via `presentationControllerDidDismiss`). The Coordinator's own
+    /// `fireDismissOnce` guard ensures this runs at most once per sheet presentation;
+    /// the ViewModel does not need its own idempotency flag.
+    ///
+    /// Classification and cleanup of the share lifecycle are entirely delegated to
+    /// `CloudSharingService.finalizeShareOutcome`. The ViewModel stays agnostic of
+    /// CloudKit mechanics.
     func handleShareDismiss(_ share: CKShare?) {
-        guard !hasHandledCurrentDismiss else {
-            logger.debug("handleShareDismiss: already handled — skipped")
-            return
-        }
-        hasHandledCurrentDismiss = true
         logger.info("handleShareDismiss: share=\(share != nil ? "present" : "nil")")
-        if let share {
-            cloudSharingService.persistUpdatedShare(share)
-        } else {
-            // nil share means "Stop Sharing" fired (UICloudSharingController auto-deletes
-            // the CKShare remotely before the delegate callback) or swipe-dismiss with no action.
-            // In either case the previously-active share is no longer valid — clear it so the
-            // next sheet presentation doesn't re-surface a dead reference.
-            activeShare = nil
-            activeContainer = nil
-        }
         isShowingShareSheet = false
+        activeShare = nil
+        activeContainer = nil
         refreshTask?.cancel()
-        refreshTask = Task { await refreshSharingStatus() }
+        // Capture the service directly, NOT through `self`. `finalizeShareOutcome`
+        // classifies a CloudKit share that was already persisted — skipping it leaves
+        // `SharingState` permanently incorrect (the original orphan-share bug vector).
+        // A `[weak self]` capture would silently drop the call if the view dismisses
+        // before the Task runs. The service is a @MainActor singleton and outlives
+        // any individual ViewModel, so capturing it strongly is safe and correct.
+        let service = cloudSharingService
+        refreshTask = Task {
+            await service.finalizeShareOutcome(share)
+        }
     }
 
     func cancelInvitation() async {

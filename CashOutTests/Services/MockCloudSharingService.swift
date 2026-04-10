@@ -8,9 +8,8 @@ final class MockCloudSharingService: CloudSharingServiceProtocol {
 
     // MARK: - Configurable State
 
-    var isShared = false
+    var state: SharingState = .solo
     var isShareOwner = false
-    var partnerName: String? = nil
 
     // MARK: - Call Tracking
 
@@ -21,7 +20,9 @@ final class MockCloudSharingService: CloudSharingServiceProtocol {
     var shareObjectsToHouseholdCalled = false
     var resetStateCalled = false
     var cancelShareCalled = false
+    var finalizeShareOutcomeCalled = false
     var lastPersistedShare: CKShare?
+    var lastFinalizedShare: CKShare?
 
     var cancelShareShouldThrow = false
 
@@ -32,11 +33,17 @@ final class MockCloudSharingService: CloudSharingServiceProtocol {
                 userInfo: [NSLocalizedDescriptionKey: "No handler set"])
     )
 
+    /// Optional state the mock transitions to when `finalizeShareOutcome` is called.
+    /// Tests set this to verify VM behavior when the service reports an outcome.
+    var finalizeShareOutcomeResultState: SharingState?
+
     // MARK: - Protocol Methods
 
     func createShare(for objects: [NSManagedObject]) async throws -> (CKShare, CKContainer) {
         createShareCalled = true
-        return try createShareResult.get()
+        let result = try createShareResult.get()
+        state = .draft
+        return result
     }
 
     func checkSharingStatus() async {
@@ -58,9 +65,8 @@ final class MockCloudSharingService: CloudSharingServiceProtocol {
 
     func resetState() {
         resetStateCalled = true
-        isShared = false
+        state = .solo
         isShareOwner = false
-        partnerName = nil
     }
 
     func cancelShare() async throws {
@@ -69,8 +75,15 @@ final class MockCloudSharingService: CloudSharingServiceProtocol {
             throw NSError(domain: "MockCloudSharingService", code: 0,
                           userInfo: [NSLocalizedDescriptionKey: "Cancel failed"])
         }
-        isShared = false
+        state = .solo
         isShareOwner = false
-        partnerName = nil
+    }
+
+    func finalizeShareOutcome(_ updatedShare: CKShare?) async {
+        finalizeShareOutcomeCalled = true
+        lastFinalizedShare = updatedShare
+        if let resultState = finalizeShareOutcomeResultState {
+            state = resultState
+        }
     }
 }

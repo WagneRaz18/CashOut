@@ -191,11 +191,11 @@ private struct SettingsContent: View {
                 Text(error)
             }
         }
-        .sheet(isPresented: Bindable(viewModel).isShowingShareSheet, onDismiss: {
-            // Catches interactive dismiss (swipe-down) when no delegate method fires.
-            // Safe to call unconditionally — handleShareDismiss is idempotent per presentation.
-            viewModel.handleShareDismiss(nil)
-        }) {
+        .sheet(isPresented: Bindable(viewModel).isShowingShareSheet) {
+            // The CloudSharingSheet Coordinator owns every dismissal path via
+            // UICloudSharingControllerDelegate + UIAdaptivePresentationControllerDelegate.
+            // SwiftUI's `.onDismiss:` would race the Coordinator callbacks, so we omit it
+            // here — the Coordinator's `fireDismissOnce` is the single source of truth.
             if let share = viewModel.activeShare,
                let container = viewModel.activeContainer {
                 CloudSharingSheet(share: share, container: container) { updatedShare in
