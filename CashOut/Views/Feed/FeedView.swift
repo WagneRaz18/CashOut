@@ -11,80 +11,75 @@ struct FeedView: View {
 
     var body: some View {
         List {
-            if viewModel.isEmpty {
-                Text("No entries yet")
-                    .font(.body)
-                    .foregroundStyle(SemanticColor.onSurfaceVariant)
-                    .frame(maxWidth: .infinity)
-                    .containerRelativeFrame(.vertical) { height, _ in height }
-                    .listRowBackground(Color.clear)
-                    .listRowSeparator(.hidden)
-            } else {
-                ForEach(viewModel.groupedExpenses) { section in
-                    Section {
-                        ForEach(section.expenses) { expense in
-                            let isFirst = expense.id == section.expenses.first?.id
-                            let isLast = expense.id == section.expenses.last?.id
-                            let radius: CGFloat = 16
-                            let shape = UnevenRoundedRectangle(
-                                topLeadingRadius: isFirst ? radius : 0,
-                                bottomLeadingRadius: isLast ? radius : 0,
-                                bottomTrailingRadius: isLast ? radius : 0,
-                                topTrailingRadius: isFirst ? radius : 0,
-                                style: .continuous
-                            )
+            ForEach(viewModel.groupedExpenses) { section in
+                Section {
+                    ForEach(section.expenses) { expense in
+                        let isFirst = expense.id == section.expenses.first?.id
+                        let isLast = expense.id == section.expenses.last?.id
+                        let radius: CGFloat = 16
+                        let shape = UnevenRoundedRectangle(
+                            topLeadingRadius: isFirst ? radius : 0,
+                            bottomLeadingRadius: isLast ? radius : 0,
+                            bottomTrailingRadius: isLast ? radius : 0,
+                            topTrailingRadius: isFirst ? radius : 0,
+                            style: .continuous
+                        )
 
-                            Button {
-                                expenseToEdit = expense
+                        Button {
+                            expenseToEdit = expense
+                        } label: {
+                            FeedRowView(
+                                expense: expense,
+                                category: viewModel.categoryFor(expense),
+                                isCurrentUser: viewModel.isCurrentUser(expense),
+                                partnerInitials: viewModel.partnerInitials(for: expense)
+                            )
+                            .padding(.vertical, Spacing.sm)
+                            .frame(maxWidth: .infinity, alignment: .leading)
+                            .background(Surface.containerLow)
+                            .clipShape(shape)
+                        }
+                        .buttonStyle(.plain)
+                        .accessibilityHint("Double tap to edit")
+                        .listRowBackground(Color.clear)
+                        .listRowSeparator(.hidden)
+                        .listRowInsets(EdgeInsets(
+                            top: isFirst ? Spacing.xs : 0.5,
+                            leading: Spacing.md,
+                            bottom: isLast ? Spacing.xs : 0.5,
+                            trailing: Spacing.md
+                        ))
+                        .swipeActions(edge: .trailing, allowsFullSwipe: false) {
+                            Button(role: .destructive) {
+                                logger.info("Delete confirmed for expense id=\(expense.id, privacy: .private)")
+                                deleteTask = Task { await viewModel.deleteExpense(expense) }
                             } label: {
-                                FeedRowView(
-                                    expense: expense,
-                                    category: viewModel.categoryFor(expense),
-                                    isCurrentUser: viewModel.isCurrentUser(expense),
-                                    partnerInitials: viewModel.partnerInitials(for: expense)
-                                )
-                                .padding(.vertical, Spacing.sm)
-                                .frame(maxWidth: .infinity, alignment: .leading)
-                                .background(Surface.containerLow)
-                                .clipShape(shape)
-                            }
-                            .buttonStyle(.plain)
-                            .accessibilityHint("Double tap to edit")
-                            .listRowBackground(Color.clear)
-                            .listRowSeparator(.hidden)
-                            .listRowInsets(EdgeInsets(
-                                top: isFirst ? Spacing.xs : 0.5,
-                                leading: Spacing.md,
-                                bottom: isLast ? Spacing.xs : 0.5,
-                                trailing: Spacing.md
-                            ))
-                            .swipeActions(edge: .trailing, allowsFullSwipe: false) {
-                                Button(role: .destructive) {
-                                    logger.info("Delete confirmed for expense id=\(expense.id, privacy: .private)")
-                                    deleteTask = Task { await viewModel.deleteExpense(expense) }
-                                } label: {
-                                    Label("Delete", systemImage: "trash")
-                                }
+                                Label("Delete", systemImage: "trash")
                             }
                         }
-                    } header: {
-                        Text(section.title)
-                            .font(.caption)
-                            .fontWeight(.semibold)
-                            .tracking(1.2)
-                            .textCase(.uppercase)
-                            .foregroundStyle(SemanticColor.onSurfaceVariant.opacity(0.7))
-                            .listRowInsets(EdgeInsets(
-                                top: 0, leading: Spacing.md,
-                                bottom: 0, trailing: Spacing.md
-                            ))
                     }
+                } header: {
+                    Text(section.title)
+                        .font(.caption)
+                        .fontWeight(.semibold)
+                        .tracking(1.2)
+                        .textCase(.uppercase)
+                        .foregroundStyle(SemanticColor.onSurfaceVariant.opacity(0.7))
+                        .listRowInsets(EdgeInsets(
+                            top: 0, leading: Spacing.md,
+                            bottom: 0, trailing: Spacing.md
+                        ))
                 }
             }
         }
         .listStyle(.plain)
         .scrollContentBackground(.hidden)
         .background(Surface.base)
+        .overlay {
+            if viewModel.isEmpty {
+                ContentUnavailableView("No entries yet", systemImage: "tray")
+            }
+        }
         .safeAreaInset(edge: .top) {
             VStack(spacing: 0) {
                 if viewModel.syncStatus == .noICloudAccount {
