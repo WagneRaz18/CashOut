@@ -185,6 +185,27 @@ final class SettingsViewModelTests: XCTestCase {
         XCTAssertFalse(viewModel.isShowingShareSheet)
     }
 
+    func testHandleDismissWithNilClearsActiveShareAndContainer() async {
+        let (viewModel, mockService, persistence) = makeSUTWithPersistence()
+        seedCategories(in: persistence)
+
+        let testShare = CKShare(recordZoneID: CKRecordZone.ID(zoneName: "test", ownerName: CKCurrentUserDefaultName))
+        mockService.createShareResult = .success((testShare, CKContainer.default()))
+        await viewModel.invitePartner()
+
+        // Precondition: invitePartner must have populated active state
+        XCTAssertNotNil(viewModel.activeShare, "test setup failed — invitePartner did not set activeShare")
+        XCTAssertNotNil(viewModel.activeContainer, "test setup failed — invitePartner did not set activeContainer")
+
+        viewModel.handleShareDismiss(nil)
+
+        XCTAssertNil(viewModel.activeShare,
+            "Stop Sharing / swipe dismiss should clear activeShare")
+        XCTAssertNil(viewModel.activeContainer,
+            "Stop Sharing / swipe dismiss should clear activeContainer")
+        XCTAssertFalse(viewModel.isShowingShareSheet)
+    }
+
     // MARK: - Category Loading Tests
 
     func testLoadCategoriesPopulatesCategoriesArray() async {

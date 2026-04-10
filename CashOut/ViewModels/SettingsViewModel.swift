@@ -179,6 +179,13 @@ final class SettingsViewModel {
         logger.info("handleShareDismiss: share=\(share != nil ? "present" : "nil")")
         if let share {
             cloudSharingService.persistUpdatedShare(share)
+        } else {
+            // nil share means "Stop Sharing" fired (UICloudSharingController auto-deletes
+            // the CKShare remotely before the delegate callback) or swipe-dismiss with no action.
+            // In either case the previously-active share is no longer valid — clear it so the
+            // next sheet presentation doesn't re-surface a dead reference.
+            activeShare = nil
+            activeContainer = nil
         }
         isShowingShareSheet = false
         refreshTask?.cancel()
@@ -209,31 +216,8 @@ final class SettingsViewModel {
     }
 
     func resendInvitation() async {
-        guard !isInviting else {
-            logger.debug("resendInvitation: already inviting — skipped")
-            return
-        }
         logger.info("resendInvitation: re-presenting share sheet with existing share")
-        isInviting = true
-        defer { isInviting = false }
-        errorMessage = nil
-
-        do {
-            let categories = try fetchCategoriesForSharing()
-            let (share, container) = try await cloudSharingService.createShare(for: categories)
-            guard !Task.isCancelled else { return }
-            logger.info("resendInvitation: share ready — presenting sheet")
-            activeShare = share
-            activeContainer = container
-            hasHandledCurrentDismiss = false
-            isShowingShareSheet = true
-        } catch {
-            guard !Task.isCancelled else { return }
-            logger.error("resendInvitation: FAILED — \(error.localizedDescription)")
-            errorMessage = error.localizedDescription
-            activeShare = nil
-            activeContainer = nil
-        }
+        await invitePartner()
     }
 
     // MARK: - Category Reorder & Delete

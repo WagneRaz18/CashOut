@@ -11,7 +11,8 @@ struct CloudSharingSheet: UIViewControllerRepresentable {
 
     func makeUIViewController(context: Context) -> UICloudSharingController {
         let controller = UICloudSharingController(share: share, container: container)
-        controller.availablePermissions = [.allowReadWrite]
+        controller.availablePermissions = [.allowPrivate, .allowReadWrite]
+        controller.modalPresentationStyle = .formSheet
         controller.delegate = context.coordinator
         return controller
     }

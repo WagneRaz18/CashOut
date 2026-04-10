@@ -90,30 +90,31 @@ final class CloudSharingService: CloudSharingServiceProtocol {
         // Re-validate cached share before reuse (may have been revoked)
         if let existingShare = currentShare {
             logger.debug("createShare: validating cached share")
-            let validationStore = isShareOwner
-                ? persistenceController.privatePersistentStore
-                : persistenceController.sharedPersistentStore
-            if let store = validationStore {
-                do {
-                    let freshShares = try persistenceController.container.fetchShares(in: store)
-                    if freshShares.contains(where: { $0.recordID == existingShare.recordID }) {
-                        // Skip stale share that was recently canceled from CloudKit
-                        if isRecentlyCanceled(recordName: existingShare.recordID.recordName) {
-                            logger.info("createShare: cached share was recently canceled — creating new")
-                            currentShare = nil
-                        } else {
+
+            // Sentinel check FIRST — must block regardless of network state
+            if isRecentlyCanceled(recordName: existingShare.recordID.recordName) {
+                logger.info("createShare: cached share was recently canceled — creating new")
+                currentShare = nil
+            } else {
+                // Owner-created shares always live in the private store.
+                // Participants never call createShare() — this is always the owner path.
+                let validationStore = persistenceController.privatePersistentStore
+                if let store = validationStore {
+                    do {
+                        let freshShares = try persistenceController.container.fetchShares(in: store)
+                        if freshShares.contains(where: { $0.recordID == existingShare.recordID }) {
                             logger.info("createShare: reusing existing valid share")
                             return (existingShare, CKContainer(identifier: Self.containerIdentifier))
+                        } else {
+                            // Share not found in store — revoked or deleted, create new
+                            logger.info("createShare: cached share no longer valid — creating new")
+                            currentShare = nil
                         }
-                    } else {
-                        // Share not found in store — revoked or deleted, create new
-                        logger.info("createShare: cached share no longer valid — creating new")
-                        currentShare = nil
+                    } catch {
+                        // Transient error (network, etc.) — keep cached share to avoid duplicate creation
+                        logger.error("createShare: fetchShares validation failed — \(error.localizedDescription), reusing cached")
+                        return (existingShare, CKContainer(identifier: Self.containerIdentifier))
                     }
-                } catch {
-                    // Transient error (network, etc.) — keep cached share to avoid duplicate creation
-                    logger.error("createShare: fetchShares validation failed — \(error.localizedDescription), reusing cached")
-                    return (existingShare, CKContainer(identifier: Self.containerIdentifier))
                 }
             }
         }
