@@ -158,7 +158,9 @@ struct EntryView: View {
             logger.debug("EntryView.onDisappear — cancelling tasks")
             saveTask?.cancel()
             retryTask?.cancel()
-            viewModel.cancelPendingShare()
+            // Share tasks are owned by ExpenseRepository and must NOT be cancelled here:
+            // a successful save dismisses EntryView, which would race-cancel the in-flight
+            // CloudKit share and silently drop the expense from the partner's shared zone.
         }
     }
 }

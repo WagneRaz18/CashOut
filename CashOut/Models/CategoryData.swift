@@ -1,6 +1,6 @@
 import Foundation
 
-struct CategoryData: Sendable {
+struct CategoryData: Sendable, Hashable {
     let id: UUID
     let name: String
     let iconName: String

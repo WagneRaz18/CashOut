@@ -20,6 +20,11 @@ final class ExpenseRepository: ExpenseRepositoryProtocol {
     private var feedFRC: NSFetchedResultsController<Expense>?
     private var frcDelegate: FRCDelegate?
 
+    /// Active fire-and-forget share tasks, keyed by expense ID. Owned by the singleton so
+    /// they survive view dismissal — a successful save must never lose its household share
+    /// just because the user navigated away before CloudKit finished.
+    private var activeShareTasks: [UUID: Task<Void, Never>] = [:]
+
     init(
         persistence: PersistenceController = .shared,
         cloudSharingService: CloudSharingServiceProtocol? = CloudSharingService.shared
@@ -200,8 +205,47 @@ final class ExpenseRepository: ExpenseRepositoryProtocol {
 
     }
 
+    /// Delay before calling `container.share()` to let NSPersistentCloudKitContainer's
+    /// async export cycle (triggered by the preceding `context.save()`) register
+    /// metadata for the new record. Without this delay, `container.share()` races the
+    /// export and produces "Missing metadata for recordID" errors plus a 3s result-
+    /// accumulator timeout inside the container. 800ms is empirically sufficient for
+    /// the export to advance past the metadata-registration point on a warm connection.
+    private static let shareExportSettleDelay: UInt64 = 800_000_000 // 800ms
+
+    func enqueueShareForNewExpense(id: UUID) {
+        logger.debug("enqueueShareForNewExpense: id=\(id, privacy: .private)")
+        activeShareTasks[id]?.cancel()
+        // Strong capture: ExpenseRepository.shared is a singleton that outlives all
+        // enqueued tasks — `[self]` guarantees the activeShareTasks cleanup on line
+        // below runs unconditionally, whereas `[weak self]` would silently skip it
+        // on dealloc and leak the dict entry.
+        let task = Task { [self] in
+            // Yield first so the caller's @MainActor continuation (e.g. EntryView's
+            // saveTask awaiting `async let save`) can resume and dismiss before
+            // container.share() grabs the main actor for its ~2s synchronous prep.
+            await Task.yield()
+            await shareNewExpenseToHousehold(id: id)
+            activeShareTasks[id] = nil
+        }
+        activeShareTasks[id] = task
+    }
+
     func shareNewExpenseToHousehold(id: UUID) async {
         logger.info("shareNewExpenseToHousehold: starting — id=\(id, privacy: .private)")
+        // Participant path no-ops inside shareObjectsToHouseholdIfNeeded, so skip the
+        // 800ms sleep entirely for participants — they use the pre-save routing path.
+        guard cloudSharingService?.isShareOwner == true else {
+            logger.debug("shareNewExpenseToHousehold: not owner — skipping post-save share")
+            return
+        }
+        // Let context.save()'s async CloudKit export register metadata before we
+        // invoke container.share() — see shareExportSettleDelay doc comment.
+        do {
+            try await Task.sleep(nanoseconds: Self.shareExportSettleDelay)
+        } catch {
+            return
+        }
         let totalStart = CFAbsoluteTimeGetCurrent()
         let context = persistence.container.viewContext
         let refetchStart = CFAbsoluteTimeGetCurrent()

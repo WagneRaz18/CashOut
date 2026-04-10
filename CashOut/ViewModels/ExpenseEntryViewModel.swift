@@ -43,8 +43,11 @@ final class ExpenseEntryViewModel {
     @ObservationIgnored
     private let categoryOrderStore: CategoryOrderStore
 
+    /// Tracks whether the first-load auto-retry path has already run. Re-fetches on
+    /// subsequent tab appears still execute to pick up categories added or deleted
+    /// from Settings — the flag only suppresses the seeding-race retry, not the fetch.
     @ObservationIgnored
-    private var shareTask: Task<Void, Never>?
+    private var hasLoadedOnce: Bool = false
 
     // MARK: - Constants
 
@@ -93,19 +96,17 @@ final class ExpenseEntryViewModel {
     private static let autoRetryDelay: UInt64 = 500_000_000 // 500ms
 
     func loadCategories() async {
-        guard categories.isEmpty else {
-            logger.debug("loadCategories: already loaded — skipped")
-            return
-        }
-
         categoryLoadFailed = false
         logger.info("loadCategories: fetching categories")
         do {
             var fetched = try await categoryRepository.fetchCategories()
             guard !Task.isCancelled else { return }
 
-            // Auto-retry once if empty — seeding may still be completing
-            if fetched.isEmpty {
+            // Seeding-race auto-retry — only on the very first load when the fetch
+            // returns empty. Subsequent tab-appear fetches must NOT retry: an
+            // empty result then legitimately means the user deleted all custom
+            // categories and removed every default.
+            if fetched.isEmpty && !hasLoadedOnce {
                 logger.info("loadCategories: empty result — retrying after delay")
                 try await Task.sleep(nanoseconds: Self.autoRetryDelay)
                 guard !Task.isCancelled else { return }
@@ -113,17 +114,26 @@ final class ExpenseEntryViewModel {
                 guard !Task.isCancelled else { return }
             }
 
+            hasLoadedOnce = true
+            let previousSelection = selectedCategoryID
             categories = categoryOrderStore.applyUserOrder(to: fetched)
             logger.info("loadCategories: loaded \(fetched.count) categories")
 
             if fetched.isEmpty {
                 logger.warning("loadCategories: no categories after retry")
                 categoryLoadFailed = true
+                selectedCategoryID = nil
                 return
             }
 
-            selectedCategoryID = categories.first?.id
-            logger.debug("loadCategories: selected first category")
+            // Preserve selection across tab-switch re-fetches; fall back to first
+            // category if the previously-selected one was deleted elsewhere.
+            if let prev = previousSelection, categories.contains(where: { $0.id == prev }) {
+                selectedCategoryID = prev
+            } else {
+                selectedCategoryID = categories.first?.id
+                logger.debug("loadCategories: selected first category")
+            }
         } catch is CancellationError {
             return
         } catch {
@@ -147,6 +157,7 @@ final class ExpenseEntryViewModel {
         categories = []
         selectedCategoryID = nil
         categoryLoadFailed = false
+        hasLoadedOnce = false
         await loadCategories()
     }
 
@@ -201,24 +212,16 @@ final class ExpenseEntryViewModel {
             let saveElapsed = (CFAbsoluteTimeGetCurrent() - saveStart) * 1000
             logger.info("saveExpense: saved successfully — id=\(expense.id, privacy: .private) — total \(saveElapsed, format: .fixed(precision: 1))ms")
 
-            // Fire-and-forget sharing — doesn't block the save caller
-            let repo = expenseRepository
-            let expenseID = expense.id
-            logger.debug("saveExpense: enqueuing share task — id=\(expenseID, privacy: .private)")
-            shareTask = Task { await repo.shareNewExpenseToHousehold(id: expenseID) }
+            // Fire-and-forget sharing — owned by the repository singleton so the task
+            // survives EntryView dismissal. The repo yields before calling container.share()
+            // so the caller's @MainActor continuation (EntryView's saveTask) resumes first.
+            logger.debug("saveExpense: enqueuing share task — id=\(expense.id, privacy: .private)")
+            expenseRepository.enqueueShareForNewExpense(id: expense.id)
         } catch {
             guard !Task.isCancelled else { return }
             logger.error("saveExpense: failed — \(error.localizedDescription, privacy: .public)")
             saveError = "Could not save entry. Please try again."
         }
-    }
-
-    func cancelPendingShare() {
-        if shareTask != nil {
-            logger.debug("cancelPendingShare: cancelling in-flight share task")
-        }
-        shareTask?.cancel()
-        shareTask = nil
     }
 
     /// Resets the entry form for the next expense. Called by the View after the save animation completes.

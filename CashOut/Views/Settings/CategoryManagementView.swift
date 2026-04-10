@@ -8,7 +8,101 @@ struct CategoryManagementView: View {
     @State private var selectedIcon: String
     @State private var selectedColor: CategoryColor
     @State private var saveTask: Task<Void, Never>?
+    @FocusState private var isNameFocused: Bool
     @Environment(\.dismiss) private var dismiss
+
+    init(category: CategoryData?, viewModel: SettingsViewModel) {
+        self.category = category
+        self.viewModel = viewModel
+        _name = State(initialValue: category?.name ?? "")
+        _selectedIcon = State(initialValue: category?.iconName ?? "star.fill")
+        _selectedColor = State(initialValue: CategoryColor(from: category?.colorName ?? "") ?? .teal)
+    }
+
+    var body: some View {
+        Form {
+            CategoryNameSection(name: $name, isFocused: $isNameFocused)
+            CategoryIconSection(selectedIcon: $selectedIcon, selectedColor: selectedColor)
+            CategoryColorSection(selectedColor: $selectedColor)
+            saveSection
+        }
+        .navigationTitle(category == nil ? "New Category" : "Edit Category")
+        .navigationBarTitleDisplayMode(.inline)
+        .onAppear {
+            viewModel.categorySaveError = nil
+            // Pre-warm the keyboard responder chain for the new-category flow.
+            // First-ever keyboard activation in a nav context is slow on iOS 26;
+            // requesting focus on appear lets the OS load keyboard resources
+            // while the push animation plays instead of on the user's first tap.
+            if category == nil {
+                isNameFocused = true
+            }
+        }
+        .onDisappear { saveTask?.cancel() }
+    }
+
+    private var saveSection: some View {
+        Section {
+            Button("Save") {
+                saveTask?.cancel()
+                saveTask = Task {
+                    await viewModel.saveCategory(
+                        name: name,
+                        iconName: selectedIcon,
+                        colorName: selectedColor.rawValue,
+                        existingID: category?.id
+                    )
+                    guard !Task.isCancelled else { return }
+                    if viewModel.categorySaveError == nil {
+                        dismiss()
+                    }
+                }
+            }
+            .disabled(name.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty || viewModel.isSavingCategory)
+            .frame(maxWidth: .infinity)
+
+            if let error = viewModel.categorySaveError {
+                Text(error)
+                    .font(.caption)
+                    .foregroundStyle(.red)
+            }
+        }
+    }
+}
+
+// MARK: - Name Section (isolated from icon/color re-renders)
+
+private struct CategoryNameSection: View {
+    @Binding var name: String
+    var isFocused: FocusState<Bool>.Binding
+
+    var body: some View {
+        Section("Name") {
+            TextField("Category Name", text: $name)
+                .focused(isFocused)
+                .textContentType(.name)
+                .autocorrectionDisabled()
+                .submitLabel(.done)
+                .onChange(of: name) { _, newValue in
+                    if newValue.count > 30 {
+                        name = String(newValue.prefix(30))
+                    }
+                }
+            HStack {
+                Spacer()
+                Text("\(name.count)/30")
+                    .font(.caption)
+                    .foregroundStyle(.secondary)
+            }
+        }
+    }
+}
+
+// MARK: - Icon Section (isolated — only re-renders on selectedIcon/selectedColor)
+
+private struct CategoryIconSection: View {
+    @Binding var selectedIcon: String
+    let selectedColor: CategoryColor
 
     private static let availableIcons: [String] = [
         "star.fill", "heart.fill", "gift.fill", "cart.fill", "cup.and.saucer.fill",
@@ -34,47 +128,7 @@ struct CategoryManagementView: View {
 
     private static let iconColumns = Array(repeating: GridItem(.flexible(), spacing: Spacing.sm), count: 5)
 
-    init(category: CategoryData?, viewModel: SettingsViewModel) {
-        self.category = category
-        self.viewModel = viewModel
-        _name = State(initialValue: category?.name ?? "")
-        _selectedIcon = State(initialValue: category?.iconName ?? "star.fill")
-        _selectedColor = State(initialValue: CategoryColor(from: category?.colorName ?? "") ?? .teal)
-    }
-
     var body: some View {
-        Form {
-            nameSection
-            iconSection
-            colorSection
-            saveSection
-        }
-        .navigationTitle(category == nil ? "New Category" : "Edit Category")
-        .navigationBarTitleDisplayMode(.inline)
-        .onAppear { viewModel.categorySaveError = nil }
-        .onDisappear { saveTask?.cancel() }
-    }
-
-    // MARK: - Sections
-
-    private var nameSection: some View {
-        Section("Name") {
-            TextField("Category Name", text: $name)
-                .onChange(of: name) { _, newValue in
-                    if newValue.count > 30 {
-                        name = String(newValue.prefix(30))
-                    }
-                }
-            HStack {
-                Spacer()
-                Text("\(name.count)/30")
-                    .font(.caption)
-                    .foregroundStyle(.secondary)
-            }
-        }
-    }
-
-    private var iconSection: some View {
         Section("Icon") {
             LazyVGrid(columns: Self.iconColumns, spacing: Spacing.sm) {
                 ForEach(Self.availableIcons, id: \.self) { iconName in
@@ -103,8 +157,14 @@ struct CategoryManagementView: View {
             .padding(.vertical, Spacing.xs)
         }
     }
+}
 
-    private var colorSection: some View {
+// MARK: - Color Section (isolated — only re-renders on selectedColor)
+
+private struct CategoryColorSection: View {
+    @Binding var selectedColor: CategoryColor
+
+    var body: some View {
         Section("Color") {
             HStack(spacing: Spacing.md) {
                 ForEach(CategoryColor.customPalette, id: \.rawValue) { colorOption in
@@ -135,34 +195,6 @@ struct CategoryManagementView: View {
             }
             .padding(.vertical, Spacing.xs)
             .frame(maxWidth: .infinity)
-        }
-    }
-
-    private var saveSection: some View {
-        Section {
-            Button("Save") {
-                saveTask?.cancel()
-                saveTask = Task {
-                    await viewModel.saveCategory(
-                        name: name,
-                        iconName: selectedIcon,
-                        colorName: selectedColor.rawValue,
-                        existingID: category?.id
-                    )
-                    guard !Task.isCancelled else { return }
-                    if viewModel.categorySaveError == nil {
-                        dismiss()
-                    }
-                }
-            }
-            .disabled(name.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty || viewModel.isSavingCategory)
-            .frame(maxWidth: .infinity)
-
-            if let error = viewModel.categorySaveError {
-                Text(error)
-                    .font(.caption)
-                    .foregroundStyle(.red)
-            }
         }
     }
 }

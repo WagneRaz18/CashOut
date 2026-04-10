@@ -10,6 +10,11 @@ final class CategoryRepository: CategoryRepositoryProtocol {
     private let persistence: PersistenceController
     private let cloudSharingService: CloudSharingServiceProtocol?
 
+    /// Active fire-and-forget share tasks, keyed by category ID. Owned by the singleton so
+    /// they survive view dismissal — a successful save must never lose its household share
+    /// just because the user popped Settings before CloudKit finished.
+    private var activeShareTasks: [UUID: Task<Void, Never>] = [:]
+
     init(
         persistence: PersistenceController = .shared,
         cloudSharingService: CloudSharingServiceProtocol? = CloudSharingService.shared
@@ -160,7 +165,45 @@ final class CategoryRepository: CategoryRepositoryProtocol {
         }
     }
 
+    /// Delay before calling `container.share()` to let NSPersistentCloudKitContainer's
+    /// async export cycle (triggered by the preceding `context.save()`) register
+    /// metadata for the new record. Without this delay, `container.share()` races the
+    /// export and produces "Missing metadata for recordID" errors plus a 3s result-
+    /// accumulator timeout inside the container. 800ms is empirically sufficient for
+    /// the export to advance past the metadata-registration point on a warm connection.
+    private static let shareExportSettleDelay: UInt64 = 800_000_000 // 800ms
+
+    func enqueueShareForNewCategory(id: UUID) {
+        logger.debug("enqueueShareForNewCategory: id=\(id, privacy: .private)")
+        activeShareTasks[id]?.cancel()
+        let task = Task { [self] in
+            // Yield first so the caller's @MainActor continuation (e.g. Settings
+            // sheet dismiss) can resume before container.share() grabs the actor.
+            await Task.yield()
+            await shareNewCategoryToHousehold(id: id)
+            activeShareTasks[id] = nil
+        }
+        activeShareTasks[id] = task
+    }
+
     func shareNewCategoryToHousehold(id: UUID) async {
+        logger.info("shareNewCategoryToHousehold: starting — id=\(id, privacy: .private)")
+        // Participant path no-ops inside shareObjectsToHouseholdIfNeeded, so skip the
+        // 800ms sleep entirely for participants — they use the pre-save routing path.
+        guard cloudSharingService?.isShareOwner == true else {
+            logger.debug("shareNewCategoryToHousehold: not owner — skipping post-save share")
+            return
+        }
+        // Let context.save()'s async CloudKit export register metadata before we
+        // invoke container.share() — see shareExportSettleDelay doc comment.
+        // Must catch CancellationError explicitly: `try?` would silently proceed on
+        // cancel and race the caller's teardown.
+        do {
+            try await Task.sleep(nanoseconds: Self.shareExportSettleDelay)
+        } catch {
+            return
+        }
+
         let context = persistence.container.viewContext
         let request: NSFetchRequest<Category> = Category.fetchRequest()
         request.predicate = NSPredicate(format: "id == %@", id as CVarArg)

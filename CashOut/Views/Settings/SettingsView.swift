@@ -24,8 +24,12 @@ struct SettingsView: View {
             if viewModel == nil {
                 viewModel = SettingsViewModel()
             }
-            await viewModel?.refreshSharingStatus()
-            await viewModel?.loadCategories()
+            guard let viewModel else { return }
+            // Local Core Data fetch must not wait for the CloudKit round-trip —
+            // run both concurrently so categories render immediately.
+            async let sharing: Void = viewModel.refreshSharingStatus()
+            async let categories: Void = viewModel.loadCategories()
+            _ = await (sharing, categories)
         }
     }
 }
@@ -36,6 +40,7 @@ private struct SettingsContent: View {
     @Environment(AuthenticationViewModel.self) private var authViewModel
     @Bindable var viewModel: SettingsViewModel
     @State private var isShowingAddCategory = false
+    @State private var categoryToEdit: CategoryData?
     @State private var isShowingSignOutAlert = false
     @State private var categoryToDelete: CategoryData?
     @State private var deleteTask: Task<Void, Never>?
@@ -62,12 +67,24 @@ private struct SettingsContent: View {
                                 }
                             }
                     } else {
-                        NavigationLink(destination: CategoryManagementView(
-                            category: category,
-                            viewModel: viewModel
-                        )) {
-                            CategoryRowView(category: category)
+                        // Button + navigationDestination(item:) — defers
+                        // CategoryManagementView allocation until the user taps
+                        // the row. NavigationLink(destination:) would eagerly
+                        // allocate every destination on every body re-evaluation.
+                        Button {
+                            categoryToEdit = category
+                        } label: {
+                            HStack {
+                                CategoryRowView(category: category)
+                                Spacer()
+                                Image(systemName: "chevron.right")
+                                    .font(.caption.weight(.semibold))
+                                    .foregroundStyle(.tertiary)
+                                    .accessibilityHidden(true)
+                            }
+                            .contentShape(Rectangle())
                         }
+                        .buttonStyle(.plain)
                         .accessibilityHint("Double tap to edit")
                         .swipeActions(edge: .trailing, allowsFullSwipe: false) {
                             Button(role: .destructive) {
@@ -121,6 +138,9 @@ private struct SettingsContent: View {
         .environment(\.editMode, $editMode)
         .navigationDestination(isPresented: $isShowingAddCategory) {
             CategoryManagementView(category: nil, viewModel: viewModel)
+        }
+        .navigationDestination(item: $categoryToEdit) { category in
+            CategoryManagementView(category: category, viewModel: viewModel)
         }
         .toolbar {
             ToolbarItem(placement: .topBarTrailing) {

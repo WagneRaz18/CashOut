@@ -10,8 +10,6 @@ private let logger = Logger(subsystem: "com.wagneraz.CashOut", category: "Settin
 final class SettingsViewModel {
     @ObservationIgnored
     private var refreshTask: Task<Void, Never>?
-    @ObservationIgnored
-    private var categoryShareTask: Task<Void, Never>?
 
     var isShowingShareSheet = false
 
@@ -164,11 +162,12 @@ final class SettingsViewModel {
             hapticService.trigger(.saveTap)
             await loadCategories()
 
-            // Share new custom categories after UI has updated
+            // Share new custom categories via the repository singleton — the task
+            // must outlive SettingsViewModel so a post-save Settings dismiss does
+            // not race-cancel the in-flight CloudKit share.
             if existingID == nil {
                 logger.debug("saveCategory: enqueuing share task for new category id=\(id, privacy: .private)")
-                let repo = categoryRepository
-                categoryShareTask = Task { await repo.shareNewCategoryToHousehold(id: id) }
+                categoryRepository.enqueueShareForNewCategory(id: id)
             }
         } catch {
             guard !Task.isCancelled else { return }

@@ -8,6 +8,10 @@ protocol ExpenseRepositoryProtocol {
     /// Share a newly-created expense to the household. Fire-and-forget from the caller.
     func shareNewExpenseToHousehold(id: UUID) async
 
+    /// Fire-and-forget wrapper owned by the repository. Unblocks the caller's main-actor
+    /// continuation before the CloudKit share call grabs the actor for its synchronous prep.
+    func enqueueShareForNewExpense(id: UUID)
+
     // MARK: - FRC Observation (Story 2-1)
 
     var onExpensesChanged: (@MainActor ([ExpenseData]) -> Void)? { get set }
@@ -25,4 +29,5 @@ extension ExpenseRepositoryProtocol {
     func startObservingExpenses() { }
     func stopObservingExpenses() { }
     func shareNewExpenseToHousehold(id: UUID) async { }
+    func enqueueShareForNewExpense(id: UUID) { }
 }
