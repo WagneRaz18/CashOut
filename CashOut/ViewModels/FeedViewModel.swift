@@ -174,7 +174,7 @@ final class FeedViewModel {
             hapticService.trigger(.deleteTap)
         } catch {
             guard !Task.isCancelled else { return }
-            logger.error("deleteExpense: failed — \(error.localizedDescription)")
+            logger.error("deleteExpense: failed — \(error.localizedDescription, privacy: .public)")
             errorMessage = "Could not delete expense. Please try again."
         }
     }
@@ -220,7 +220,7 @@ final class FeedViewModel {
                     logger.debug("reloadCategories: cancelled during error handling")
                     return
                 }
-                logger.error("reloadCategories: failed — \(error.localizedDescription)")
+                logger.error("reloadCategories: failed — \(error.localizedDescription, privacy: .public)")
                 errorMessage = error.localizedDescription
             }
         }
