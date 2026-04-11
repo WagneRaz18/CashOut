@@ -8,9 +8,6 @@ private let logger = Logger(subsystem: "com.wagneraz.CashOut", category: "Settin
 @MainActor
 @Observable
 final class SettingsViewModel {
-    @ObservationIgnored
-    private var refreshTask: Task<Void, Never>?
-
     var isShowingShareSheet = false
 
     /// True iff a partner has accepted the invitation. Derived from `SharingState.connected`.
@@ -204,7 +201,6 @@ final class SettingsViewModel {
         isShowingShareSheet = false
         activeShare = nil
         activeContainer = nil
-        refreshTask?.cancel()
 
         if let error {
             logger.error("handleShareDismiss: UIKit reported save failure — \(error.localizedDescription)")
@@ -214,19 +210,27 @@ final class SettingsViewModel {
             errorMessage = error.localizedDescription
         }
 
-        // Capture the service directly, NOT through `self`. `finalizeShareOutcome`
-        // classifies a CloudKit share that was already persisted — skipping it leaves
-        // `SharingState` permanently incorrect (the original orphan-share bug vector).
-        // A `[weak self]` capture would silently drop the call if the view dismisses
-        // before the Task runs. The service is a @MainActor singleton and outlives
-        // any individual ViewModel, so capturing it strongly is safe and correct.
+        // `finalizeShareOutcome` is an irreversible write operation — on the
+        // `.draft` path it issues a CKModifyRecordsOperation delete. It must run
+        // to completion even if the user leaves Settings immediately after dismiss,
+        // so we fire-and-forget WITHOUT storing a Task reference on the ViewModel
+        // (per .claude/learnings/architecture.md: write/share tasks must not be
+        // owned by view-scoped ViewModels where they could be cancel-before-
+        // replaced or cleaned up in onDisappear).
         //
-        // On the error path we still dispatch with `nil` — UIKit has NOT committed the
-        // invite, so the local draft share is an orphan that must be cleaned up via the
-        // existing `.draft` + nil branch in `finalizeShareOutcome`.
+        // Strong-capture the service, NOT `self`: the service is a @MainActor
+        // singleton that outlives any individual ViewModel, so the captured Task
+        // stays alive via Swift's strong retain on the closure until it completes,
+        // even if both the View and ViewModel are deallocated. A `[weak self]`
+        // capture would silently drop `finalizeShareOutcome` — the original
+        // orphan-share bug vector.
+        //
+        // On the error path we still dispatch with `nil` — UIKit has NOT committed
+        // the invite, so the local draft share is an orphan that must be cleaned
+        // up via the existing `.draft` + nil branch in `finalizeShareOutcome`.
         let service = cloudSharingService
         let shareForFinalize: CKShare? = (error == nil) ? share : nil
-        refreshTask = Task {
+        Task {
             await service.finalizeShareOutcome(shareForFinalize)
         }
     }

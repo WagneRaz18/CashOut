@@ -25,11 +25,12 @@ struct SettingsView: View {
                 viewModel = SettingsViewModel()
             }
             guard let viewModel else { return }
-            // Local Core Data fetch must not wait for the CloudKit round-trip —
-            // run both concurrently so categories render immediately.
-            async let sharing: Void = viewModel.refreshSharingStatus()
-            async let categories: Void = viewModel.loadCategories()
-            _ = await (sharing, categories)
+            // Both methods are @MainActor-isolated — they serialize on the
+            // main actor regardless of `async let`, so sequential `await` is
+            // equivalent at runtime and avoids the Swift 6 "non-Sendable type
+            // cannot exit main actor" error (see .claude/learnings/ios-swiftui.md).
+            await viewModel.refreshSharingStatus()
+            await viewModel.loadCategories()
         }
     }
 }
