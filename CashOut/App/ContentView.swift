@@ -67,6 +67,19 @@ struct ContentView: View {
                         try await Task.sleep(nanoseconds: 500_000_000)
                     } catch is CancellationError { return } catch { return }
                     guard !Task.isCancelled else { return }
+                    // Solo-mode short-circuit: NSPersistentStoreRemoteChange in solo
+                    // mode is always a local data-change event (FRC, save). Every
+                    // path that transitions out of .solo bypasses this guard:
+                    // (1) iCloud account change → accountDidChange listener below
+                    // (2) createShare() success → state set directly by the service
+                    // (3) accepting a share via universal link → AppDelegate calls
+                    //     checkSharingStatus() directly, not through this listener
+                    // (4) post-acceptance shared-store import → state is already
+                    //     != .solo from (3) before this listener observes the import
+                    guard CloudSharingService.shared.state != .solo else {
+                        logger.debug("Remote store change in solo mode — skipping checkSharingStatus")
+                        return
+                    }
                     logger.info("Remote store change (debounced) — re-checking sharing status")
                     await CloudSharingService.shared.checkSharingStatus()
                 }

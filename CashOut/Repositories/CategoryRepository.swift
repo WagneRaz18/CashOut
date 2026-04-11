@@ -80,9 +80,10 @@ final class CategoryRepository: CategoryRepositoryProtocol {
         category.isDefault = data.isDefault
         category.sortOrder = data.sortOrder
 
-        // Route new custom categories to shared zone for partner sync
+        // Route new custom categories to shared zone for partner sync.
+        // `prepareObjectForSharedSave` no-ops outside of participant+.connected,
+        // and it emits its own debug log when it actually performs the assignment.
         if isNewCustomCategory {
-            logger.debug("saveCategory: routing new custom category to shared zone")
             cloudSharingService?.prepareObjectForSharedSave(category)
         }
 
@@ -174,6 +175,13 @@ final class CategoryRepository: CategoryRepositoryProtocol {
     private static let shareExportSettleDelay: UInt64 = 800_000_000 // 800ms
 
     func enqueueShareForNewCategory(id: UUID) {
+        // Solo-mode fast path: skip Task creation + 800ms sleep + inner isShareOwner
+        // guard entirely. The NSPersistentStoreRemoteChange listener in ContentView
+        // handles state transitions; this guard only needs to catch the steady state.
+        guard let svc = cloudSharingService, svc.state != .solo else {
+            logger.debug("enqueueShareForNewCategory: solo mode — skipping")
+            return
+        }
         logger.debug("enqueueShareForNewCategory: id=\(id, privacy: .private)")
         activeShareTasks[id]?.cancel()
         let task = Task { [self] in

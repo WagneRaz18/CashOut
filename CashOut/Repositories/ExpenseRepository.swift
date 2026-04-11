@@ -214,6 +214,13 @@ final class ExpenseRepository: ExpenseRepositoryProtocol {
     private static let shareExportSettleDelay: UInt64 = 800_000_000 // 800ms
 
     func enqueueShareForNewExpense(id: UUID) {
+        // Solo-mode fast path: skip Task creation + 800ms sleep + inner isShareOwner
+        // guard entirely. The NSPersistentStoreRemoteChange listener in ContentView
+        // handles state transitions; this guard only needs to catch the steady state.
+        guard let svc = cloudSharingService, svc.state != .solo else {
+            logger.debug("enqueueShareForNewExpense: solo mode — skipping")
+            return
+        }
         logger.debug("enqueueShareForNewExpense: id=\(id, privacy: .private)")
         activeShareTasks[id]?.cancel()
         // Strong capture: ExpenseRepository.shared is a singleton that outlives all
