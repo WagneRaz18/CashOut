@@ -141,8 +141,15 @@ struct FeedView: View {
     }
 }
 
+// Preview isolates the data layer via PersistenceController.preview (in-memory).
+// Service-layer deps (cloudSharingService, syncMonitorService) still default to .shared
+// because FeedViewModel requires non-optional instances; full mock isolation would need
+// per-protocol test doubles in the main target.
 #Preview {
     NavigationStack {
-        FeedView(viewModel: FeedViewModel())
+        FeedView(viewModel: FeedViewModel(
+            repository: ExpenseRepository(persistence: .preview, cloudSharingService: nil),
+            categoryRepository: CategoryRepository(persistence: .preview, cloudSharingService: nil)
+        ))
     }
 }

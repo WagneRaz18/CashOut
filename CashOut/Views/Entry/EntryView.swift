@@ -170,11 +170,20 @@ struct EntryView: View {
     }
 }
 
+// Previews are isolated from the live SQLite/CloudKit stack via PersistenceController.preview
+// (in-memory). Data-layer repos are fresh instances against the in-memory store. Service-layer
+// defaults (auth, haptic, categoryOrderStore) use .shared since they do not touch Core Data.
 #Preview {
-    EntryView(viewModel: ExpenseEntryViewModel())
+    EntryView(viewModel: ExpenseEntryViewModel(
+        expenseRepository: ExpenseRepository(persistence: .preview, cloudSharingService: nil),
+        categoryRepository: CategoryRepository(persistence: .preview, cloudSharingService: nil)
+    ))
 }
 
 #Preview("Dynamic Type — AX3") {
-    EntryView(viewModel: ExpenseEntryViewModel())
-        .dynamicTypeSize(.accessibility3)
+    EntryView(viewModel: ExpenseEntryViewModel(
+        expenseRepository: ExpenseRepository(persistence: .preview, cloudSharingService: nil),
+        categoryRepository: CategoryRepository(persistence: .preview, cloudSharingService: nil)
+    ))
+    .dynamicTypeSize(.accessibility3)
 }

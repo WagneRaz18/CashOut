@@ -119,8 +119,13 @@ struct InsightsView: View {
     }
 }
 
+// Preview isolates the data layer via PersistenceController.preview (in-memory).
+// Service-layer deps (syncMonitorService, authService) still default to .shared.
 #Preview {
     NavigationStack {
-        InsightsView(viewModel: InsightsViewModel())
+        InsightsView(viewModel: InsightsViewModel(
+            repository: ExpenseRepository(persistence: .preview, cloudSharingService: nil),
+            categoryRepository: CategoryRepository(persistence: .preview, cloudSharingService: nil)
+        ))
     }
 }
