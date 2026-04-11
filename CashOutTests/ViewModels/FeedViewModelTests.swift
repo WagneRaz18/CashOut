@@ -334,6 +334,32 @@ final class FeedViewModelTests: XCTestCase {
         )
     }
 
+    // MARK: - refresh (Pull-to-Refresh) Tests
+
+    func testRefreshTriggersRefreshHapticAndChecksSharingStatus() async {
+        let hapticService = MockHapticService()
+        let cloudSharingService = MockCloudSharingService()
+        let viewModel = FeedViewModel(
+            repository: MockExpenseRepository(),
+            categoryRepository: MockCategoryRepository(),
+            authService: MockAuthenticationService(),
+            cloudSharingService: cloudSharingService,
+            syncMonitorService: MockSyncMonitorService(),
+            hapticService: hapticService
+        )
+
+        await viewModel.refresh()
+
+        XCTAssertTrue(
+            hapticService.triggeredEvents.contains(.refresh),
+            "refresh() should fire the .refresh haptic on entry"
+        )
+        XCTAssertTrue(
+            cloudSharingService.checkSharingStatusCalled,
+            "refresh() should call cloudSharingService.checkSharingStatus() after the minimum dwell"
+        )
+    }
+
     // MARK: - Sync Status Tests (Story 4-3)
 
     func testSyncStatusStartsHealthy() {

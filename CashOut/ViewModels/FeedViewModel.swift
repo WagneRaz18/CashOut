@@ -107,6 +107,28 @@ final class FeedViewModel {
         logger.info("startObserving: FRC observation started — \(self.expenses.count) initial expenses")
     }
 
+    // MARK: - Manual Refresh
+
+    /// Pull-to-refresh handler. The feed is always live against Core Data via FRC, so this is
+    /// primarily a UX acknowledgment (haptic + minimum spinner dwell) plus a sharing-status
+    /// nudge that prods CloudKit to reconcile any pending state. Live timestamps update
+    /// automatically on the next `TimelineView` tick — no explicit clock bump needed.
+    func refresh() async {
+        logger.info("refresh: manual pull-to-refresh triggered")
+        hapticService.trigger(.refresh)
+        do {
+            try await Task.sleep(nanoseconds: 400_000_000)
+        } catch is CancellationError {
+            logger.debug("refresh: cancelled during minimum dwell")
+            return
+        } catch {
+            logger.error("refresh: unexpected sleep error — \(error.localizedDescription, privacy: .public)")
+            return
+        }
+        await cloudSharingService.checkSharingStatus()
+        logger.info("refresh: completed")
+    }
+
     // MARK: - Category Lookup
 
     func categoryFor(_ expense: ExpenseData) -> CategoryData? {

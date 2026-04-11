@@ -75,6 +75,9 @@ struct FeedView: View {
         .listStyle(.plain)
         .scrollContentBackground(.hidden)
         .background(Surface.base)
+        .refreshable {
+            await viewModel.refresh()
+        }
         .overlay {
             if viewModel.isEmpty {
                 ContentUnavailableView("No entries yet", systemImage: "tray")

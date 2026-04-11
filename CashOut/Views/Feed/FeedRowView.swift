@@ -38,9 +38,12 @@ struct FeedRowView: View {
 
                 HStack(spacing: Spacing.xs) {
                     partnerCircle
-                    Text(expense.createdAt.relativeFormatted)
-                        .font(.caption)
-                        .foregroundStyle(SemanticColor.onSurfaceVariant)
+                    TimelineView(.periodic(from: .now, by: 15)) { context in
+                        Text(expense.createdAt.relativeFormatted(relativeTo: context.date))
+                            .font(.caption)
+                            .foregroundStyle(SemanticColor.onSurfaceVariant)
+                            .monospacedDigit()
+                    }
                 }
             }
 
@@ -61,6 +64,9 @@ struct FeedRowView: View {
     // MARK: - Accessibility
 
     private var accessibilityText: String {
+        // VoiceOver reads the label once when a row gains focus; using the live `Date()` shim here
+        // (not the TimelineView context) gives a fresh snapshot at that moment without triggering
+        // per-tick a11y announcements.
         var label = "\(partnerInitials) spent \(expense.amount.displayAmount) on \(category?.name ?? "unknown"), \(expense.createdAt.relativeFormatted)"
         if let note = expense.note, !note.isEmpty {
             label += ", note: \(note)"
