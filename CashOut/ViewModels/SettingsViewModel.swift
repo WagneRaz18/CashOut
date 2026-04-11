@@ -211,8 +211,11 @@ final class SettingsViewModel {
         }
 
         // `finalizeShareOutcome` is an irreversible write operation — on the
-        // `.draft` path it issues a CKModifyRecordsOperation delete. It must run
-        // to completion even if the user leaves Settings immediately after dismiss,
+        // `.draft` path it calls `cancelShare()` which runs a deep-copy of share-zone
+        // managed objects into the default private zone followed by
+        // `purgeObjectsAndRecordsInZone` on the share zone (Apple's prescribed
+        // cancel-then-reshare pattern). It must run to completion even if the user
+        // leaves Settings immediately after dismiss,
         // so we fire-and-forget WITHOUT storing a Task reference on the ViewModel
         // (per .claude/learnings/architecture.md: write/share tasks must not be
         // owned by view-scoped ViewModels where they could be cancel-before-

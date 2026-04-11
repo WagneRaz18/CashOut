@@ -173,16 +173,7 @@ final class CloudSharingService: CloudSharingServiceProtocol {
         currentShare = share
         isShareOwner = true
         share[CKShare.SystemFieldKey.title] = "CashOut Household"
-        // Transition to .draft. The share exists in CloudKit but no invite has been
-        // dispatched yet. `finalizeShareOutcome` will transition to `.pending` on
-        // successful invite, or back to `.solo` with orphan cleanup on cancel.
         state = .draft
-        // NSPersistentCloudKitContainer's exporter runs asynchronously after this
-        // point. If this call was preceded by an orphan-share cancellation in the same
-        // session, the exporter may emit a benign "Export failed ... Unknown Item
-        // (11/2003)" log as it tombstones its stale mirror entry. That log is expected
-        // recovery noise — see `.claude/learnings/cloudkit-sync.md` (2026-04-10 entry
-        // on benign 11/2003) for the full rationale.
         logger.info("createShare: new share created locally (state=.draft) — async export follows")
         return (share, CKContainer(identifier: Self.containerIdentifier))
     }
@@ -284,15 +275,12 @@ final class CloudSharingService: CloudSharingServiceProtocol {
         // DO NOT clear the canceled-share sentinel here. The solo-mode fallthrough is
         // NOT a server-authoritative confirmation that the share is gone — it only
         // means "at this instant, fetchActiveShare returned nil (possibly because the
-        // sentinel itself was suppressing a stale mirror entry)." Clearing the sentinel
-        // here races the NSPersistentCloudKitContainer mirror reconciliation window:
-        // after cancelShare's CKModifyRecordsOperation deletes the share server-side,
-        // the local Core Data mirror may still return the stale entry for seconds to
-        // minutes until its own recovery path reconciles. If we clear the sentinel
-        // prematurely, the next remote-change refresh re-detects the stale mirror
-        // entry, triggers another orphan cleanup, and emits redundant log noise plus
-        // a Core Data "Unknown Item" export error. The sentinel self-expires via its
-        // TTL; only `createShare` on new-share success and `transitionToSolo(
+        // sentinel itself was suppressing a stale mirror entry)." With the new
+        // purge-based cancelShare, `purgeObjectsAndRecordsInZone` cleans the local
+        // mirror atomically, so the primary source of mirror-race log noise is gone.
+        // The sentinel is retained as belt-and-suspenders for any residual edge case
+        // (e.g., force-quit between save and purge completion). Let the TTL expire it;
+        // only `createShare` on new-share success and `transitionToSolo(
         // clearSentinel: true)` on `.unknownItem`-confirmed paths should clear it.
         let elapsed = (CFAbsoluteTimeGetCurrent() - checkStart) * 1000
         logger.info("checkSharingStatus: no shares found — solo mode — \(elapsed, format: .fixed(precision: 1))ms")
@@ -381,8 +369,19 @@ final class CloudSharingService: CloudSharingServiceProtocol {
         }
     }
 
+    /// Cancels the current share via Apple's prescribed reshare-safe pattern:
+    /// deep-copy share-zone managed objects to the default private zone, save,
+    /// then `purgeObjectsAndRecordsInZone` on the share zone. The purge is the
+    /// only framework-sanctioned API that cleans both the CloudKit server state
+    /// AND the local Core Data mirror atomically — raw `CKModifyRecordsOperation`
+    /// leaves the mirror with stale CKShare associations that make future
+    /// `container.share(objects, to: nil)` calls fail with
+    /// `CKError.partialFailure (2/1011)` → `unknownItem (11/2003)` on the
+    /// cloudkit.zoneshare record. See Apple source:
+    /// https://developer.apple.com/documentation/CoreData/sharing-core-data-objects-between-icloud-users#Implement-a-custom-sharing-flow
+    /// https://developer.apple.com/documentation/CoreData/NSPersistentCloudKitContainer/shareManagedObjects:toShare:completion:
     func cancelShare() async throws {
-        logger.info("cancelShare: deleting current share")
+        logger.info("cancelShare: starting purge-based cancellation")
         guard let share = currentShare else {
             logger.warning("cancelShare: no current share to cancel")
             return
@@ -397,42 +396,39 @@ final class CloudSharingService: CloudSharingServiceProtocol {
             )
         }
 
-        let container = CKContainer(identifier: Self.containerIdentifier)
-        let operation = CKModifyRecordsOperation(recordsToSave: nil, recordIDsToDelete: [share.recordID])
-        operation.qualityOfService = .userInitiated
+        let shareZoneID = share.recordID.zoneID
 
-        try await withCheckedThrowingContinuation { (continuation: CheckedContinuation<Void, Error>) in
-            operation.modifyRecordsResultBlock = { result in
-                switch result {
-                case .success:
-                    continuation.resume()
-                case .failure(let error):
-                    // Treat .unknownItem as success — share already deleted server-side
-                    if let ckError = error as? CKError,
-                       ckError.code == .partialFailure,
-                       let partialErrors = ckError.partialErrorsByItemID,
-                       partialErrors.values.allSatisfy({ ($0 as? CKError)?.code == .unknownItem }) {
-                        continuation.resume()
-                    } else {
-                        continuation.resume(throwing: error)
-                    }
-                }
-            }
-            container.privateCloudDatabase.add(operation)
+        // Step 1: Deep-copy share-zone managed objects to the default private zone.
+        // Must happen BEFORE purge — purgeObjectsAndRecordsInZone deletes the
+        // managed objects along with the CloudKit records. If the save inside
+        // deepCopyObjectGraph throws, we abort before calling purge so the user's
+        // originals remain intact (no data-loss window).
+        let copyResult: (expenseCount: Int, categoryCount: Int)
+        do {
+            copyResult = try deepCopyObjectGraph(shareZoneID: shareZoneID)
+            logger.info("cancelShare: deep-copied \(copyResult.expenseCount) expenses + \(copyResult.categoryCount) categories to default zone")
+        } catch {
+            logger.fault("cancelShare: deep-copy FAILED — aborting before purge to preserve data — \(error.localizedDescription, privacy: .public)")
+            throw error
         }
 
-        logger.info("cancelShare: share deleted from CloudKit")
+        // Step 2: Purge the share zone. Deterministically deletes the zone on
+        // CloudKit, the share-zone managed objects, and the stale local mirror
+        // entry — all in one framework call. After this returns, a subsequent
+        // `container.share(copies, to: nil)` will succeed (the objects passed
+        // are the deep-copies, which carry no share association).
+        do {
+            try await purgeSharedZone(zoneID: shareZoneID)
+            logger.info("cancelShare: purged zone \(shareZoneID.zoneName, privacy: .public) — local mirror is clean")
+        } catch {
+            logger.fault("cancelShare: purge FAILED — copies exist in default zone, originals still in share zone — \(error.localizedDescription, privacy: .public)")
+            throw error
+        }
+
         setCanceledShareSentinel(recordName: share.recordID.recordName)
-        logger.debug("cancelShare: set sentinel for recordName=\(share.recordID.recordName)")
-        // Route through the centralized helper so every `.solo` transition resets
-        // state/isShareOwner/currentShare in lockstep. `clearSentinel: false` because
-        // we just set it above — clearing it would defeat the purpose of the TTL guard.
+        logger.debug("cancelShare: set sentinel for recordName=\(share.recordID.recordName, privacy: .public)")
         transitionToSolo(clearSentinel: false)
-        // Subsequent NSPersistentCloudKitContainer "Export failed ... Unknown Item
-        // (11/2003)" logs are the framework's own mirror reconciliation — benign,
-        // documented in `.claude/learnings/cloudkit-sync.md` under the 2026-04-10
-        // entry on out-of-band cancelShare. Not a bug, not user-visible.
-        logger.debug("cancelShare: transitioned to solo — subsequent 11/2003 export log is benign mirror reconciliation")
+        logger.info("cancelShare: transitioned to solo via purge-based cleanup")
     }
 
     // MARK: - Private
@@ -675,6 +671,104 @@ final class CloudSharingService: CloudSharingServiceProtocol {
         }
 
         return .pending
+    }
+
+    // MARK: - Purge-based Cancel Helpers
+
+    /// Deep-copies Expense and Category records that live in the given share zone
+    /// into the default private zone. New managed objects carry no `CKShare`
+    /// association, so a subsequent `container.share(copies, to: nil)` will not
+    /// be rejected for "objects already belong to an existing share" (the
+    /// framework evaluates the LOCAL mirror, not server state — see
+    /// https://developer.apple.com/documentation/CoreData/NSPersistentCloudKitContainer/shareManagedObjects:toShare:completion:).
+    ///
+    /// Filters by `container.recordID(for:)?.zoneID == shareZoneID` — objects
+    /// currently in the default zone (unsynced new records, backfill-pending
+    /// records) are left untouched because `purgeObjectsAndRecordsInZone` will
+    /// not touch them. Copying them would create duplicates.
+    ///
+    /// - Important: Atomicity contract. This method calls `context.save()` and
+    ///   throws if save fails. Callers MUST only invoke `purgeSharedZone` if
+    ///   this method returns successfully — otherwise the user's originals are
+    ///   the only surviving copy of the data.
+    private func deepCopyObjectGraph(shareZoneID: CKRecordZone.ID) throws -> (expenseCount: Int, categoryCount: Int) {
+        guard let privateStore = persistenceController.privatePersistentStore else {
+            throw NSError(
+                domain: "CloudSharingService",
+                code: 10,
+                userInfo: [NSLocalizedDescriptionKey: "Private store unavailable for deep copy"]
+            )
+        }
+        let context = persistenceController.container.viewContext
+        let container = persistenceController.container
+
+        let expenseRequest: NSFetchRequest<Expense> = Expense.fetchRequest()
+        expenseRequest.affectedStores = [privateStore]
+        let allExpenses = try context.fetch(expenseRequest)
+
+        let categoryRequest: NSFetchRequest<Category> = Category.fetchRequest()
+        categoryRequest.affectedStores = [privateStore]
+        let allCategories = try context.fetch(categoryRequest)
+
+        let expensesToCopy = allExpenses.filter { expense in
+            guard let recordID = container.recordID(for: expense.objectID) else { return false }
+            return recordID.zoneID == shareZoneID
+        }
+        let categoriesToCopy = allCategories.filter { category in
+            guard let recordID = container.recordID(for: category.objectID) else { return false }
+            return recordID.zoneID == shareZoneID
+        }
+
+        for src in expensesToCopy {
+            let copy = Expense(context: context)
+            copy.id = src.id
+            copy.amount = src.amount
+            copy.note = src.note
+            copy.categoryID = src.categoryID
+            copy.createdByUserID = src.createdByUserID
+            copy.createdAt = src.createdAt
+            copy.modifiedAt = src.modifiedAt
+        }
+        for src in categoriesToCopy {
+            let copy = Category(context: context)
+            copy.id = src.id
+            copy.name = src.name
+            copy.iconName = src.iconName
+            copy.colorName = src.colorName
+            copy.isDefault = src.isDefault
+            copy.sortOrder = src.sortOrder
+        }
+
+        try context.save()
+        return (expenseCount: expensesToCopy.count, categoryCount: categoriesToCopy.count)
+    }
+
+    /// Async wrapper for `NSPersistentCloudKitContainer.purgeObjectsAndRecordsInZone`.
+    /// The completion callback is the only synchronization point — there is NO
+    /// `NSPersistentCloudKitContainerEvent` emitted for purge. After this method
+    /// returns successfully, the zone is deleted on CloudKit, the share-zone
+    /// managed objects are deleted from Core Data, and the local mirror's
+    /// CKShare association is tombstoned — all atomically.
+    private func purgeSharedZone(zoneID: CKRecordZone.ID) async throws {
+        guard let privateStore = persistenceController.privatePersistentStore else {
+            throw NSError(
+                domain: "CloudSharingService",
+                code: 11,
+                userInfo: [NSLocalizedDescriptionKey: "Private store unavailable for zone purge"]
+            )
+        }
+        try await withCheckedThrowingContinuation { (continuation: CheckedContinuation<Void, Error>) in
+            persistenceController.container.purgeObjectsAndRecordsInZone(
+                with: zoneID,
+                in: privateStore
+            ) { _, error in
+                if let error {
+                    continuation.resume(throwing: error)
+                } else {
+                    continuation.resume()
+                }
+            }
+        }
     }
 
     // MARK: - Share Outcome Finalization
