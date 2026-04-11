@@ -18,12 +18,16 @@ private struct HapticViewBridge: UIViewRepresentable {
 
 struct ContentView: View {
     @State private var selectedTab = 0
-    // Owned here (not inside EntryView) so the ViewModel survives iOS 26 `Tab` API
-    // content-closure re-evaluation on `selectedTab` changes. Owning it inside
-    // EntryView as `@State` caused the ViewModel (and in-progress entry state) to
-    // be destroyed on every tab switch. ContentView's `@State` is stable because
-    // ContentView itself is not re-created by its own state changes.
+    // All three tab ViewModels are owned here so they survive iOS 26 `Tab` API
+    // content-closure re-evaluation on `selectedTab` changes. Owning them inside
+    // the tab content views as `@State` caused each ViewModel to be destroyed on
+    // every tab switch (ExpenseEntryViewModel lost in-progress entry state;
+    // FeedViewModel re-registered FRC observer; InsightsViewModel dropped cached
+    // period data). ContentView's `@State` is stable because ContentView itself
+    // is not re-created by its own state changes.
     @State private var entryViewModel = ExpenseEntryViewModel()
+    @State private var feedViewModel = FeedViewModel()
+    @State private var insightsViewModel = InsightsViewModel()
 
     var body: some View {
         TabView(selection: $selectedTab) {
@@ -34,12 +38,12 @@ struct ContentView: View {
             }
             Tab("Feed", systemImage: "list.bullet", value: 1) {
                 NavigationStack {
-                    FeedView()
+                    FeedView(viewModel: feedViewModel)
                 }
             }
             Tab("Insights", systemImage: "chart.pie", value: 2) {
                 NavigationStack {
-                    InsightsView()
+                    InsightsView(viewModel: insightsViewModel)
                 }
             }
         }

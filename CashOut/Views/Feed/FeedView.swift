@@ -4,7 +4,11 @@ import os.log
 private let logger = Logger(subsystem: "com.wagneraz.CashOut", category: "FeedView")
 
 struct FeedView: View {
-    @State private var viewModel = FeedViewModel()
+    // Owned by ContentView — iOS 26 value-based `Tab` API re-evaluates content
+    // closures on `selectedTab` change and tears down child `@State` storage,
+    // recreating the ViewModel on every tab switch. Lifting to ContentView
+    // preserves the ViewModel (and its FRC subscription) across tab switches.
+    @Bindable var viewModel: FeedViewModel
     @State private var expenseToEdit: ExpenseData?
     @State private var showSettings = false
     @State private var deleteTask: Task<Void, Never>?
@@ -139,6 +143,6 @@ struct FeedView: View {
 
 #Preview {
     NavigationStack {
-        FeedView()
+        FeedView(viewModel: FeedViewModel())
     }
 }

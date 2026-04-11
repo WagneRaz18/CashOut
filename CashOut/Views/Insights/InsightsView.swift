@@ -4,7 +4,11 @@ import os.log
 private let logger = Logger(subsystem: "com.wagneraz.CashOut", category: "InsightsView")
 
 struct InsightsView: View {
-    @State private var viewModel = InsightsViewModel()
+    // Owned by ContentView — iOS 26 value-based `Tab` API re-evaluates content
+    // closures on `selectedTab` change and tears down child `@State` storage,
+    // recreating the ViewModel on every tab switch. Lifting to ContentView
+    // preserves the ViewModel (and cached period data) across tab switches.
+    @Bindable var viewModel: InsightsViewModel
     @State private var showSettings = false
 
     var body: some View {
@@ -117,6 +121,6 @@ struct InsightsView: View {
 
 #Preview {
     NavigationStack {
-        InsightsView()
+        InsightsView(viewModel: InsightsViewModel())
     }
 }
