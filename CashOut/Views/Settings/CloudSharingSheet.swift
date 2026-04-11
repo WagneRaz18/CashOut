@@ -19,7 +19,10 @@ import os
 ///
 /// The `Coordinator` therefore conforms to BOTH delegate protocols and routes all four
 /// paths through a single `fireDismissOnce` entry point that the ViewModel observes as
-/// one unified callback: `(CKShare?) -> Void`.
+/// one unified callback: `(CKShare?, Error?) -> Void`. The shape is:
+/// - non-nil share, nil error → save succeeded (invite dispatched or permissions changed)
+/// - nil share, non-nil error → UIKit tried to save and failed (surface to user)
+/// - nil share, nil error → user swipe-dismissed or Stop Sharing
 ///
 /// **Critical wiring note:** `vc.presentationController` is nil inside
 /// `makeUIViewController` because UIKit creates the presentation controller lazily, only
@@ -29,7 +32,7 @@ import os
 struct CloudSharingSheet: UIViewControllerRepresentable {
     let share: CKShare
     let container: CKContainer
-    let onDismiss: @MainActor (CKShare?) -> Void
+    let onDismiss: @MainActor (CKShare?, Error?) -> Void
 
     func makeCoordinator() -> Coordinator {
         Coordinator(onDismiss: onDismiss)
@@ -55,10 +58,10 @@ struct CloudSharingSheet: UIViewControllerRepresentable {
         UICloudSharingControllerDelegate,
         UIAdaptivePresentationControllerDelegate {
 
-        private let onDismiss: @MainActor (CKShare?) -> Void
+        private let onDismiss: @MainActor (CKShare?, Error?) -> Void
         private var dismissHandled = false
 
-        init(onDismiss: @escaping @MainActor (CKShare?) -> Void) {
+        init(onDismiss: @escaping @MainActor (CKShare?, Error?) -> Void) {
             self.onDismiss = onDismiss
         }
 
@@ -69,20 +72,20 @@ struct CloudSharingSheet: UIViewControllerRepresentable {
             failedToSaveShareWithError error: Error
         ) {
             os_log(.error, "CloudSharingSheet: failedToSaveShare — %{public}@", error.localizedDescription)
-            fireDismissOnce(nil)
+            fireDismissOnce(nil, error: error)
         }
 
         func cloudSharingControllerDidSaveShare(_ csc: UICloudSharingController) {
             // Note: this can fire on permissions changes AND on invite dispatch — it is
             // NOT a reliable "invite sent" signal on its own. The service's
             // `finalizeShareOutcome` classifies the outcome from the share's participants.
-            fireDismissOnce(csc.share)
+            fireDismissOnce(csc.share, error: nil)
         }
 
         func cloudSharingControllerDidStopSharing(_ csc: UICloudSharingController) {
             // UIKit has already deleted the CKShare from CloudKit at this point.
             // The service's Stop Sharing path just refreshes state from stores.
-            fireDismissOnce(nil)
+            fireDismissOnce(nil, error: nil)
         }
 
         func itemTitle(for csc: UICloudSharingController) -> String? {
@@ -96,7 +99,7 @@ struct CloudSharingSheet: UIViewControllerRepresentable {
         /// the sheet), so there is no double-fire risk with the delegate methods above —
         /// they always fire first and set `dismissHandled = true` via `fireDismissOnce`.
         func presentationControllerDidDismiss(_ presentationController: UIPresentationController) {
-            fireDismissOnce(nil)
+            fireDismissOnce(nil, error: nil)
         }
 
         // MARK: - Idempotency
@@ -104,10 +107,10 @@ struct CloudSharingSheet: UIViewControllerRepresentable {
         /// Routes all dismissal paths through a single entry. Setting `dismissHandled`
         /// BEFORE invoking the callback prevents re-entrancy if the closure synchronously
         /// triggers a re-render that somehow fires another dismiss path.
-        private func fireDismissOnce(_ share: CKShare?) {
+        private func fireDismissOnce(_ share: CKShare?, error: Error?) {
             guard !dismissHandled else { return }
             dismissHandled = true
-            onDismiss(share)
+            onDismiss(share, error)
         }
     }
 }

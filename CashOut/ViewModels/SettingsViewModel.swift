@@ -189,24 +189,45 @@ final class SettingsViewModel {
     /// `fireDismissOnce` guard ensures this runs at most once per sheet presentation;
     /// the ViewModel does not need its own idempotency flag.
     ///
+    /// The `error` argument is populated only on the `failedToSaveShareWithError` path.
+    /// When present, we surface it via `errorMessage` so the user sees the failure —
+    /// otherwise UIKit would silently swallow the outcome and the partner could receive
+    /// a dead share URL. The error is purely user-facing feedback: we still route
+    /// through `finalizeShareOutcome(nil)` so the existing orphan-cleanup path runs
+    /// unchanged and removes the local draft from the Core Data mirror.
+    ///
     /// Classification and cleanup of the share lifecycle are entirely delegated to
     /// `CloudSharingService.finalizeShareOutcome`. The ViewModel stays agnostic of
     /// CloudKit mechanics.
-    func handleShareDismiss(_ share: CKShare?) {
-        logger.info("handleShareDismiss: share=\(share != nil ? "present" : "nil")")
+    func handleShareDismiss(_ share: CKShare?, error: Error? = nil) {
+        logger.info("handleShareDismiss: share=\(share != nil ? "present" : "nil"), error=\(error?.localizedDescription ?? "nil")")
         isShowingShareSheet = false
         activeShare = nil
         activeContainer = nil
         refreshTask?.cancel()
+
+        if let error {
+            logger.error("handleShareDismiss: UIKit reported save failure — \(error.localizedDescription)")
+            // Bare localizedDescription matches the error-surface pattern used by
+            // `invitePartner` and `cancelInvitation` above — consistency across the
+            // three error sites in this ViewModel.
+            errorMessage = error.localizedDescription
+        }
+
         // Capture the service directly, NOT through `self`. `finalizeShareOutcome`
         // classifies a CloudKit share that was already persisted — skipping it leaves
         // `SharingState` permanently incorrect (the original orphan-share bug vector).
         // A `[weak self]` capture would silently drop the call if the view dismisses
         // before the Task runs. The service is a @MainActor singleton and outlives
         // any individual ViewModel, so capturing it strongly is safe and correct.
+        //
+        // On the error path we still dispatch with `nil` — UIKit has NOT committed the
+        // invite, so the local draft share is an orphan that must be cleaned up via the
+        // existing `.draft` + nil branch in `finalizeShareOutcome`.
         let service = cloudSharingService
+        let shareForFinalize: CKShare? = (error == nil) ? share : nil
         refreshTask = Task {
-            await service.finalizeShareOutcome(share)
+            await service.finalizeShareOutcome(shareForFinalize)
         }
     }
 

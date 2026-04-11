@@ -720,6 +720,57 @@ final class SettingsViewModelTests: XCTestCase {
         XCTAssertFalse(viewModel.isShowingShareSheet)
     }
 
+    func test_HandleDismiss_withError_surfacesErrorMessageAndStillCleansUp() async {
+        // The error path fires when UIKit calls failedToSaveShareWithError. The VM must:
+        //   1. Set errorMessage so the user sees the failure (no more silent drop).
+        //   2. Still dispatch finalizeShareOutcome(nil) so the orphan-cleanup path runs.
+        //   3. Force the finalize argument to nil regardless of whatever share UIKit
+        //      handed us — the local draft is the orphan that needs removing.
+        let (viewModel, mockService, _, _) = makeSUT(state: .draft)
+        mockService.finalizeShareOutcomeResultState = .solo
+        viewModel.isShowingShareSheet = true
+
+        let ckError = CKError(.unknownItem)
+        viewModel.handleShareDismiss(nil, error: ckError)
+
+        // Synchronous UI state:
+        XCTAssertFalse(viewModel.isShowingShareSheet)
+        XCTAssertNil(viewModel.activeShare)
+        XCTAssertNil(viewModel.activeContainer)
+        XCTAssertNotNil(viewModel.errorMessage,
+            "UIKit save failures must surface an errorMessage — silent drop was the bug")
+        XCTAssertFalse(viewModel.errorMessage?.isEmpty ?? true,
+            "errorMessage must carry the underlying localizedDescription")
+
+        // Async cleanup still fires:
+        await Task.yield()
+        await Task.yield()
+        XCTAssertTrue(mockService.finalizeShareOutcomeCalled,
+            "Error path must still dispatch finalizeShareOutcome for orphan cleanup")
+        XCTAssertNil(mockService.lastFinalizedShare,
+            "Error path must force finalize argument to nil (local draft is the orphan)")
+    }
+
+    func test_HandleDismiss_withErrorAndStalePresentShare_forcesNilToFinalize() async {
+        // Even if UIKit somehow hands us both a non-nil share AND an error (unusual
+        // but possible on some iOS paths), the error branch must force nil into
+        // finalizeShareOutcome so cleanup runs through the .draft branch, not the
+        // classify-the-delegate-share branch.
+        let (viewModel, mockService, _, _) = makeSUT(state: .draft)
+        mockService.finalizeShareOutcomeResultState = .solo
+
+        let testShare = CKShare(recordZoneID: CKRecordZone.ID(zoneName: "test", ownerName: CKCurrentUserDefaultName))
+        viewModel.handleShareDismiss(testShare, error: CKError(.networkUnavailable))
+
+        await Task.yield()
+        await Task.yield()
+
+        XCTAssertTrue(mockService.finalizeShareOutcomeCalled)
+        XCTAssertNil(mockService.lastFinalizedShare,
+            "Error branch must not pass the delegate-provided share through — force nil")
+        XCTAssertNotNil(viewModel.errorMessage)
+    }
+
     // MARK: - Category Test Helpers
 
     private func makeDefaultCategories() -> [CategoryData] {

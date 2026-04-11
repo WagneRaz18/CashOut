@@ -177,7 +177,13 @@ final class CloudSharingService: CloudSharingServiceProtocol {
         // dispatched yet. `finalizeShareOutcome` will transition to `.pending` on
         // successful invite, or back to `.solo` with orphan cleanup on cancel.
         state = .draft
-        logger.info("createShare: new share created successfully (state=.draft)")
+        // NSPersistentCloudKitContainer's exporter runs asynchronously after this
+        // point. If this call was preceded by an orphan-share cancellation in the same
+        // session, the exporter may emit a benign "Export failed ... Unknown Item
+        // (11/2003)" log as it tombstones its stale mirror entry. That log is expected
+        // recovery noise — see `.claude/learnings/cloudkit-sync.md` (2026-04-10 entry
+        // on benign 11/2003) for the full rationale.
+        logger.info("createShare: new share created locally (state=.draft) — async export follows")
         return (share, CKContainer(identifier: Self.containerIdentifier))
     }
 
@@ -422,6 +428,11 @@ final class CloudSharingService: CloudSharingServiceProtocol {
         // state/isShareOwner/currentShare in lockstep. `clearSentinel: false` because
         // we just set it above — clearing it would defeat the purpose of the TTL guard.
         transitionToSolo(clearSentinel: false)
+        // Subsequent NSPersistentCloudKitContainer "Export failed ... Unknown Item
+        // (11/2003)" logs are the framework's own mirror reconciliation — benign,
+        // documented in `.claude/learnings/cloudkit-sync.md` under the 2026-04-10
+        // entry on out-of-band cancelShare. Not a bug, not user-visible.
+        logger.debug("cancelShare: transitioned to solo — subsequent 11/2003 export log is benign mirror reconciliation")
     }
 
     // MARK: - Private

@@ -218,8 +218,8 @@ private struct SettingsContent: View {
             // here — the Coordinator's `fireDismissOnce` is the single source of truth.
             if let share = viewModel.activeShare,
                let container = viewModel.activeContainer {
-                CloudSharingSheet(share: share, container: container) { updatedShare in
-                    viewModel.handleShareDismiss(updatedShare)
+                CloudSharingSheet(share: share, container: container) { updatedShare, error in
+                    viewModel.handleShareDismiss(updatedShare, error: error)
                 }
             }
         }
