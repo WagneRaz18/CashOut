@@ -30,12 +30,32 @@ final class CategoryRepository: CategoryRepositoryProtocol {
             NSSortDescriptor(key: "id", ascending: true),
         ]
 
+        // Scope the fetch to the user's primary store. Without this, an unscoped
+        // viewContext.fetch aggregates records from BOTH stores, returning 2N
+        // results once NSPersistentCloudKitContainer mirrors private-store data
+        // into the shared-store backing zone. Mirrors the role-based pattern in
+        // ExpenseRepository.deleteExpense: participants target sharedPersistentStore
+        // (their categories live there via prepareObjectForSharedSave); owner and
+        // solo mode target privatePersistentStore.
+        let targetStore: NSPersistentStore?
+        if let svc = cloudSharingService,
+           !svc.isShareOwner,
+           case .connected = svc.state {
+            targetStore = persistence.sharedPersistentStore
+        } else {
+            targetStore = persistence.privatePersistentStore
+        }
+        if let targetStore {
+            request.affectedStores = [targetStore]
+        }
+
         let results = try persistence.container.viewContext.fetch(request)
         logger.debug("fetchCategories: found \(results.count) categories (pre-dedup)")
 
-        // Deduplicate default categories by name or id — CloudKit sync across
-        // private/shared stores can create duplicates when both devices seed.
-        // Custom categories are never deduplicated (user may reuse names).
+        // Defense-in-depth dedup: scoping above eliminates the 2N cross-store
+        // duplication, but this block still guards against transient races
+        // during participant-mode shared-zone imports and double-seeding
+        // across reinstalls. Custom categories are never deduplicated.
         var seenDefaultNames = Set<String>()
         var seenDefaultIDs = Set<UUID>()
         let unique = results.compactMap { category -> CategoryData? in

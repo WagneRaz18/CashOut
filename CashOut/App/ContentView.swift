@@ -18,11 +18,17 @@ private struct HapticViewBridge: UIViewRepresentable {
 
 struct ContentView: View {
     @State private var selectedTab = 0
+    // Owned here (not inside EntryView) so the ViewModel survives iOS 26 `Tab` API
+    // content-closure re-evaluation on `selectedTab` changes. Owning it inside
+    // EntryView as `@State` caused the ViewModel (and in-progress entry state) to
+    // be destroyed on every tab switch. ContentView's `@State` is stable because
+    // ContentView itself is not re-created by its own state changes.
+    @State private var entryViewModel = ExpenseEntryViewModel()
 
     var body: some View {
         TabView(selection: $selectedTab) {
             Tab("Add", systemImage: "plus", value: 0) {
-                EntryView(onSaveComplete: {
+                EntryView(viewModel: entryViewModel, onSaveComplete: {
                     withAnimation { selectedTab = 1 }
                 })
             }

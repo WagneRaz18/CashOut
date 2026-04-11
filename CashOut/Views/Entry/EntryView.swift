@@ -4,9 +4,14 @@ import os.log
 private let logger = Logger(subsystem: "com.wagneraz.CashOut", category: "EntryView")
 
 struct EntryView: View {
+    // ViewModel is owned by ContentView so it survives iOS 26 `Tab` API content-closure
+    // re-evaluation on selection change. Owning `viewModel` locally as `@State` caused
+    // the ViewModel (and all in-progress entry state) to be destroyed on every tab
+    // switch because the value-based `Tab` API re-evaluates its content closure when
+    // `selectedTab` changes, tearing down `@State` storage.
+    @Bindable var viewModel: ExpenseEntryViewModel
     var onSaveComplete: (@MainActor @Sendable () -> Void)? = nil
 
-    @State private var viewModel = ExpenseEntryViewModel()
     @State private var showingNoteSheet = false
     @State private var saveTask: Task<Void, Never>?
     @State private var retryTask: Task<Void, Never>?
@@ -166,10 +171,10 @@ struct EntryView: View {
 }
 
 #Preview {
-    EntryView()
+    EntryView(viewModel: ExpenseEntryViewModel())
 }
 
 #Preview("Dynamic Type — AX3") {
-    EntryView()
+    EntryView(viewModel: ExpenseEntryViewModel())
         .dynamicTypeSize(.accessibility3)
 }
