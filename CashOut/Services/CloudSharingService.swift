@@ -512,9 +512,9 @@ final class CloudSharingService: CloudSharingServiceProtocol {
     /// unset so the next `checkSharingStatus` call retries. A fresh share (different
     /// `recordName`) clears the marker via `clearBackfillMarker` in `createShare`.
     ///
-    /// Runs at `.utility` priority because `container.share(_:to:)` holds the calling
-    /// actor during a network round-trip — running it at the inherited `.userInteractive`
-    /// priority would contend with UI rendering on large histories.
+    /// The outer `Task(priority: .utility)` is only a scheduling-priority nudge —
+    /// it inherits this `@MainActor` isolation. The actual main-actor escape happens
+    /// inside `runBackfill` around the `container.share()` call (see that fn).
     private func scheduleBackfillIfNeeded(for share: CKShare) {
         let recordName = share.recordID.recordName
         guard backfilledShareRecordName != recordName else { return }
@@ -552,17 +552,32 @@ final class CloudSharingService: CloudSharingServiceProtocol {
             return
         }
 
-        let expensesToShare = hydrateDefaultZoneExpenses(ids: objectIDs, privateStore: privateStore)
-        guard !expensesToShare.isEmpty else {
+        // `NSManagedObjectID.persistentStore` is context-free, so the private-zone
+        // filter runs here on MainActor without a context hop. Defense-in-depth
+        // beyond `affectedStores = [privateStore]` at fetch time — objects already
+        // migrated into the shared zone must not be re-shared (metadata race).
+        let filteredIDs = objectIDs.filter { $0.persistentStore == privateStore }
+        guard !filteredIDs.isEmpty else {
             logger.info("backfill: no default-zone expenses to share — marking complete")
             markBackfillComplete(for: recordName)
             return
         }
 
-        logger.info("backfill: sharing \(expensesToShare.count) pre-invite expenses to household")
+        logger.info("backfill: sharing \(filteredIDs.count) pre-invite expenses to household")
         let opStart = CFAbsoluteTimeGetCurrent()
+        let container = persistenceController.container
         do {
-            _ = try await persistenceController.container.share(expensesToShare, to: share)
+            // Hop off MainActor for `container.share(_:to:)` — see the same pattern
+            // in `shareObjectsToHouseholdIfNeeded` for the full rationale. Large
+            // backfills on first invite would otherwise freeze the UI for seconds.
+            try await Task.detached(priority: .utility) {
+                let bg = container.newBackgroundContext()
+                let bgObjects: [NSManagedObject] = try await bg.perform {
+                    try filteredIDs.compactMap { try bg.existingObject(with: $0) }
+                }
+                guard !bgObjects.isEmpty else { return }
+                _ = try await container.share(bgObjects, to: share)
+            }.value
             let elapsed = (CFAbsoluteTimeGetCurrent() - opStart) * 1000
             logger.info("backfill: success — \(elapsed, format: .fixed(precision: 1))ms")
             markBackfillComplete(for: recordName)
@@ -573,7 +588,7 @@ final class CloudSharingService: CloudSharingServiceProtocol {
 
     /// Fetches Expense ObjectIDs on a background context so a large history doesn't
     /// block the main actor. ObjectIDs are `Sendable` and can safely cross the
-    /// background → main boundary for re-hydration in `hydrateDefaultZoneExpenses`.
+    /// background → main boundary for the subsequent store-scope filter.
     private func fetchPrivateExpenseIDs(
         in privateStore: NSPersistentStore
     ) async throws -> [NSManagedObjectID] {
@@ -583,21 +598,6 @@ final class CloudSharingService: CloudSharingServiceProtocol {
             request.resultType = .managedObjectIDResultType
             request.affectedStores = [privateStore]
             return try bgContext.fetch(request)
-        }
-    }
-
-    /// Re-hydrates ObjectIDs on the main viewContext and filters to objects still in
-    /// the private default zone. Objects already migrated to the shared zone are
-    /// skipped — re-sharing races the CloudKit export cycle and produces
-    /// "Missing metadata for recordID" warnings per cloudkit-sync.md:94.
-    private func hydrateDefaultZoneExpenses(
-        ids: [NSManagedObjectID],
-        privateStore: NSPersistentStore
-    ) -> [NSManagedObject] {
-        let viewContext = persistenceController.container.viewContext
-        return ids.compactMap { id in
-            guard let object = try? viewContext.existingObject(with: id) else { return nil }
-            return object.objectID.persistentStore == privateStore ? object : nil
         }
     }
 
