@@ -30,6 +30,7 @@ enum SharingState: Equatable {
 protocol CloudSharingServiceProtocol {
     var state: SharingState { get }
     var isShareOwner: Bool { get }
+    var acceptanceError: String? { get }
     func createShare(for objects: [NSManagedObject]) async throws -> (CKShare, CKContainer)
     func checkSharingStatus() async
     func persistUpdatedShare(_ share: CKShare)
@@ -38,6 +39,7 @@ protocol CloudSharingServiceProtocol {
     func resetState()
     func cancelShare() async throws
     func finalizeShareOutcome(_ updatedShare: CKShare?) async
+    func handleAcceptedShareMetadata(_ metadata: CKShare.Metadata, entryPath: String) async
 }
 
 @MainActor
@@ -48,6 +50,12 @@ final class CloudSharingService: CloudSharingServiceProtocol {
     var state: SharingState = .solo
 
     var isShareOwner: Bool = false
+
+    /// Non-nil when the most recent share-acceptance attempt failed. Set by
+    /// `handleAcceptedShareMetadata`; cleared on the subsequent successful
+    /// transition to `.connected`. Surfaced by `SettingsViewModel` so the
+    /// partner sees the failure instead of a silently stuck "Invite partner" screen.
+    var acceptanceError: String? = nil
 
     @ObservationIgnored private var currentShare: CKShare? = nil
 
@@ -257,6 +265,14 @@ final class CloudSharingService: CloudSharingServiceProtocol {
             // debounced remote-change re-checks must not spam tracking
             // notifications when the classification is unchanged.
             if state != classified { state = classified }
+            // Clear any stale acceptanceError — reaching .connected via the
+            // remote-change path after an initially-failed acceptance must
+            // not leave the UI banner visible. Mirrors the clear inside
+            // `handleAcceptedShareMetadata` after its own successful poll,
+            // covering the case where the import arrived outside the poll window.
+            if case .connected = classified {
+                acceptanceError = nil
+            }
             let elapsed = (CFAbsoluteTimeGetCurrent() - checkStart) * 1000
             logger.info("checkSharingStatus: found share in shared store (participant, state=\(String(describing: self.state))) — \(elapsed, format: .fixed(precision: 1))ms")
             return
@@ -342,14 +358,31 @@ final class CloudSharingService: CloudSharingServiceProtocol {
         // expenses into a zone that is about to be deleted.
         guard isShareOwner, hasCommittedShare, let share = currentShare else { return }
         guard !objects.isEmpty else { return }
-        // Guard: iCloud must be available
         guard FileManager.default.ubiquityIdentityToken != nil else {
             logger.error("shareObjectsToHouseholdIfNeeded: iCloud unavailable — saved locally only")
             return
         }
         logger.info("shareObjectsToHouseholdIfNeeded: sharing \(objects.count) objects to household")
+
+        // `container.share(_:to:)` holds the calling actor during its ~2-3s network
+        // round-trip (worst case ~3s when the metadata race fires — see
+        // `ExpenseRepository.shareExportSettleDelay`). Running it on this @MainActor
+        // service blocks the post-save animation and tab-switch, leaving the user
+        // staring at a stuck numpad until the share completes. Hop to a detached
+        // task with a background context so the main thread stays free. ObjectIDs
+        // are Sendable; NSManagedObject is not, so re-hydrate on the bg context
+        // before calling `share`.
+        let objectIDs = objects.map(\.objectID)
+        let container = persistenceController.container
         let shareOpStart = CFAbsoluteTimeGetCurrent()
-        _ = try await persistenceController.container.share(objects, to: share)
+        try await Task.detached(priority: .utility) {
+            let bg = container.newBackgroundContext()
+            let bgObjects: [NSManagedObject] = try await bg.perform {
+                try objectIDs.compactMap { try bg.existingObject(with: $0) }
+            }
+            guard !bgObjects.isEmpty else { return }
+            _ = try await container.share(bgObjects, to: share)
+        }.value
         let shareOpElapsed = (CFAbsoluteTimeGetCurrent() - shareOpStart) * 1000
         logger.info("shareObjectsToHouseholdIfNeeded: success — \(shareOpElapsed, format: .fixed(precision: 1))ms")
     }
@@ -971,6 +1004,124 @@ final class CloudSharingService: CloudSharingServiceProtocol {
             }
 
             database.add(op)
+        }
+    }
+
+    // MARK: - Share Acceptance (Participant Path)
+
+    /// Consolidated entry point for `CKShare.Metadata` acceptance. Invoked from both
+    /// `CashOutSceneDelegate.windowScene(_:userDidAcceptCloudKitShareWith:)` and
+    /// `AppDelegate.application(_:userDidAcceptCloudKitShareWith:)` — the scene path
+    /// is the iOS 14+ canonical callsite, the app-delegate path is a fallback firewall
+    /// in case the scene manifest is ever misconfigured. `entryPath` records which
+    /// delegate fired so the logs are unambiguous across future regressions.
+    ///
+    /// `container.acceptShareInvitations` completion fires when CloudKit acknowledges
+    /// acceptance — NOT when the shared persistent store has imported the share. The
+    /// `NSPersistentStoreRemoteChange` import can arrive seconds to minutes later. A
+    /// single `checkSharingStatus()` call from the completion reliably returns 0
+    /// shares and leaves state at `.solo`. `pollForAcceptedShare` bounds a retry
+    /// window so state transitions to `.connected` as soon as the import lands.
+    func handleAcceptedShareMetadata(_ metadata: CKShare.Metadata, entryPath: String) async {
+        logger.info("handleAcceptedShareMetadata: entryPath=\(entryPath, privacy: .public) — calling acceptShareInvitations")
+        acceptanceError = nil
+
+        guard let sharedStore = persistenceController.sharedPersistentStore else {
+            let msg = "Share acceptance failed: shared store unavailable (iCloud may be signed out)."
+            logger.error("handleAcceptedShareMetadata: \(msg, privacy: .public)")
+            acceptanceError = msg
+            return
+        }
+
+        let container = persistenceController.container
+        do {
+            try await withCheckedThrowingContinuation { (continuation: CheckedContinuation<Void, Error>) in
+                container.acceptShareInvitations(from: [metadata], into: sharedStore) { _, error in
+                    if let error {
+                        continuation.resume(throwing: error)
+                    } else {
+                        continuation.resume()
+                    }
+                }
+            }
+            logger.info("handleAcceptedShareMetadata: acceptShareInvitations succeeded — polling for shared-store import")
+        } catch {
+            let msg = "Share acceptance failed: \(error.localizedDescription)"
+            logger.error("handleAcceptedShareMetadata: \(msg, privacy: .public)")
+            acceptanceError = msg
+            return
+        }
+
+        await pollForAcceptedShare(maxDuration: 15.0)
+
+        // Post-await cancellation check — the Task that wraps this method is
+        // ownerless (fire-and-forget from AppDelegate/SceneDelegate) and runs
+        // up to 15s. Any path that reset the service (sign-out, account change)
+        // during the poll must not have its state silently overwritten here.
+        guard !Task.isCancelled else { return }
+
+        if case .connected = state {
+            acceptanceError = nil
+        } else {
+            // Poll window elapsed without reaching .connected. Surface a
+            // user-facing message so the UI banner explains the delay instead
+            // of silently returning the participant to the "Invite Partner"
+            // screen with no signal. The NSPersistentStoreRemoteChange listener
+            // in ContentView remains the reliable long-tail recovery path —
+            // once the import does land, checkSharingStatus' participant branch
+            // clears this message alongside the state transition.
+            let msg = "Household sync is taking longer than expected. Keep the app open — the connection may complete in a moment."
+            logger.warning("handleAcceptedShareMetadata: \(msg, privacy: .public) — current state=\(String(describing: self.state))")
+            acceptanceError = msg
+        }
+    }
+
+    /// Bounded retry of `checkSharingStatus` after a share acceptance. Each tick
+    /// short-circuits the moment state becomes `.connected`. The schedule below
+    /// sums to ~15s; `maxDuration` enforces the wall-clock ceiling so a future
+    /// caller passing a shorter budget is honored instead of silently ignored.
+    ///
+    /// Intentionally synchronous style: each tick awaits the previous sleep, so
+    /// the actor executor handles scheduling. No Task hop needed — we're already
+    /// on the main actor and `checkSharingStatus` is main-actor isolated.
+    private func pollForAcceptedShare(maxDuration: TimeInterval) async {
+        let schedule: [UInt64] = [
+            250_000_000,     // 0.25s
+            500_000_000,     // 0.5s
+            1_000_000_000,   // 1s
+            2_000_000_000,   // 2s
+            3_000_000_000,   // 3s
+            3_000_000_000,   // 3s
+            3_000_000_000,   // 3s
+            2_250_000_000    // 2.25s
+        ]
+
+        let start = CFAbsoluteTimeGetCurrent()
+        for (index, delay) in schedule.enumerated() {
+            let elapsedSoFar = CFAbsoluteTimeGetCurrent() - start
+            guard elapsedSoFar < maxDuration else {
+                logger.debug("pollForAcceptedShare: maxDuration (\(maxDuration)s) reached — stopping after \(index) ticks")
+                return
+            }
+
+            do {
+                try await Task.sleep(nanoseconds: delay)
+            } catch is CancellationError {
+                logger.debug("pollForAcceptedShare: cancelled during sleep — aborting")
+                return
+            } catch {
+                logger.error("pollForAcceptedShare: sleep failed with unexpected error — \(error.localizedDescription)")
+                return
+            }
+            guard !Task.isCancelled else { return }
+
+            await checkSharingStatus()
+
+            if case .connected = state {
+                logger.info("pollForAcceptedShare: tick \(index + 1) — state transitioned to .connected, short-circuit")
+                return
+            }
+            logger.debug("pollForAcceptedShare: tick \(index + 1) — state still \(String(describing: self.state))")
         }
     }
 }

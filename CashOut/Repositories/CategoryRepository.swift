@@ -205,9 +205,9 @@ final class CategoryRepository: CategoryRepositoryProtocol {
         logger.debug("enqueueShareForNewCategory: id=\(id, privacy: .private)")
         activeShareTasks[id]?.cancel()
         let task = Task { [self] in
-            // Yield first so the caller's @MainActor continuation (e.g. Settings
-            // sheet dismiss) can resume before container.share() grabs the actor.
-            await Task.yield()
+            // `shareObjectsToHouseholdIfNeeded` hops to a detached bg task for the
+            // actual `container.share()` call, so this wrapper no longer needs to
+            // yield to let the caller dismiss first — the main actor stays free.
             await shareNewCategoryToHousehold(id: id)
             activeShareTasks[id] = nil
         }

@@ -228,10 +228,9 @@ final class ExpenseRepository: ExpenseRepositoryProtocol {
         // below runs unconditionally, whereas `[weak self]` would silently skip it
         // on dealloc and leak the dict entry.
         let task = Task { [self] in
-            // Yield first so the caller's @MainActor continuation (e.g. EntryView's
-            // saveTask awaiting `async let save`) can resume and dismiss before
-            // container.share() grabs the main actor for its ~2s synchronous prep.
-            await Task.yield()
+            // `shareObjectsToHouseholdIfNeeded` hops to a detached bg task for the
+            // actual `container.share()` call, so this wrapper no longer needs to
+            // yield to let the caller navigate first — the main actor stays free.
             await shareNewExpenseToHousehold(id: id)
             activeShareTasks[id] = nil
         }

@@ -30,6 +30,13 @@ final class SettingsViewModel {
         return nil
     }
 
+    /// Non-nil when the participant's most recent share acceptance attempt failed.
+    /// Surfaced from `CloudSharingService.acceptanceError` so the partner sees an
+    /// explanatory banner instead of a silently stuck "Invite partner" screen.
+    var acceptanceError: String? {
+        cloudSharingService.acceptanceError
+    }
+
     var errorMessage: String?
     var categories: [CategoryData] = []
     private(set) var isSavingCategory = false

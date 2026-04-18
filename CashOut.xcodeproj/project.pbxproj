@@ -20,6 +20,7 @@
 		7DD905A08B1776BF9F570222 /* CashOut.xcdatamodeld in Sources */ = {isa = PBXBuildFile; fileRef = 1220D06E7CDAED7C785E2D19 /* CashOut.xcdatamodeld */; };
 		85E20F790EF30AB6FCFBCD36 /* ContentView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3E9EFA06CBD5754CC782E9DF /* ContentView.swift */; };
 		973CA059EE0ABF8FD8E660D2 /* AppDelegate.swift in Sources */ = {isa = PBXBuildFile; fileRef = E633E5716F4D140FB5FA20A7 /* AppDelegate.swift */; };
+		5CD1E6A7E1B0FC3AC0DE0001 /* CashOutSceneDelegate.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5CD1E6A7E1B0FC3AC0DE0002 /* CashOutSceneDelegate.swift */; };
 		A1B2C3D4E5F60718A1B2C3D4 /* AuthenticationService.swift in Sources */ = {isa = PBXBuildFile; fileRef = A1B2C3D4E5F60718A1B2C3D5 /* AuthenticationService.swift */; };
 		A1B2C3D4E5F60718A1B2C3D6 /* AuthenticationViewModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = A1B2C3D4E5F60718A1B2C3D7 /* AuthenticationViewModel.swift */; };
 		A1B2C3D4E5F60718A1B2C3D8 /* SignInView.swift in Sources */ = {isa = PBXBuildFile; fileRef = A1B2C3D4E5F60718A1B2C3D9 /* SignInView.swift */; };
@@ -162,6 +163,7 @@
 		E1F2A3B4C5D60202E1F2A3B4 /* NoteEntrySheet.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = NoteEntrySheet.swift; sourceTree = "<group>"; };
 		E1F2A3B4C5D60203E1F2A3B4 /* SaveButtonView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SaveButtonView.swift; sourceTree = "<group>"; };
 		E633E5716F4D140FB5FA20A7 /* AppDelegate.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AppDelegate.swift; sourceTree = "<group>"; };
+		5CD1E6A7E1B0FC3AC0DE0002 /* CashOutSceneDelegate.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CashOutSceneDelegate.swift; sourceTree = "<group>"; };
 		F0AF4C3E7DFCE872871D084A /* CashOutApp.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CashOutApp.swift; sourceTree = "<group>"; };
 		F1A2B3C4D5E60301F1A2B3C4 /* MockCategoryRepository.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MockCategoryRepository.swift; sourceTree = "<group>"; };
 		F1A2B3C4D5E60302F1A2B3C4 /* MockExpenseRepository.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MockExpenseRepository.swift; sourceTree = "<group>"; };
@@ -243,6 +245,7 @@
 			isa = PBXGroup;
 			children = (
 				E633E5716F4D140FB5FA20A7 /* AppDelegate.swift */,
+				5CD1E6A7E1B0FC3AC0DE0002 /* CashOutSceneDelegate.swift */,
 				F0AF4C3E7DFCE872871D084A /* CashOutApp.swift */,
 				3E9EFA06CBD5754CC782E9DF /* ContentView.swift */,
 			);
@@ -631,6 +634,7 @@
 			buildActionMask = 2147483647;
 			files = (
 				973CA059EE0ABF8FD8E660D2 /* AppDelegate.swift in Sources */,
+				5CD1E6A7E1B0FC3AC0DE0001 /* CashOutSceneDelegate.swift in Sources */,
 				A1B2C3D4E5F60718A1B2C3D4 /* AuthenticationService.swift in Sources */,
 				A1B2C3D4E5F60718A1B2C3D6 /* AuthenticationViewModel.swift in Sources */,
 				7DD905A08B1776BF9F570222 /* CashOut.xcdatamodeld in Sources */,

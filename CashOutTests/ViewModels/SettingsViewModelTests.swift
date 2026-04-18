@@ -771,6 +771,55 @@ final class SettingsViewModelTests: XCTestCase {
         XCTAssertNotNil(viewModel.errorMessage)
     }
 
+    // MARK: - Acceptance Error Surface Tests
+
+    /// Regression test for the CKShare acceptance silent-failure bug. Before
+    /// the fix, acceptance errors were logged but never exposed to the UI; the
+    /// partner saw a stuck "Invite partner" screen with no signal that a retry
+    /// was needed. `SettingsViewModel.acceptanceError` must reflect whatever
+    /// the service last recorded on its `acceptanceError` property.
+    ///
+    /// We exercise only the ViewModel surface directly (not the metadata path)
+    /// because `CKShare.Metadata()` is unavailable outside live CloudKit: it
+    /// can only be obtained from `CKFetchShareMetadataOperation` or platform
+    /// scene/app-delegate callbacks. The observable contract is "anything the
+    /// service stores in `acceptanceError` must be readable from the VM."
+    func test_AcceptanceError_mirrorsServiceAcceptanceError() {
+        let (viewModel, mockService, _, _) = makeSUT(state: .solo)
+        XCTAssertNil(viewModel.acceptanceError)
+
+        mockService.acceptanceError = "Share acceptance failed: network unavailable"
+        XCTAssertEqual(viewModel.acceptanceError,
+                       "Share acceptance failed: network unavailable",
+                       "ViewModel must reflect the service's acceptanceError")
+
+        mockService.acceptanceError = nil
+        XCTAssertNil(viewModel.acceptanceError,
+                     "Clearing the service error must clear the ViewModel surface")
+    }
+
+    /// When the service transitions to `.connected` after a successful
+    /// acceptance, any prior `acceptanceError` must be cleared so the UI
+    /// banner disappears and the Household section renders the connected
+    /// state cleanly.
+    func test_AcceptanceError_clearedOnConnectedTransition() {
+        let (viewModel, mockService, _, _) = makeSUT(state: .solo)
+        mockService.acceptanceError = "prior failure"
+        XCTAssertEqual(viewModel.acceptanceError, "prior failure")
+        XCTAssertFalse(viewModel.hasPartner)
+
+        // Simulate a subsequent successful acceptance: the real service clears
+        // `acceptanceError` and moves `state` to `.connected` at the tail of
+        // `handleAcceptedShareMetadata`. The VM must reflect both.
+        mockService.acceptanceError = nil
+        mockService.state = .connected(partnerName: "Partner")
+
+        XCTAssertNil(viewModel.acceptanceError,
+                     "Successful acceptance must clear the prior error from the UI surface")
+        XCTAssertTrue(viewModel.hasPartner,
+                      "State must be .connected after successful acceptance")
+    }
+
     // MARK: - Category Test Helpers
 
     private func makeDefaultCategories() -> [CategoryData] {

@@ -10,6 +10,7 @@ final class MockCloudSharingService: CloudSharingServiceProtocol {
 
     var state: SharingState = .solo
     var isShareOwner = false
+    var acceptanceError: String?
 
     // MARK: - Call Tracking
 
@@ -21,10 +22,18 @@ final class MockCloudSharingService: CloudSharingServiceProtocol {
     var resetStateCalled = false
     var cancelShareCalled = false
     var finalizeShareOutcomeCalled = false
+    var handleAcceptedShareMetadataCalled = false
     var lastPersistedShare: CKShare?
     var lastFinalizedShare: CKShare?
+    var lastAcceptedEntryPath: String?
 
     var cancelShareShouldThrow = false
+    /// When non-nil, `handleAcceptedShareMetadata` sets `acceptanceError` to this
+    /// string before returning, mimicking the real service's error surface.
+    var handleAcceptedShareMetadataError: String?
+    /// When non-nil, `handleAcceptedShareMetadata` sets `state` to this value
+    /// before returning, mimicking the real service's post-poll transition.
+    var handleAcceptedShareMetadataResultState: SharingState?
 
     // MARK: - Configurable Results
 
@@ -83,6 +92,19 @@ final class MockCloudSharingService: CloudSharingServiceProtocol {
         finalizeShareOutcomeCalled = true
         lastFinalizedShare = updatedShare
         if let resultState = finalizeShareOutcomeResultState {
+            state = resultState
+        }
+    }
+
+    func handleAcceptedShareMetadata(_ metadata: CKShare.Metadata, entryPath: String) async {
+        handleAcceptedShareMetadataCalled = true
+        lastAcceptedEntryPath = entryPath
+        if let error = handleAcceptedShareMetadataError {
+            acceptanceError = error
+            return
+        }
+        acceptanceError = nil
+        if let resultState = handleAcceptedShareMetadataResultState {
             state = resultState
         }
     }

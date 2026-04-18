@@ -285,6 +285,21 @@ private struct HouseholdSectionView: View {
                         .font(.caption)
                         .foregroundStyle(.red)
                 }
+
+                // Acceptance-error banner: surfaces failures from the participant's
+                // CKShare acceptance flow. Without it, a dropped acceptance leaves
+                // the partner staring at "Invite Partner" with no signal that a
+                // retry is needed.
+                if let acceptanceError = viewModel.acceptanceError {
+                    VStack(alignment: .leading, spacing: 4) {
+                        Text(acceptanceError)
+                            .font(.caption)
+                            .foregroundStyle(.red)
+                        Text("Ask your partner to resend the invitation, then tap the link again.")
+                            .font(.caption2)
+                            .foregroundStyle(.secondary)
+                    }
+                }
             }
         }
     }
