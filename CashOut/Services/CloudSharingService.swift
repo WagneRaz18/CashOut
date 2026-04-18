@@ -231,7 +231,10 @@ final class CloudSharingService: CloudSharingServiceProtocol {
 
             isShareOwner = true
             currentShare = share
-            state = classified
+            // @Observable emits a tracking notification on every assignment — guard
+            // the no-op write so debounced remote-change re-checks don't spam
+            // invalidations when the classification hasn't changed.
+            if state != classified { state = classified }
             // Back-fill pre-invite expenses into the shared zone exactly once per
             // unique share. Gate on `hasCommittedShare` (.pending or .connected) —
             // running backfill for a `.draft` would move expenses into a zone attached
@@ -247,9 +250,13 @@ final class CloudSharingService: CloudSharingServiceProtocol {
         }
 
         if let share = fetchActiveShare(from: persistenceController.sharedPersistentStore, label: "shared") {
+            let classified = classify(share: share, isOwner: false)
             isShareOwner = false
             currentShare = share
-            state = classify(share: share, isOwner: false)
+            // Same @Observable no-op-write guard as the owner branch above —
+            // debounced remote-change re-checks must not spam tracking
+            // notifications when the classification is unchanged.
+            if state != classified { state = classified }
             let elapsed = (CFAbsoluteTimeGetCurrent() - checkStart) * 1000
             logger.info("checkSharingStatus: found share in shared store (participant, state=\(String(describing: self.state))) — \(elapsed, format: .fixed(precision: 1))ms")
             return
@@ -811,9 +818,14 @@ final class CloudSharingService: CloudSharingServiceProtocol {
             } catch {
                 // Transient failure (network, propagation lag). Fall back to the delegate
                 // share — do NOT call cancelShare on transient errors.
-                logger.warning("finalizeShareOutcome: fresh fetch failed (\(error.localizedDescription)) — falling back to delegate share")
+                // `persistShare: false` because we have no fresh-etag share: passing
+                // the stale delegate to `container.persistUpdatedShare(_:in:)` would
+                // trigger `CKError.serverRecordChanged` (14/2004). The next
+                // `NSPersistentStoreRemoteChange` notification will drive the local
+                // Core Data mirror back into sync via `checkSharingStatus`.
+                logger.warning("finalizeShareOutcome: fresh fetch failed (\(error.localizedDescription)) — classifying from delegate share, deferring persist to next remote-change")
                 let classified = classify(share: updatedShare, isOwner: isShareOwner)
-                await apply(classification: classified, authoritativeShare: updatedShare, delegateShare: updatedShare)
+                await apply(classification: classified, authoritativeShare: updatedShare, delegateShare: updatedShare, persistShare: false)
             }
             return
         }
@@ -842,7 +854,8 @@ final class CloudSharingService: CloudSharingServiceProtocol {
     private func apply(
         classification: SharingState,
         authoritativeShare: CKShare,
-        delegateShare: CKShare
+        delegateShare: CKShare,
+        persistShare: Bool = true
     ) async {
         switch classification {
         case .draft:
@@ -856,9 +869,20 @@ final class CloudSharingService: CloudSharingServiceProtocol {
                 await checkSharingStatus()
             }
         case .pending, .connected:
-            // Persist whatever the delegate handed us (that's what UIKit last touched)
-            // and update cached state from the fresh authoritative share.
-            persistUpdatedShare(delegateShare)
+            // Persist the CloudKit-fresh copy. `delegateShare` is the UIKit-local
+            // CKShare handed to us by `UICloudSharingController.didSaveShare`, which
+            // still carries the pre-save clientEtag even though the controller has
+            // already committed participant changes server-side. Passing it to
+            // `container.persistUpdatedShare(_:in:)` guarantees `CKError.serverRecordChanged`
+            // (14/2004) and leaves the Core Data mirror diverged from `currentShare`
+            // until the next remote-change pull reconciles it. `authoritativeShare`
+            // was just fetched from CloudKit so its recordChangeTag matches the server.
+            // Callers pass `persistShare: false` when `authoritativeShare` is itself
+            // stale (transient fetchFreshShare failure) — in that case, mirror
+            // reconciliation is deferred to the next remote-change notification.
+            if persistShare {
+                persistUpdatedShare(authoritativeShare)
+            }
             currentShare = authoritativeShare
             state = classification
         case .solo:
