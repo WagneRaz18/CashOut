@@ -211,12 +211,8 @@ final class ExpenseEntryViewModel {
 
             let saveElapsed = (CFAbsoluteTimeGetCurrent() - saveStart) * 1000
             logger.info("saveExpense: saved successfully — id=\(expense.id, privacy: .private) — total \(saveElapsed, format: .fixed(precision: 1))ms")
-
-            // Fire-and-forget sharing — owned by the repository singleton so the task
-            // survives EntryView dismissal. The repo yields before calling container.share()
-            // so the caller's @MainActor continuation (EntryView's saveTask) resumes first.
-            logger.debug("saveExpense: enqueuing share task — id=\(expense.id, privacy: .private)")
-            expenseRepository.enqueueShareForNewExpense(id: expense.id)
+            // Public-DB mirror is triggered inside ExpenseRepository.saveExpense —
+            // no explicit share enqueue needed in the household-code model.
         } catch {
             guard !Task.isCancelled else { return }
             logger.error("saveExpense: failed — \(error.localizedDescription, privacy: .public)")

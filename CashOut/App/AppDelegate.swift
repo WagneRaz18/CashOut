@@ -1,5 +1,4 @@
 import UIKit
-import CloudKit
 import os.log
 
 private let logger = Logger(subsystem: "com.wagneraz.CashOut", category: "AppDelegate")
@@ -15,35 +14,22 @@ class AppDelegate: NSObject, UIApplicationDelegate {
         return true
     }
 
+    /// Silent-push handler for CloudKit public-DB `CKQuerySubscription` notifications.
+    /// Each push tells the app that another paired device wrote a record matching our
+    /// household code. We return `.newData` eagerly so we never exceed iOS's 30-second
+    /// background execution budget on a large fetch — the debounced fetch runs in the
+    /// detached task independently.
     func application(
         _ application: UIApplication,
         didReceiveRemoteNotification userInfo: [AnyHashable: Any],
         fetchCompletionHandler completionHandler: @escaping (UIBackgroundFetchResult) -> Void
     ) {
-        logger.debug("didReceiveRemoteNotification — silent push received")
-        // NSPersistentCloudKitContainer processes silent pushes automatically via
-        // NSPersistentStoreRemoteChangeNotificationPostOptionKey.
-        completionHandler(.newData)
-    }
-
-    /// Fallback acceptance handler. In normal operation the iOS 14+ scene-based
-    /// lifecycle routes CKShare acceptance to `CashOutSceneDelegate.windowScene(
-    /// _:userDidAcceptCloudKitShareWith:)` and this method never fires. It is
-    /// retained as defense in depth so a future refactor that drops the
-    /// `UIApplicationSceneManifest` entry from Info.plist fails loudly (log line
-    /// below) instead of silently dropping invitations the way the pre-fix code
-    /// did. Acceptance logic itself is owned by `CloudSharingService` — both
-    /// entry paths route through the same helper so behavior stays in lockstep.
-    func application(
-        _ application: UIApplication,
-        userDidAcceptCloudKitShareWith cloudKitShareMetadata: CKShare.Metadata
-    ) {
-        logger.warning("application.userDidAcceptCloudKitShareWith fired (fallback path — scene manifest may be missing)")
+        logger.debug("didReceiveRemoteNotification — silent push received, routing to PublicSyncService")
         Task { @MainActor in
-            await CloudSharingService.shared.handleAcceptedShareMetadata(
-                cloudKitShareMetadata,
-                entryPath: "appDelegate"
-            )
+            await PublicSyncService.shared.handleRemoteNotification(userInfo: userInfo)
         }
+        // Eager acknowledgment — the OS budgets background time against this handler,
+        // so we must not block on the full fetch+merge round trip.
+        completionHandler(.newData)
     }
 }

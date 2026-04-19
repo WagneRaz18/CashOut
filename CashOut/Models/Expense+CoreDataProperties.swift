@@ -10,6 +10,9 @@ extension Expense {
     @NSManaged public var note: String?
     @NSManaged public var categoryID: UUID?
     @NSManaged public var createdByUserID: String?
+    @NSManaged public var createdByDisplayName: String?
+    @NSManaged public var householdCode: String?
+    @NSManaged public var isSoftDeleted: Bool
     @NSManaged public var createdAt: Date?
     @NSManaged public var modifiedAt: Date?
 }
@@ -31,5 +34,9 @@ extension Expense: Identifiable {
 
     public var wrappedCreatedByUserID: String {
         createdByUserID ?? ""
+    }
+
+    public var wrappedCreatedByDisplayName: String {
+        createdByDisplayName ?? ""
     }
 }

@@ -124,8 +124,8 @@ struct InsightsView: View {
 #Preview {
     NavigationStack {
         InsightsView(viewModel: InsightsViewModel(
-            repository: ExpenseRepository(persistence: .preview, cloudSharingService: nil),
-            categoryRepository: CategoryRepository(persistence: .preview, cloudSharingService: nil)
+            repository: ExpenseRepository(persistence: .preview),
+            categoryRepository: CategoryRepository(persistence: .preview)
         ))
     }
 }

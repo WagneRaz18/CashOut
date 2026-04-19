@@ -140,6 +140,7 @@ final class EditExpenseViewModel {
             note: { let t = noteText.trimmingCharacters(in: .whitespacesAndNewlines); return t.isEmpty ? nil : t }(),
             categoryID: categoryID,
             createdByUserID: originalExpense.createdByUserID,
+            createdByDisplayName: originalExpense.createdByDisplayName,
             createdAt: originalExpense.createdAt,
             modifiedAt: Date()
         )

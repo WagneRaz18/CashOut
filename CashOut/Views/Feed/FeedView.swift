@@ -148,8 +148,8 @@ struct FeedView: View {
 #Preview {
     NavigationStack {
         FeedView(viewModel: FeedViewModel(
-            repository: ExpenseRepository(persistence: .preview, cloudSharingService: nil),
-            categoryRepository: CategoryRepository(persistence: .preview, cloudSharingService: nil)
+            repository: ExpenseRepository(persistence: .preview),
+            categoryRepository: CategoryRepository(persistence: .preview)
         ))
     }
 }

@@ -11,6 +11,9 @@ extension Category {
     @NSManaged public var colorName: String?
     @NSManaged public var isDefault: Bool
     @NSManaged public var sortOrder: Int16
+    @NSManaged public var householdCode: String?
+    @NSManaged public var isSoftDeleted: Bool
+    @NSManaged public var modifiedAt: Date?
 }
 
 extension Category: Identifiable {

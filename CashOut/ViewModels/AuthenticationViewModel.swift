@@ -28,7 +28,10 @@ final class AuthenticationViewModel {
     private var syncMonitorService: SyncMonitorServiceProtocol
 
     @ObservationIgnored
-    private var cloudSharingService: CloudSharingServiceProtocol
+    private var householdService: HouseholdServiceProtocol
+
+    @ObservationIgnored
+    private var publicSync: PublicSyncServiceProtocol
 
     @ObservationIgnored
     private var expenseRepository: ExpenseRepositoryProtocol
@@ -38,17 +41,22 @@ final class AuthenticationViewModel {
     @ObservationIgnored
     private var hasCheckedAuth = false
 
+    @ObservationIgnored
+    private var hasBootstrappedSync = false
+
     // MARK: - Init
 
     init(
         authService: AuthenticationServiceProtocol = AuthenticationService.shared,
         syncMonitorService: SyncMonitorServiceProtocol = SyncMonitorService.shared,
-        cloudSharingService: CloudSharingServiceProtocol = CloudSharingService.shared,
+        householdService: HouseholdServiceProtocol = HouseholdService.shared,
+        publicSync: PublicSyncServiceProtocol = PublicSyncService.shared,
         expenseRepository: ExpenseRepositoryProtocol = ExpenseRepository.shared
     ) {
         self.authService = authService
         self.syncMonitorService = syncMonitorService
-        self.cloudSharingService = cloudSharingService
+        self.householdService = householdService
+        self.publicSync = publicSync
         self.expenseRepository = expenseRepository
         logger.debug("AuthenticationViewModel.init")
     }
@@ -85,6 +93,37 @@ final class AuthenticationViewModel {
         isAuthenticated = authorized
         isCheckingCredentials = false
         logger.info("checkAuth: result — authenticated=\(authorized)")
+    }
+
+    /// Bootstraps the household-code sync path on app launch. Registers CloudKit
+    /// subscriptions and pulls any changes the partner made while offline. Guarded so
+    /// repeated `.task` invocations (TabView re-appearance) are cheap. Separated from
+    /// `checkAuth` so the ContentView does not import services directly — business
+    /// logic stays in the ViewModel.
+    func bootstrapSyncIfPaired() async {
+        guard !hasBootstrappedSync else {
+            logger.debug("bootstrapSyncIfPaired: already bootstrapped — skipped")
+            return
+        }
+        hasBootstrappedSync = true
+
+        syncMonitorService.startMonitoring()
+        guard householdService.isPaired else {
+            logger.info("bootstrapSyncIfPaired: not paired — skipped public-DB init")
+            return
+        }
+        logger.info("bootstrapSyncIfPaired: registering subscriptions and fetching changes")
+        await publicSync.registerSubscriptions()
+        await publicSync.fetchChanges()
+        logger.info("bootstrapSyncIfPaired: complete")
+    }
+
+    /// Re-fetches on iCloud account change. Exposed here so ContentView's listener does
+    /// not need to reach into PublicSyncService directly.
+    func refetchOnAccountChange() async {
+        guard householdService.isPaired else { return }
+        logger.info("refetchOnAccountChange: refetching public DB changes")
+        await publicSync.fetchChanges()
     }
 
     /// Trigger Sign in with Apple flow (programmatic path via ASAuthorizationController)
@@ -130,12 +169,13 @@ final class AuthenticationViewModel {
         }
     }
 
-    /// User-initiated sign out — clears credentials and resets all session state
+    /// User-initiated sign out — clears credentials and resets all session state.
+    /// Household pairing is preserved across sign-out: the user's household code
+    /// represents a device-level pairing, not an auth-session property.
     func signOut() {
         logger.info("signOut: user-initiated sign out")
         syncMonitorService.stopMonitoring()
         expenseRepository.stopObservingExpenses()
-        cloudSharingService.resetState()
         authService.signOut()
         isAuthenticated = false
         isCheckingCredentials = false

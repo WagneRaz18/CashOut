@@ -17,14 +17,8 @@ private struct HapticViewBridge: UIViewRepresentable {
 }
 
 struct ContentView: View {
+    @Environment(AuthenticationViewModel.self) private var authViewModel
     @State private var selectedTab = 0
-    // All three tab ViewModels are owned here so they survive iOS 26 `Tab` API
-    // content-closure re-evaluation on `selectedTab` changes. Owning them inside
-    // the tab content views as `@State` caused each ViewModel to be destroyed on
-    // every tab switch (ExpenseEntryViewModel lost in-progress entry state;
-    // FeedViewModel re-registered FRC observer; InsightsViewModel dropped cached
-    // period data). ContentView's `@State` is stable because ContentView itself
-    // is not re-created by its own state changes.
     @State private var entryViewModel = ExpenseEntryViewModel()
     @State private var feedViewModel = FeedViewModel()
     @State private var insightsViewModel = InsightsViewModel()
@@ -53,58 +47,16 @@ struct ContentView: View {
             logger.info("Tab switched: \(oldTab) → \(newTab)")
         }
         .task {
-            logger.info("ContentView.task: starting sync monitor + sharing check")
-            SyncMonitorService.shared.startMonitoring()
-            logger.debug("ContentView.task: sync monitor started, awaiting checkSharingStatus")
-            await CloudSharingService.shared.checkSharingStatus()
-            logger.debug("ContentView.task: checkSharingStatus completed")
-        }
-        .task {
-            logger.debug("ContentView.task: listening for remote store changes")
-            // Debounce: coalesce rapid notifications into a single sharing check.
-            // CloudKit sync fires multiple NSPersistentStoreRemoteChange per operation.
-            var debounceTask: Task<Void, Never>?
-            defer { debounceTask?.cancel() }
-            for await _ in NotificationCenter.default.notifications(named: .NSPersistentStoreRemoteChange) {
-                guard !Task.isCancelled else { break }
-                let wasCoalesced = debounceTask != nil
-                debounceTask?.cancel()
-                if wasCoalesced {
-                    logger.debug("Remote change notification coalesced (prior debounce cancelled)")
-                }
-                debounceTask = Task { @MainActor in
-                    do {
-                        try await Task.sleep(nanoseconds: 500_000_000)
-                    } catch is CancellationError { return } catch { return }
-                    guard !Task.isCancelled else { return }
-                    // Store-availability gate: skip only when both CloudKit stores
-                    // are literally unavailable (mid-account-change teardown). A
-                    // prior version of this guard short-circuited on state == .solo,
-                    // which was wrong for the PARTICIPANT acceptance path: when a
-                    // partner accepts a CKShare, NSPersistentCloudKitContainer
-                    // imports it into the shared store and posts this notification
-                    // while our in-memory state is still .solo. Gating on .solo made
-                    // the .solo → .connected transition unreachable from the runtime
-                    // and required an app cold-start for the invite to take effect.
-                    // See .claude/learnings/cloudkit-sync.md entry on the solo-mode
-                    // gate correction.
-                    guard PersistenceController.shared.privatePersistentStore != nil ||
-                          PersistenceController.shared.sharedPersistentStore != nil else {
-                        logger.debug("Remote store change — both stores unavailable, skipping checkSharingStatus")
-                        return
-                    }
-                    logger.info("Remote store change (debounced) — re-checking sharing status")
-                    await CloudSharingService.shared.checkSharingStatus()
-                }
-            }
+            // All sync/monitor bootstrap now lives in AuthenticationViewModel so the
+            // View does not import service singletons directly. Guard in the VM
+            // absorbs TabView's re-firing `.task` semantics.
+            await authViewModel.bootstrapSyncIfPaired()
         }
         .task {
             logger.debug("ContentView.task: listening for iCloud account changes")
-            // React to iCloud account changes (sign-out, switch)
             for await _ in NotificationCenter.default.notifications(named: PersistenceController.accountDidChange) {
                 guard !Task.isCancelled else { break }
-                logger.info("iCloud account changed — re-checking sharing status")
-                await CloudSharingService.shared.checkSharingStatus()
+                await authViewModel.refetchOnAccountChange()
             }
         }
     }

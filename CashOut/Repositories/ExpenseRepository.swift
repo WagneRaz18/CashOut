@@ -12,25 +12,23 @@ final class ExpenseRepository: ExpenseRepositoryProtocol {
     static let shared = ExpenseRepository()
 
     private let persistence: PersistenceController
-    private let cloudSharingService: CloudSharingServiceProtocol?
+    private let householdService: HouseholdServiceProtocol
+    private let publicSync: PublicSyncServiceProtocol
 
-    // MARK: - FRC Observation (Story 2-1)
+    // MARK: - FRC Observation
 
     var onExpensesChanged: (@MainActor ([ExpenseData]) -> Void)?
     private var feedFRC: NSFetchedResultsController<Expense>?
     private var frcDelegate: FRCDelegate?
 
-    /// Active fire-and-forget share tasks, keyed by expense ID. Owned by the singleton so
-    /// they survive view dismissal — a successful save must never lose its household share
-    /// just because the user navigated away before CloudKit finished.
-    private var activeShareTasks: [UUID: Task<Void, Never>] = [:]
-
     init(
         persistence: PersistenceController = .shared,
-        cloudSharingService: CloudSharingServiceProtocol? = CloudSharingService.shared
+        householdService: HouseholdServiceProtocol = HouseholdService.shared,
+        publicSync: PublicSyncServiceProtocol = PublicSyncService.shared
     ) {
         self.persistence = persistence
-        self.cloudSharingService = cloudSharingService
+        self.householdService = householdService
+        self.publicSync = publicSync
         logger.debug("ExpenseRepository.init")
     }
 
@@ -40,6 +38,44 @@ final class ExpenseRepository: ExpenseRepositoryProtocol {
         frcDelegate = nil
         onExpensesChanged = nil
         logger.info("stopObservingExpenses: FRC and callback cleared")
+    }
+
+    /// Rebuilds the feed FRC with a fresh household-scoped predicate. Call after
+    /// `pair()` or `unpair()` so the visible record set reflects the new scope.
+    /// Preserves the `onExpensesChanged` callback.
+    func reloadObservation() {
+        logger.info("reloadObservation: rebuilding FRC for household scope change")
+        let savedCallback = onExpensesChanged
+        feedFRC?.delegate = nil
+        feedFRC = nil
+        frcDelegate = nil
+        onExpensesChanged = savedCallback
+        if savedCallback != nil {
+            startObservingExpenses()
+        }
+    }
+
+    /// Predicate that matches records belonging to the current household:
+    /// - `householdCode == currentCode` (records written under this pairing)
+    /// - `householdCode == nil` (local records created while unpaired — preserved so
+    ///   they don't vanish from the feed when the user first pairs)
+    /// - `isSoftDeleted == NO OR nil` (filter out tombstones)
+    ///
+    /// When the user unpairs, `currentCode == nil`, so the predicate reduces to
+    /// `householdCode == nil` and partner records are hidden locally (not deleted;
+    /// re-pairing with the same code restores them).
+    private func currentHouseholdPredicate() -> NSPredicate {
+        let deletedClause = NSPredicate(format: "isSoftDeleted == NO OR isSoftDeleted == nil")
+        if let code = householdService.householdCode {
+            let scopeClause = NSPredicate(
+                format: "householdCode == %@ OR householdCode == nil",
+                code
+            )
+            return NSCompoundPredicate(andPredicateWithSubpredicates: [scopeClause, deletedClause])
+        } else {
+            let scopeClause = NSPredicate(format: "householdCode == nil")
+            return NSCompoundPredicate(andPredicateWithSubpredicates: [scopeClause, deletedClause])
+        }
     }
 
     func startObservingExpenses() {
@@ -59,6 +95,8 @@ final class ExpenseRepository: ExpenseRepositoryProtocol {
         )
 
         let request: NSFetchRequest<Expense> = Expense.fetchRequest()
+        // Scope to current household (or unpaired local records) + filter tombstones.
+        request.predicate = currentHouseholdPredicate()
         request.sortDescriptors = [NSSortDescriptor(key: "createdAt", ascending: false)]
         request.fetchBatchSize = 50
 
@@ -89,7 +127,6 @@ final class ExpenseRepository: ExpenseRepositoryProtocol {
         } catch {
             let elapsed = (CFAbsoluteTimeGetCurrent() - fetchStart) * 1000
             logger.fault("startObservingExpenses: performFetch FAILED in \(elapsed, format: .fixed(precision: 1))ms — \(error.localizedDescription)")
-            // Tear down so a future call can retry from scratch
             self.feedFRC?.delegate = nil
             self.feedFRC = nil
             self.frcDelegate = nil
@@ -111,6 +148,7 @@ final class ExpenseRepository: ExpenseRepositoryProtocol {
                 note: expense.note,
                 categoryID: categoryID,
                 createdByUserID: expense.wrappedCreatedByUserID,
+                createdByDisplayName: expense.wrappedCreatedByDisplayName,
                 createdAt: expense.wrappedCreatedAt,
                 modifiedAt: expense.wrappedModifiedAt
             )
@@ -122,8 +160,6 @@ final class ExpenseRepository: ExpenseRepositoryProtocol {
         logger.debug("handleFRCUpdate: publishing \(data.count) expenses to callback")
         onExpensesChanged?(data)
     }
-
-    // MARK: - FRC Delegate (nested class for NSObject conformance)
 
     @MainActor
     private class FRCDelegate: NSObject, @preconcurrency NSFetchedResultsControllerDelegate {
@@ -139,11 +175,15 @@ final class ExpenseRepository: ExpenseRepositoryProtocol {
     func fetchExpenses(for period: DateInterval) async throws -> [ExpenseData] {
         logger.debug("fetchExpenses: \(period.start) — \(period.end)")
         let request: NSFetchRequest<Expense> = Expense.fetchRequest()
-        request.predicate = NSPredicate(
+        let periodClause = NSPredicate(
             format: "createdAt >= %@ AND createdAt < %@",
             period.start as NSDate,
             period.end as NSDate
         )
+        request.predicate = NSCompoundPredicate(andPredicateWithSubpredicates: [
+            periodClause,
+            currentHouseholdPredicate(),
+        ])
         request.sortDescriptors = [NSSortDescriptor(key: "createdAt", ascending: false)]
 
         let results = try persistence.container.viewContext.fetch(request)
@@ -158,6 +198,7 @@ final class ExpenseRepository: ExpenseRepositoryProtocol {
                 note: expense.note,
                 categoryID: categoryID,
                 createdByUserID: expense.wrappedCreatedByUserID,
+                createdByDisplayName: expense.wrappedCreatedByDisplayName,
                 createdAt: expense.wrappedCreatedAt,
                 modifiedAt: expense.wrappedModifiedAt
             )
@@ -170,7 +211,7 @@ final class ExpenseRepository: ExpenseRepositoryProtocol {
 
         let upsertStart = CFAbsoluteTimeGetCurrent()
         let request: NSFetchRequest<Expense> = Expense.fetchRequest()
-        request.predicate = NSPredicate(format: "id == %@", data.id as CVarArg)
+        request.predicate = NSPredicate(format: "id == %@", data.id as NSUUID)
         request.fetchLimit = 1
 
         let existing = try context.fetch(request).first
@@ -186,10 +227,15 @@ final class ExpenseRepository: ExpenseRepositoryProtocol {
         expense.createdByUserID = data.createdByUserID
         expense.createdAt = data.createdAt
         expense.modifiedAt = data.modifiedAt
-
-        // PRE-SAVE: Route to shared store if participant (new objects only)
-        if isNewObject {
-            cloudSharingService?.prepareObjectForSharedSave(expense)
+        expense.isSoftDeleted = false
+        // Stamp the record with the current household (may be nil in solo mode — the
+        // record stays local-only until pairing, at which point the next save will
+        // propagate it to the public DB via publicSync.upsert below).
+        expense.householdCode = householdService.householdCode
+        // Display name is populated by ExpenseEntryViewModel before calling save for
+        // new expenses; preserve any existing value on edits.
+        if expense.createdByDisplayName == nil {
+            expense.createdByDisplayName = householdService.displayName
         }
 
         do {
@@ -203,84 +249,10 @@ final class ExpenseRepository: ExpenseRepositoryProtocol {
             throw error
         }
 
-    }
-
-    /// Delay before calling `container.share()` to let NSPersistentCloudKitContainer's
-    /// async export cycle (triggered by the preceding `context.save()`) register
-    /// metadata for the new record. Without this delay, `container.share()` races the
-    /// export and produces "Missing metadata for recordID" errors plus a 3s result-
-    /// accumulator timeout inside the container. 800ms is empirically sufficient for
-    /// the export to advance past the metadata-registration point on a warm connection.
-    private static let shareExportSettleDelay: UInt64 = 800_000_000 // 800ms
-
-    func enqueueShareForNewExpense(id: UUID) {
-        // Solo-mode fast path: skip Task creation + 800ms sleep + inner isShareOwner
-        // guard entirely. The NSPersistentStoreRemoteChange listener in ContentView
-        // handles state transitions; this guard only needs to catch the steady state.
-        guard let svc = cloudSharingService, svc.state != .solo else {
-            logger.debug("enqueueShareForNewExpense: solo mode — skipping")
-            return
+        // Mirror to public CloudKit DB for partner sync. No-op if unpaired.
+        if householdService.isPaired {
+            publicSync.upsert(expense: expense)
         }
-        logger.debug("enqueueShareForNewExpense: id=\(id, privacy: .private)")
-        activeShareTasks[id]?.cancel()
-        // Strong capture: ExpenseRepository.shared is a singleton that outlives all
-        // enqueued tasks — `[self]` guarantees the activeShareTasks cleanup on line
-        // below runs unconditionally, whereas `[weak self]` would silently skip it
-        // on dealloc and leak the dict entry.
-        let task = Task { [self] in
-            // `shareObjectsToHouseholdIfNeeded` hops to a detached bg task for the
-            // actual `container.share()` call, so this wrapper no longer needs to
-            // yield to let the caller navigate first — the main actor stays free.
-            await shareNewExpenseToHousehold(id: id)
-            activeShareTasks[id] = nil
-        }
-        activeShareTasks[id] = task
-    }
-
-    func shareNewExpenseToHousehold(id: UUID) async {
-        logger.info("shareNewExpenseToHousehold: starting — id=\(id, privacy: .private)")
-        // Participant path no-ops inside shareObjectsToHouseholdIfNeeded, so skip the
-        // 800ms sleep entirely for participants — they use the pre-save routing path.
-        guard cloudSharingService?.isShareOwner == true else {
-            logger.debug("shareNewExpenseToHousehold: not owner — skipping post-save share")
-            return
-        }
-        // Let context.save()'s async CloudKit export register metadata before we
-        // invoke container.share() — see shareExportSettleDelay doc comment.
-        do {
-            try await Task.sleep(nanoseconds: Self.shareExportSettleDelay)
-        } catch {
-            return
-        }
-        let totalStart = CFAbsoluteTimeGetCurrent()
-        let context = persistence.container.viewContext
-        let refetchStart = CFAbsoluteTimeGetCurrent()
-        let request: NSFetchRequest<Expense> = Expense.fetchRequest()
-        request.predicate = NSPredicate(format: "id == %@", id as CVarArg)
-        request.fetchLimit = 1
-
-        let expense: Expense
-        do {
-            guard let found = try context.fetch(request).first else {
-                logger.warning("shareNewExpenseToHousehold: expense \(id, privacy: .private) not found — skipping")
-                return
-            }
-            expense = found
-            let refetchElapsed = (CFAbsoluteTimeGetCurrent() - refetchStart) * 1000
-            logger.debug("shareNewExpenseToHousehold: re-fetch in \(refetchElapsed, format: .fixed(precision: 1))ms")
-        } catch {
-            logger.fault("shareNewExpenseToHousehold: fetch FAILED — \(error.localizedDescription, privacy: .public)")
-            return
-        }
-        guard !Task.isCancelled else { return }
-        logger.debug("shareNewExpenseToHousehold: sharing to household")
-        do {
-            try await cloudSharingService?.shareObjectsToHouseholdIfNeeded([expense])
-        } catch {
-            logger.error("shareNewExpenseToHousehold: FAILED — \(error.localizedDescription)")
-        }
-        let totalElapsed = (CFAbsoluteTimeGetCurrent() - totalStart) * 1000
-        logger.info("shareNewExpenseToHousehold: completed in \(totalElapsed, format: .fixed(precision: 1))ms")
     }
 
     func deleteExpense(id: UUID) async throws {
@@ -288,40 +260,30 @@ final class ExpenseRepository: ExpenseRepositoryProtocol {
         let context = persistence.container.viewContext
 
         let request: NSFetchRequest<Expense> = Expense.fetchRequest()
-        request.predicate = NSPredicate(format: "id == %@", id as CVarArg)
+        request.predicate = NSPredicate(format: "id == %@", id as NSUUID)
         request.fetchLimit = 1
 
-        // Scope the fetch to the user's primary store so we delete the authoritative
-        // copy and NSPersistentCloudKitContainer generates a correct tombstone via
-        // history tracking. Participants write expenses to the shared store via
-        // prepareObjectForSharedSave, so their deletes must target sharedPersistentStore.
-        // Owner and solo mode target privatePersistentStore (owned shared zones live there).
-        let targetStore: NSPersistentStore?
-        if let svc = cloudSharingService,
-           !svc.isShareOwner,
-           case .connected = svc.state {
-            targetStore = persistence.sharedPersistentStore
-        } else {
-            targetStore = persistence.privatePersistentStore
-        }
-        guard let targetStore else {
-            logger.error("deleteExpense: no persistent store available — aborting")
-            return
-        }
-        request.affectedStores = [targetStore]
-
         guard let expense = try context.fetch(request).first else {
-            logger.warning("deleteExpense: id=\(id) not found in target store — already deleted or in wrong store")
+            logger.warning("deleteExpense: id=\(id) not found — already deleted")
             return
         }
-        context.delete(expense)
+
+        // Soft-delete: tombstone the record so the partner sees the deletion. The
+        // public DB has no native tombstones, so we mirror an `isSoftDeleted = true`
+        // record and let the FRC predicate filter it from the UI.
+        expense.isSoftDeleted = true
+        expense.modifiedAt = Date()
         do {
             try context.save()
-            logger.info("deleteExpense: success")
+            logger.info("deleteExpense: tombstoned successfully")
         } catch {
             logger.error("deleteExpense: context.save() FAILED — \(error.localizedDescription)")
             context.rollback()
             throw error
+        }
+
+        if householdService.isPaired {
+            publicSync.upsert(expense: expense)
         }
     }
 }

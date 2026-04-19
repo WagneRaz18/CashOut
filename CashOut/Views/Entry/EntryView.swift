@@ -175,15 +175,15 @@ struct EntryView: View {
 // defaults (auth, haptic, categoryOrderStore) use .shared since they do not touch Core Data.
 #Preview {
     EntryView(viewModel: ExpenseEntryViewModel(
-        expenseRepository: ExpenseRepository(persistence: .preview, cloudSharingService: nil),
-        categoryRepository: CategoryRepository(persistence: .preview, cloudSharingService: nil)
+        expenseRepository: ExpenseRepository(persistence: .preview),
+        categoryRepository: CategoryRepository(persistence: .preview)
     ))
 }
 
 #Preview("Dynamic Type — AX3") {
     EntryView(viewModel: ExpenseEntryViewModel(
-        expenseRepository: ExpenseRepository(persistence: .preview, cloudSharingService: nil),
-        categoryRepository: CategoryRepository(persistence: .preview, cloudSharingService: nil)
+        expenseRepository: ExpenseRepository(persistence: .preview),
+        categoryRepository: CategoryRepository(persistence: .preview)
     ))
     .dynamicTypeSize(.accessibility3)
 }

@@ -47,7 +47,10 @@ final class FeedViewModel {
     private let authService: AuthenticationServiceProtocol
 
     @ObservationIgnored
-    private let cloudSharingService: CloudSharingServiceProtocol
+    private let householdService: HouseholdServiceProtocol
+
+    @ObservationIgnored
+    private let publicSync: PublicSyncServiceProtocol
 
     @ObservationIgnored
     private var syncMonitorService: SyncMonitorServiceProtocol
@@ -67,14 +70,16 @@ final class FeedViewModel {
         repository: ExpenseRepositoryProtocol = ExpenseRepository.shared,
         categoryRepository: CategoryRepositoryProtocol = CategoryRepository.shared,
         authService: AuthenticationServiceProtocol = AuthenticationService.shared,
-        cloudSharingService: CloudSharingServiceProtocol = CloudSharingService.shared,
+        householdService: HouseholdServiceProtocol = HouseholdService.shared,
+        publicSync: PublicSyncServiceProtocol = PublicSyncService.shared,
         syncMonitorService: SyncMonitorServiceProtocol = SyncMonitorService.shared,
         hapticService: HapticServiceProtocol = HapticService.shared
     ) {
         self.repository = repository
         self.categoryRepository = categoryRepository
         self.authService = authService
-        self.cloudSharingService = cloudSharingService
+        self.householdService = householdService
+        self.publicSync = publicSync
         self.syncMonitorService = syncMonitorService
         self.hapticService = hapticService
 
@@ -125,7 +130,10 @@ final class FeedViewModel {
             logger.error("refresh: unexpected sleep error — \(error.localizedDescription, privacy: .public)")
             return
         }
-        await cloudSharingService.checkSharingStatus()
+        // In the household-code model, refresh prods the public-DB sync service to
+        // pull any changes the partner has made. Live timestamps update automatically
+        // via TimelineView on the next tick — no explicit clock bump needed here.
+        await publicSync.fetchChanges()
         logger.info("refresh: completed")
     }
 
@@ -137,30 +145,27 @@ final class FeedViewModel {
 
     // MARK: - Partner Attribution
 
+    /// True iff the expense was created on THIS device (display names match, or the
+    /// record predates the household-code model and has no display name attached).
     func isCurrentUser(_ expense: ExpenseData) -> Bool {
-        // Treat unattributed expenses (empty createdByUserID) as current user's
-        guard !expense.createdByUserID.isEmpty else { return true }
-        guard let currentUserID = authService.currentUserID else { return true }
-        return expense.createdByUserID == currentUserID
+        // Legacy rows with no display name belong to this device by default —
+        // they were created before pairing existed.
+        guard !expense.createdByDisplayName.isEmpty else { return true }
+        return expense.createdByDisplayName == householdService.displayName
     }
 
     func partnerInitials(for expense: ExpenseData) -> String {
         if isCurrentUser(expense) {
             return "Me"
         }
-        // Partner name is only meaningful in the `.connected` state.
-        if case .connected(let name?) = cloudSharingService.state {
-            let initial = name.prefix(1).uppercased()
-            return initial.isEmpty ? "P" : initial
-        }
-        return "P"
+        let initial = expense.createdByDisplayName.prefix(1).uppercased()
+        return initial.isEmpty ? "P" : initial
     }
 
-    var partnerDisplayName: String {
-        if case .connected(let name?) = cloudSharingService.state {
-            return name
-        }
-        return "Partner"
+    /// Display name to render for a NON-current-user expense. Falls back to "Partner"
+    /// if the record was synced without an attribution.
+    func partnerDisplayName(for expense: ExpenseData) -> String {
+        expense.createdByDisplayName.isEmpty ? "Partner" : expense.createdByDisplayName
     }
 
     // MARK: - Delete
