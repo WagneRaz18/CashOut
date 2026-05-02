@@ -7,7 +7,7 @@ struct MonthlyCalendarView: View {
     let onDayTap: (Date) -> Void
 
     private static let weekdaySymbols = ["S", "M", "T", "W", "T", "F", "S"]
-    private static let columns = Array(repeating: GridItem(.flexible(), spacing: 1), count: 7)
+    private static let columns = Array(repeating: GridItem(.flexible(), spacing: 0), count: 7)
 
     @State private var cells: [MonthGridCell] = []
 
@@ -16,37 +16,31 @@ struct MonthlyCalendarView: View {
     }
 
     var body: some View {
-        VStack(spacing: 4) {
-            HStack(spacing: 0) {
-                ForEach(Self.weekdaySymbols.indices, id: \.self) { i in
-                    Text(Self.weekdaySymbols[i])
-                        .font(.caption2)
-                        .foregroundStyle(.secondary)
-                        .frame(maxWidth: .infinity)
-                        .accessibilityLabel(Calendar.gregorian.weekdaySymbols[i])
+        LazyVGrid(columns: Self.columns, spacing: 4) {
+            ForEach(Array(Self.weekdaySymbols.enumerated()), id: \.offset) { i, symbol in
+                Text(symbol)
+                    .font(.caption2)
+                    .foregroundStyle(.secondary)
+                    .frame(maxWidth: .infinity)
+                    .accessibilityLabel(Calendar.gregorian.weekdaySymbols[i])
+            }
+            ForEach(cells) { cell in
+                if let date = cell.date {
+                    let dateStart = Calendar.gregorian.startOfDay(for: date)
+                    CalendarDayCell(
+                        date: date,
+                        amount: dailyTotals[dateStart],
+                        isToday: dateStart == todayStart,
+                        isFuture: dateStart > todayStart,
+                        onTap: { onDayTap(date) }
+                    )
+                } else {
+                    Color.clear
+                        .aspectRatio(0.75, contentMode: .fit)
                 }
             }
-            .padding(.horizontal, Spacing.sm)
-
-            LazyVGrid(columns: Self.columns, spacing: 1) {
-                ForEach(cells) { cell in
-                    if let date = cell.date {
-                        let dateStart = Calendar.gregorian.startOfDay(for: date)
-                        CalendarDayCell(
-                            date: date,
-                            amount: dailyTotals[dateStart],
-                            isToday: dateStart == todayStart,
-                            isFuture: dateStart > todayStart,
-                            onTap: { onDayTap(date) }
-                        )
-                    } else {
-                        Color.clear
-                            .aspectRatio(0.75, contentMode: .fit)
-                    }
-                }
-            }
-            .padding(.horizontal, Spacing.sm)
         }
+        .padding(.horizontal, Spacing.sm)
         .padding(.vertical, Spacing.sm)
         .onChange(of: calendarMonth, initial: true) { _, _ in cells = buildCells() }
     }
@@ -107,15 +101,12 @@ private struct CalendarDayCell: View {
                     .foregroundStyle(isToday ? Color.white : isFuture ? Color.secondary : Color.primary)
             }
 
-            if let amount, amount > 0 {
-                Text(amount.displayAmount)
-                    .font(.system(size: amountFontSize))
-                    .foregroundStyle(Color.secondary)
-                    .lineLimit(1)
-                    .minimumScaleFactor(0.5)
-            } else {
-                Spacer().frame(height: 9)
-            }
+            Text(amount.map { $0 > 0 ? $0.displayAmount : " " } ?? " ")
+                .font(.system(size: amountFontSize))
+                .foregroundStyle(Color.secondary)
+                .lineLimit(1)
+                .minimumScaleFactor(0.5)
+                .opacity((amount ?? 0) > 0 ? 1 : 0)
         }
         .frame(maxWidth: .infinity)
         .aspectRatio(0.75, contentMode: .fit)
