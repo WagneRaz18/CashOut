@@ -69,6 +69,7 @@ struct InsightsView: View {
                                 viewModel.selectCategory(categoryID)
                             }
                         )
+                        .id(viewModel.loadKey)
 
                         if viewModel.selectedPeriod == .monthly {
                             MonthlyCalendarView(
@@ -83,6 +84,7 @@ struct InsightsView: View {
                                 entries: viewModel.barEntries,
                                 accessibilityLabel: viewModel.barChartAccessibilityLabel
                             )
+                            .id(viewModel.loadKey)
                             .transition(.opacity)
                         }
 

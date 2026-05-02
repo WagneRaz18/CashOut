@@ -299,7 +299,12 @@ final class InsightsViewModel {
         let period = selectedPeriod
         let offset = dateOffset
         isLoading = true
+        barEntries = []
+        chartSlices = []
+        totalAmount = 0
+        categoryTotals = []
         dailyTotals = [:]
+        previousPeriodTotal = nil
         defer { isLoading = false }
         let now = Date()
         let refDate = referenceDate(for: period, offset: offset, relativeTo: now)

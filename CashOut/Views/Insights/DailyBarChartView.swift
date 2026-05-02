@@ -48,6 +48,7 @@ struct DailyBarChartView: View {
                     }
                 }
             }
+            .chartYScale(domain: 0...Swift.max(1, entries.map(\.total).max() ?? 1))
             .chartYAxis(.hidden)
             .chartLegend(.hidden)
             .frame(height: 140)
