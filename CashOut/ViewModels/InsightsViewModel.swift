@@ -343,7 +343,7 @@ final class InsightsViewModel {
         switch period {
         case .daily:
             let total = expenses.reduce(Int64(0)) { $0 + $1.amount }
-            return [BarEntry(label: "Today", total: total)]
+            return [BarEntry(label: "Today", total: total, dateLabel: Self.dayMonthFormatter.string(from: interval.start))]
 
         case .weekly:
             var entries: [BarEntry] = []
