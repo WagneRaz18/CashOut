@@ -205,6 +205,88 @@ final class InsightsViewModelNavigationTests: XCTestCase {
         )
     }
 
+    // MARK: - navigateToDay Tests
+
+    func testNavigateToDaySetsPeriodToDaily() throws {
+        let (viewModel, _, _, _) = makeSUT()
+        viewModel.selectedPeriod = .monthly
+        let yesterday = try XCTUnwrap(Calendar.gregorian.date(byAdding: .day, value: -1, to: Date()))
+        viewModel.navigateToDay(yesterday)
+        XCTAssertEqual(viewModel.selectedPeriod, .daily)
+    }
+
+    func testNavigateToDaySetsCorrectOffset() throws {
+        let (viewModel, _, _, _) = makeSUT()
+        let fiveDaysAgo = try XCTUnwrap(Calendar.gregorian.date(byAdding: .day, value: -5, to: Date()))
+        viewModel.navigateToDay(fiveDaysAgo)
+        XCTAssertEqual(viewModel.dateOffset, -5)
+    }
+
+    func testNavigateToDayOnTodaySetsOffsetZero() {
+        let (viewModel, _, _, _) = makeSUT()
+        viewModel.dateOffset = -3
+        viewModel.navigateToDay(Date())
+        XCTAssertEqual(viewModel.dateOffset, 0)
+        XCTAssertEqual(viewModel.selectedPeriod, .daily)
+    }
+
+    func testNavigateToDayFutureDateIsNoOp() throws {
+        let (viewModel, _, _, _) = makeSUT()
+        viewModel.selectedPeriod = .monthly
+        viewModel.dateOffset = -1
+        let tomorrow = try XCTUnwrap(Calendar.gregorian.date(byAdding: .day, value: 1, to: Date()))
+        viewModel.navigateToDay(tomorrow)
+        XCTAssertEqual(viewModel.selectedPeriod, .monthly, "Future date tap should not change period")
+        XCTAssertEqual(viewModel.dateOffset, -1, "Future date tap should not change offset")
+    }
+
+    func testNavigateToDayWritesDateOffsetBeforeSelectedPeriod() throws {
+        let (viewModel, _, _, _) = makeSUT()
+        viewModel.selectedPeriod = .monthly
+        let threeDaysAgo = try XCTUnwrap(Calendar.gregorian.date(byAdding: .day, value: -3, to: Date()))
+        viewModel.navigateToDay(threeDaysAgo)
+        XCTAssertEqual(viewModel.dateOffset, -3)
+        XCTAssertEqual(viewModel.selectedPeriod, .daily)
+        XCTAssertEqual(viewModel.loadKey, "Day--3", "loadKey must reflect final state, not intermediate")
+    }
+
+    // MARK: - dailyTotals Tests
+
+    func testDailyTotalsAggregatesExpensesOnSameDay() async {
+        let (viewModel, expenseRepo, _, _) = makeSUT()
+        viewModel.selectedPeriod = .daily
+        let todayStart = Calendar.gregorian.startOfDay(for: Date())
+        expenseRepo.stubbedFetchResult = [
+            makeExpense(amount: 1000, createdAt: todayStart),
+            makeExpense(amount: 2500, createdAt: todayStart)
+        ]
+        await viewModel.loadData()
+        XCTAssertEqual(viewModel.dailyTotals[todayStart], 3500)
+    }
+
+    func testDailyTotalsKeepsDaysWithSpendingOnly() async {
+        let (viewModel, expenseRepo, _, _) = makeSUT()
+        viewModel.selectedPeriod = .daily
+        let todayStart = Calendar.gregorian.startOfDay(for: Date())
+        expenseRepo.stubbedFetchResult = [makeExpense(amount: 800, createdAt: todayStart)]
+        await viewModel.loadData()
+        XCTAssertEqual(viewModel.dailyTotals.count, 1, "Only days with spend should appear in dailyTotals")
+    }
+
+    func testDailyTotalsResetOnLoadError() async {
+        let (viewModel, expenseRepo, _, _) = makeSUT()
+        viewModel.selectedPeriod = .daily
+        let todayStart = Calendar.gregorian.startOfDay(for: Date())
+        expenseRepo.stubbedFetchResult = [makeExpense(amount: 500, createdAt: todayStart)]
+        await viewModel.loadData()
+        XCTAssertFalse(viewModel.dailyTotals.isEmpty, "Precondition: dailyTotals must have data")
+
+        expenseRepo.stubbedFetchResult = []
+        expenseRepo.shouldThrow = true
+        await viewModel.invalidateAndReload()
+        XCTAssertTrue(viewModel.dailyTotals.isEmpty, "dailyTotals must reset on load error")
+    }
+
     func testDailyBarEntryLabelIsYesterdayAtOffsetNegativeOne() async {
         let (viewModel, expenseRepo, _, _) = makeSUT()
         viewModel.selectedPeriod = .daily

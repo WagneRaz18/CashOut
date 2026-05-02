@@ -92,6 +92,7 @@ final class InsightsViewModel {
     var categoryTotals: [CategoryTotal] = []
     var chartSlices: [ChartSlice] = []
     var barEntries: [BarEntry] = []
+    var dailyTotals: [Date: Int64] = [:]
     var selectedDestination: CategoryNavDestination?
     private(set) var currentPeriodInterval: DateInterval?
     private(set) var fetchedCategories: [CategoryData] = []
@@ -106,6 +107,11 @@ final class InsightsViewModel {
     var loadKey: String { "\(selectedPeriod.rawValue)-\(dateOffset)" }
 
     var canNavigateForward: Bool { dateOffset < 0 }
+
+    var viewedMonthStart: Date {
+        let ref = Self.calendar.date(byAdding: .month, value: dateOffset, to: Date()) ?? Date()
+        return Self.calendar.dateInterval(of: .month, for: ref)?.start ?? ref
+    }
 
     var headlineText: String { totalAmount.displayAmount }
 
@@ -251,6 +257,15 @@ final class InsightsViewModel {
         dateOffset = 0
     }
 
+    func navigateToDay(_ date: Date) {
+        let todayStart = Self.calendar.startOfDay(for: Date())
+        let tappedStart = Self.calendar.startOfDay(for: date)
+        guard tappedStart <= todayStart else { return }
+        let diff = Self.calendar.dateComponents([.day], from: tappedStart, to: todayStart).day ?? 0
+        dateOffset = -diff
+        selectedPeriod = .daily
+    }
+
     func selectCategory(_ categoryID: UUID?) {
         guard let categoryID, let interval = currentPeriodInterval else {
             logger.debug("selectCategory: cleared (hasCategory=\(categoryID != nil), hasInterval=\(self.currentPeriodInterval != nil))")
@@ -283,6 +298,7 @@ final class InsightsViewModel {
         let period = selectedPeriod
         let offset = dateOffset
         isLoading = true
+        dailyTotals = [:]
         defer { isLoading = false }
         let now = Date()
         let refDate = referenceDate(for: period, offset: offset, relativeTo: now)
@@ -326,6 +342,9 @@ final class InsightsViewModel {
         let categoryMap = buildCategoryMap(from: categories)
         chartSlices = buildChartSlices(from: categoryTotals, categoryMap: categoryMap)
         barEntries = computeBarEntries(from: currentExpenses, period: period, interval: interval)
+        dailyTotals = currentExpenses.reduce(into: [:]) { map, expense in
+            map[Self.calendar.startOfDay(for: expense.createdAt), default: 0] += expense.amount
+        }
         previousPeriodTotal = previousExpenses.isEmpty ? nil : previousExpenses.reduce(Int64(0)) { $0 + $1.amount }
         currentPeriodInterval = interval
         errorMessage = nil
@@ -339,6 +358,7 @@ final class InsightsViewModel {
         categoryTotals = []
         chartSlices = []
         barEntries = []
+        dailyTotals = [:]
         fetchedCategories = []
         previousPeriodTotal = nil
         currentPeriodInterval = nil

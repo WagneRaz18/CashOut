@@ -11,9 +11,16 @@ struct InsightsView: View {
     @Bindable var viewModel: InsightsViewModel
     @State private var showSettings = false
 
+    private var periodBinding: Binding<InsightsViewModel.TimePeriod> {
+        Binding(
+            get: { viewModel.selectedPeriod },
+            set: { viewModel.selectedPeriod = $0; viewModel.resetToCurrentPeriod() }
+        )
+    }
+
     var body: some View {
         VStack(spacing: 0) {
-            Picker("Period", selection: Bindable(viewModel).selectedPeriod) {
+            Picker("Period", selection: periodBinding) {
                 ForEach(InsightsViewModel.TimePeriod.allCases, id: \.self) { period in
                     Text(period.rawValue).tag(period)
                 }
@@ -36,7 +43,7 @@ struct InsightsView: View {
                         .padding(.top, Spacing.sm)
                 }
 
-                if viewModel.isEmpty {
+                if viewModel.isEmpty && viewModel.selectedPeriod != .monthly {
                     InsightsSummaryView(
                         slices: [],
                         headlineText: viewModel.headlineText,
@@ -63,18 +70,31 @@ struct InsightsView: View {
                             }
                         )
 
-                        DailyBarChartView(
-                            entries: viewModel.barEntries,
-                            accessibilityLabel: viewModel.barChartAccessibilityLabel
-                        )
+                        if viewModel.selectedPeriod == .monthly {
+                            MonthlyCalendarView(
+                                calendarMonth: viewModel.viewedMonthStart,
+                                dailyTotals: viewModel.dailyTotals,
+                                today: Date(),
+                                onDayTap: { date in viewModel.navigateToDay(date) }
+                            )
+                            .transition(.opacity)
+                        } else {
+                            DailyBarChartView(
+                                entries: viewModel.barEntries,
+                                accessibilityLabel: viewModel.barChartAccessibilityLabel
+                            )
+                            .transition(.opacity)
+                        }
 
-                        CategoryBreakdownView(
-                            slices: viewModel.chartSlices,
-                            totalAmount: viewModel.totalAmount,
-                            onCategoryTapped: { categoryID in
-                                viewModel.selectCategory(categoryID)
-                            }
-                        )
+                        if !viewModel.isEmpty {
+                            CategoryBreakdownView(
+                                slices: viewModel.chartSlices,
+                                totalAmount: viewModel.totalAmount,
+                                onCategoryTapped: { categoryID in
+                                    viewModel.selectCategory(categoryID)
+                                }
+                            )
+                        }
                     }
                 }
             }
@@ -126,9 +146,6 @@ struct InsightsView: View {
             case .decrement: viewModel.navigatePrevious()
             @unknown default: break
             }
-        }
-        .onChange(of: viewModel.selectedPeriod) {
-            viewModel.resetToCurrentPeriod()
         }
         .task(id: viewModel.loadKey) {
             logger.info("InsightsView.task: loading period=\(viewModel.selectedPeriod.rawValue, privacy: .public) offset=\(viewModel.dateOffset, privacy: .public)")

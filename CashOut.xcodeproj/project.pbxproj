@@ -78,6 +78,7 @@
 		L1M2N3O4P5Q60C12 /* FilteredFeedView.swift in Sources */ = {isa = PBXBuildFile; fileRef = L1M2N3O4P5Q60C02 /* FilteredFeedView.swift */; };
 		L1M2N3O4P5Q60C13 /* DailyBarChartView.swift in Sources */ = {isa = PBXBuildFile; fileRef = L1M2N3O4P5Q60C03 /* DailyBarChartView.swift */; };
 		L1M2N3O4P5Q60C14 /* CategoryBreakdownView.swift in Sources */ = {isa = PBXBuildFile; fileRef = L1M2N3O4P5Q60C04 /* CategoryBreakdownView.swift */; };
+		L1M2N3O4P5Q60C15 /* MonthlyCalendarView.swift in Sources */ = {isa = PBXBuildFile; fileRef = L1M2N3O4P5Q60C05 /* MonthlyCalendarView.swift */; };
 		M1N2O3P4Q5R60D11M1N2O3P4 /* SyncMonitorService.swift in Sources */ = {isa = PBXBuildFile; fileRef = M1N2O3P4Q5R60D01M1N2O3P4 /* SyncMonitorService.swift */; };
 		M1N2O3P4Q5R60D12M1N2O3P4 /* MockSyncMonitorService.swift in Sources */ = {isa = PBXBuildFile; fileRef = M1N2O3P4Q5R60D02M1N2O3P4 /* MockSyncMonitorService.swift */; };
 		N1O2P3Q4R5S60E11N1O2P3Q4 /* SyncStatusIndicator.swift in Sources */ = {isa = PBXBuildFile; fileRef = N1O2P3Q4R5S60E01N1O2P3Q4 /* SyncStatusIndicator.swift */; };
@@ -187,6 +188,7 @@
 		L1M2N3O4P5Q60C02 /* FilteredFeedView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FilteredFeedView.swift; sourceTree = "<group>"; };
 		L1M2N3O4P5Q60C03 /* DailyBarChartView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DailyBarChartView.swift; sourceTree = "<group>"; };
 		L1M2N3O4P5Q60C04 /* CategoryBreakdownView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CategoryBreakdownView.swift; sourceTree = "<group>"; };
+		L1M2N3O4P5Q60C05 /* MonthlyCalendarView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MonthlyCalendarView.swift; sourceTree = "<group>"; };
 		M1N2O3P4Q5R60D01M1N2O3P4 /* SyncMonitorService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SyncMonitorService.swift; sourceTree = "<group>"; };
 		M1N2O3P4Q5R60D02M1N2O3P4 /* MockSyncMonitorService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MockSyncMonitorService.swift; sourceTree = "<group>"; };
 		N1O2P3Q4R5S60E01N1O2P3Q4 /* SyncStatusIndicator.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SyncStatusIndicator.swift; sourceTree = "<group>"; };
@@ -363,6 +365,7 @@
 				L1M2N3O4P5Q60C02 /* FilteredFeedView.swift */,
 				B1C2D3E4F5061829B1C2D3E5 /* InsightsView.swift */,
 				L1M2N3O4P5Q60C01 /* InsightsSummaryView.swift */,
+				L1M2N3O4P5Q60C05 /* MonthlyCalendarView.swift */,
 			);
 			path = Insights;
 			sourceTree = "<group>";
@@ -682,6 +685,7 @@
 				L1M2N3O4P5Q60C12 /* FilteredFeedView.swift in Sources */,
 				L1M2N3O4P5Q60C13 /* DailyBarChartView.swift in Sources */,
 				L1M2N3O4P5Q60C14 /* CategoryBreakdownView.swift in Sources */,
+				L1M2N3O4P5Q60C15 /* MonthlyCalendarView.swift in Sources */,
 				C8E0A2FDAAB606456BD2E594 /* SettingsView.swift in Sources */,
 				F57145CC7AF2B512474D364D /* SettingsViewModel.swift in Sources */,
 				B483D9DD79CB54CBA920091B /* Bundle+Version.swift in Sources */,

@@ -89,6 +89,7 @@
 - **2026-04-06**: SF Symbol names (e.g., `"cup.and.saucer.fill"`) are incomprehensible as VoiceOver labels — always map to human-readable strings via a `[String: String]` dictionary. Use `.accessibilityAddTraits(.isSelected)` on picker items so VoiceOver announces selection state.
 
 - **2026-04-06**: NavigationLink wrapping tappable rows for edit navigation should include `.accessibilityHint("Double tap to edit")` — VoiceOver announces the chevron as "button" but does not describe the action. The hint distinguishes editable rows from read-only ones for screen reader users.
+- **2026-05-02**: Never use `.disabled(true)` on cells that should be visually non-interactive but still VoiceOver-accessible (e.g., future calendar days) — `.disabled(true)` suppresses VoiceOver focus entirely, making the cell invisible to screen reader users. Use `.allowsHitTesting(false)` + `.opacity(0.3)` to block taps while keeping VoiceOver focus, then add `.accessibilityHint("Future date, not available")` so the user understands why the cell is inactive.
 
 ## os.log in SwiftUI Views
 - **2026-04-08**: `logger.info(...)` returns `Void` — placing it directly inside `@ViewBuilder` closures (`.sheet`, `.navigationDestination`, `.overlay` content) causes "type '()' cannot conform to 'View'". Move logger calls to `.onAppear { }`, button action closures, or `.task { }` instead.
