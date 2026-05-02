@@ -223,7 +223,7 @@ final class PersistenceController {
             logger.debug("purgeOldHistory: skipped — private store unavailable")
             return
         }
-        let sevenDaysAgo = Calendar(identifier: .gregorian)
+        let sevenDaysAgo = Calendar.gregorian
             .date(byAdding: .day, value: -7, to: Date()) ?? Date()
         let purgeRequest = NSPersistentHistoryChangeRequest.deleteHistory(before: sevenDaysAgo)
         purgeRequest.affectedStores = [privateStore]

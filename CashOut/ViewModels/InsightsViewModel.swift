@@ -86,6 +86,7 @@ final class InsightsViewModel {
 
     var selectedPeriod: TimePeriod = .weekly
     var dateOffset: Int = 0
+    var isLoading: Bool = false
     var totalAmount: Int64 = 0
     var previousPeriodTotal: Int64?
     var categoryTotals: [CategoryTotal] = []
@@ -101,6 +102,7 @@ final class InsightsViewModel {
 
     var isEmpty: Bool { totalAmount == 0 && categoryTotals.isEmpty }
 
+    // Bridge for .task(id:) — period + offset uniquely identify each data slice.
     var loadKey: String { "\(selectedPeriod.rawValue)-\(dateOffset)" }
 
     var canNavigateForward: Bool { dateOffset < 0 }
@@ -162,17 +164,16 @@ final class InsightsViewModel {
     // MARK: - Dependencies
 
     private let repository: ExpenseRepositoryProtocol
-
     private let categoryRepository: CategoryRepositoryProtocol
-
     private let authService: AuthenticationServiceProtocol
+    private let hapticService: HapticServiceProtocol
 
     @ObservationIgnored
     private var syncMonitorService: SyncMonitorServiceProtocol
 
     // MARK: - Calendar
 
-    private static let calendar = Calendar(identifier: .gregorian)
+    private static let calendar = Calendar.gregorian
 
     // MARK: - Guard State
 
@@ -197,13 +198,14 @@ final class InsightsViewModel {
         repository: ExpenseRepositoryProtocol = ExpenseRepository.shared,
         categoryRepository: CategoryRepositoryProtocol = CategoryRepository.shared,
         authService: AuthenticationServiceProtocol = AuthenticationService.shared,
-        syncMonitorService: SyncMonitorServiceProtocol = SyncMonitorService.shared
+        syncMonitorService: SyncMonitorServiceProtocol = SyncMonitorService.shared,
+        hapticService: HapticServiceProtocol = HapticService.shared
     ) {
         self.repository = repository
         self.categoryRepository = categoryRepository
         self.authService = authService
         self.syncMonitorService = syncMonitorService
-
+        self.hapticService = hapticService
         self.syncStatus = syncMonitorService.syncStatus
     }
 
@@ -232,11 +234,15 @@ final class InsightsViewModel {
     }
 
     func navigatePrevious() {
+        logger.debug("navigatePrevious: offset=\(self.dateOffset - 1)")
+        hapticService.trigger(.dateNavigate)
         dateOffset -= 1
     }
 
     func navigateNext() {
         guard canNavigateForward else { return }
+        logger.debug("navigateNext: offset=\(self.dateOffset + 1)")
+        hapticService.trigger(.dateNavigate)
         dateOffset += 1
     }
 
@@ -266,20 +272,119 @@ final class InsightsViewModel {
             logger.debug("subscribeToRemoteChanges: listener ended")
         }
         logger.debug("subscribeToRemoteChanges: starting listener")
-
-        if !hasRegisteredSyncCallback {
-            hasRegisteredSyncCallback = true
-            syncMonitorService.onSyncStatusChanged.append { [weak self] newStatus in
-                guard let self else { return }
-                logger.info("Sync status changed: \(String(describing: newStatus))")
-                self.syncStatus = newStatus
-            }
-        }
-
-        // Catch-up fetch for notifications missed while tab was hidden
+        registerSyncCallbackIfNeeded()
         await invalidateAndReload()
+        await startDebounceLoop()
+    }
 
-        // Debounce: coalesce rapid notifications into a single reload.
+    // MARK: - Private (Data Loading)
+
+    private func performLoad() async {
+        let period = selectedPeriod
+        let offset = dateOffset
+        isLoading = true
+        defer { isLoading = false }
+        let now = Date()
+        let refDate = referenceDate(for: period, offset: offset, relativeTo: now)
+        let currentInterval = dateInterval(for: period, referenceDate: refDate)
+        let previousInterval = previousDateInterval(for: period, referenceDate: refDate)
+        logger.debug("performLoad: period=\(period.rawValue), interval=\(currentInterval.start) — \(currentInterval.end)")
+        do {
+            let currentExpenses = try await repository.fetchExpenses(for: currentInterval)
+            guard !Task.isCancelled else { return }
+            let previousExpenses = try await repository.fetchExpenses(for: previousInterval)
+            guard !Task.isCancelled else { return }
+            let categories = try await categoryRepository.fetchCategories()
+            guard !Task.isCancelled else { return }
+            logger.info("performLoad: \(currentExpenses.count) current, \(previousExpenses.count) previous, \(categories.count) categories")
+            applyLoadResults(
+                currentExpenses: currentExpenses,
+                previousExpenses: previousExpenses,
+                categories: categories,
+                period: period,
+                interval: currentInterval,
+                offset: offset
+            )
+        } catch {
+            guard !Task.isCancelled else { return }
+            logger.error("performLoad: FAILED — \(error.localizedDescription)")
+            clearLoadResults(error: error)
+        }
+    }
+
+    private func applyLoadResults(
+        currentExpenses: [ExpenseData],
+        previousExpenses: [ExpenseData],
+        categories: [CategoryData],
+        period: TimePeriod,
+        interval: DateInterval,
+        offset: Int
+    ) {
+        totalAmount = currentExpenses.reduce(Int64(0)) { $0 + $1.amount }
+        categoryTotals = buildCategoryTotals(from: currentExpenses)
+        fetchedCategories = categories
+        let categoryMap = buildCategoryMap(from: categories)
+        chartSlices = buildChartSlices(from: categoryTotals, categoryMap: categoryMap)
+        barEntries = computeBarEntries(from: currentExpenses, period: period, interval: interval)
+        previousPeriodTotal = previousExpenses.isEmpty ? nil : previousExpenses.reduce(Int64(0)) { $0 + $1.amount }
+        currentPeriodInterval = interval
+        errorMessage = nil
+        loadedPeriod = period
+        loadedOffset = offset
+        logger.info("performLoad: complete — total=\(self.totalAmount, privacy: .private) satang, \(self.categoryTotals.count) categories")
+    }
+
+    private func clearLoadResults(error: Error) {
+        totalAmount = 0
+        categoryTotals = []
+        chartSlices = []
+        barEntries = []
+        fetchedCategories = []
+        previousPeriodTotal = nil
+        currentPeriodInterval = nil
+        errorMessage = error.localizedDescription
+    }
+
+    private func buildCategoryTotals(from expenses: [ExpenseData]) -> [CategoryTotal] {
+        var grouped: [UUID: Int64] = [:]
+        for expense in expenses {
+            grouped[expense.categoryID, default: 0] += expense.amount
+        }
+        return grouped
+            .map { CategoryTotal(categoryID: $0.key, total: $0.value) }
+            .sorted { $0.total > $1.total }
+    }
+
+    private func buildCategoryMap(from categories: [CategoryData]) -> [UUID: CategoryData] {
+        Dictionary(categories.map { ($0.id, $0) }, uniquingKeysWith: { _, last in last })
+    }
+
+    private func buildChartSlices(from totals: [CategoryTotal], categoryMap: [UUID: CategoryData]) -> [ChartSlice] {
+        totals.map { ct in
+            let category = categoryMap[ct.categoryID]
+            return ChartSlice(
+                categoryID: ct.categoryID,
+                categoryName: category?.name ?? "Unknown",
+                colorName: category?.colorName ?? "CoolGray",
+                iconName: category?.iconName ?? "ellipsis.circle.fill",
+                total: ct.total
+            )
+        }
+    }
+
+    // MARK: - Private (Subscription)
+
+    private func registerSyncCallbackIfNeeded() {
+        guard !hasRegisteredSyncCallback else { return }
+        hasRegisteredSyncCallback = true
+        syncMonitorService.onSyncStatusChanged.append { [weak self] newStatus in
+            guard let self else { return }
+            logger.info("Sync status changed: \(String(describing: newStatus))")
+            self.syncStatus = newStatus
+        }
+    }
+
+    private func startDebounceLoop() async {
         var debounceTask: Task<Void, Never>?
         defer { debounceTask?.cancel() }
         for await _ in NotificationCenter.default.notifications(named: .NSPersistentStoreRemoteChange) {
@@ -293,80 +398,6 @@ final class InsightsViewModel {
                 logger.info("Remote change (debounced) — reloading insights")
                 await self.invalidateAndReload()
             }
-        }
-    }
-
-    // MARK: - Private
-
-    private func performLoad() async {
-        let period = selectedPeriod
-        let offset = dateOffset
-        let now = Date()
-        let refDate = referenceDate(for: period, offset: offset, relativeTo: now)
-        let currentInterval = dateInterval(for: period, referenceDate: refDate)
-        let previousInterval = previousDateInterval(for: period, referenceDate: refDate)
-
-        logger.debug("performLoad: period=\(period.rawValue), interval=\(currentInterval.start) — \(currentInterval.end)")
-
-        do {
-            let currentExpenses = try await repository.fetchExpenses(for: currentInterval)
-            guard !Task.isCancelled else { return }
-
-            let previousExpenses = try await repository.fetchExpenses(for: previousInterval)
-            guard !Task.isCancelled else { return }
-
-            let categories = try await categoryRepository.fetchCategories()
-            guard !Task.isCancelled else { return }
-
-            logger.info("performLoad: \(currentExpenses.count) current, \(previousExpenses.count) previous, \(categories.count) categories")
-
-            totalAmount = currentExpenses.reduce(Int64(0)) { $0 + $1.amount }
-
-            var grouped: [UUID: Int64] = [:]
-            for expense in currentExpenses {
-                grouped[expense.categoryID, default: 0] += expense.amount
-            }
-            categoryTotals = grouped
-                .map { CategoryTotal(categoryID: $0.key, total: $0.value) }
-                .sorted { $0.total > $1.total }
-
-            fetchedCategories = categories
-
-            let categoryMap: [UUID: CategoryData] = Dictionary(
-                categories.map { ($0.id, $0) },
-                uniquingKeysWith: { _, last in last }
-            )
-            chartSlices = categoryTotals.map { ct in
-                let category = categoryMap[ct.categoryID]
-                return ChartSlice(
-                    categoryID: ct.categoryID,
-                    categoryName: category?.name ?? "Unknown",
-                    colorName: category?.colorName ?? "CoolGray",
-                    iconName: category?.iconName ?? "ellipsis.circle.fill",
-                    total: ct.total
-                )
-            }
-
-            barEntries = computeBarEntries(from: currentExpenses, period: period, interval: currentInterval)
-
-            previousPeriodTotal = previousExpenses.isEmpty ? nil : previousExpenses.reduce(Int64(0)) { $0 + $1.amount }
-
-            currentPeriodInterval = currentInterval
-            errorMessage = nil
-            loadedPeriod = period
-            loadedOffset = offset
-            logger.info("performLoad: complete — total=\(self.totalAmount, privacy: .private) satang, \(self.categoryTotals.count) categories")
-        } catch {
-            guard !Task.isCancelled else { return }
-            logger.error("performLoad: FAILED — \(error.localizedDescription)")
-            totalAmount = 0
-            categoryTotals = []
-            chartSlices = []
-            barEntries = []
-            fetchedCategories = []
-            previousPeriodTotal = nil
-            currentPeriodInterval = nil
-            errorMessage = error.localizedDescription
         }
     }
 
@@ -402,49 +433,53 @@ final class InsightsViewModel {
     }()
 
     private func computeBarEntries(from expenses: [ExpenseData], period: TimePeriod, interval: DateInterval) -> [BarEntry] {
-        let cal = Self.calendar
-
         switch period {
-        case .daily:
-            let total = expenses.reduce(Int64(0)) { $0 + $1.amount }
-            let label = cal.isDateInToday(interval.start) ? "Today"
-                : cal.isDateInYesterday(interval.start) ? "Yesterday"
-                : Self.dayMonthFormatter.string(from: interval.start)
-            return [BarEntry(position: 0, label: label, total: total, dateLabel: Self.dayMonthFormatter.string(from: interval.start))]
+        case .daily: return computeDailyEntries(from: expenses, interval: interval)
+        case .weekly: return computeWeeklyEntries(from: expenses, interval: interval)
+        case .monthly: return computeMonthlyEntries(from: expenses, interval: interval)
+        }
+    }
 
-        case .weekly:
-            var entries: [BarEntry] = []
-            var date = interval.start
-            var position = 0
-            while date < interval.end {
-                let dayTotal = expenses
-                    .filter { cal.isDate($0.createdAt, inSameDayAs: date) }
-                    .reduce(Int64(0)) { $0 + $1.amount }
-                entries.append(BarEntry(
-                    position: position,
-                    label: Self.weekdayFormatter.string(from: date),
-                    total: dayTotal,
-                    dateLabel: Self.dayMonthFormatter.string(from: date)
-                ))
-                date = cal.date(byAdding: .day, value: 1, to: date) ?? interval.end
-                position += 1
-            }
-            return entries
+    private func computeDailyEntries(from expenses: [ExpenseData], interval: DateInterval) -> [BarEntry] {
+        let cal = Self.calendar
+        let total = expenses.reduce(Int64(0)) { $0 + $1.amount }
+        let label = cal.isDateInToday(interval.start) ? "Today"
+            : cal.isDateInYesterday(interval.start) ? "Yesterday"
+            : Self.dayMonthFormatter.string(from: interval.start)
+        return [BarEntry(position: 0, label: label, total: total, dateLabel: Self.dayMonthFormatter.string(from: interval.start))]
+    }
 
-        case .monthly:
-            guard let range = cal.range(of: .weekOfMonth, in: .month, for: interval.start) else {
-                return []
-            }
+    private func computeWeeklyEntries(from expenses: [ExpenseData], interval: DateInterval) -> [BarEntry] {
+        let cal = Self.calendar
+        var entries: [BarEntry] = []
+        var date = interval.start
+        var position = 0
+        while date < interval.end {
+            let dayTotal = expenses
+                .filter { cal.isDate($0.createdAt, inSameDayAs: date) }
+                .reduce(Int64(0)) { $0 + $1.amount }
+            entries.append(BarEntry(
+                position: position,
+                label: Self.weekdayFormatter.string(from: date),
+                total: dayTotal,
+                dateLabel: Self.dayMonthFormatter.string(from: date)
+            ))
+            date = cal.date(byAdding: .day, value: 1, to: date) ?? interval.end
+            position += 1
+        }
+        return entries
+    }
 
-            var weeklyTotals: [Int: Int64] = [:]
-            for expense in expenses {
-                let weekNum = cal.component(.weekOfMonth, from: expense.createdAt)
-                weeklyTotals[weekNum, default: 0] += expense.amount
-            }
-
-            return range.enumerated().map { idx, week in
-                BarEntry(position: idx, label: "W\(week)", total: weeklyTotals[week, default: 0])
-            }
+    private func computeMonthlyEntries(from expenses: [ExpenseData], interval: DateInterval) -> [BarEntry] {
+        let cal = Self.calendar
+        guard let range = cal.range(of: .weekOfMonth, in: .month, for: interval.start) else { return [] }
+        var weeklyTotals: [Int: Int64] = [:]
+        for expense in expenses {
+            let weekNum = cal.component(.weekOfMonth, from: expense.createdAt)
+            weeklyTotals[weekNum, default: 0] += expense.amount
+        }
+        return range.enumerated().map { idx, week in
+            BarEntry(position: idx, label: "W\(week)", total: weeklyTotals[week, default: 0])
         }
     }
 

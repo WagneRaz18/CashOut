@@ -49,6 +49,10 @@
 - **2026-04-06**: `.buttonStyle(.glass)` adds internal chrome (padding/background) OUTSIDE `.frame(height:)` applied to the label — manual GeometryReader height math can't account for it. For button grids, replace GeometryReader + LazyVGrid with `VStack { ForEach(rows) { HStack { ForEach(row) { Button.frame(maxWidth: .infinity, maxHeight: .infinity) } } } }` — the layout system distributes space including all style decorations with no manual math.
 - **2026-04-07**: `maxHeight: .infinity` on buttons in a VStack with Spacers creates layout competition — buttons greedily expand, consuming space intended for Spacers and pushing siblings offscreen. Use `minHeight: <fixed>` for elements with known size in flexible layouts; reserve `maxHeight: .infinity` only when the element should truly fill all remaining space.
 
+## Gestures
+- **2026-05-02**: Attach `DragGesture` to the specific scroll container (`ScrollView`), not to an ancestor `VStack` that also contains a `Picker` or other controls — a gesture on the ancestor fires when dragging over the `Picker` header, competing with the picker's own touch handling. `.simultaneousGesture` allows concurrent recognition but still activates on ALL descendant touch regions.
+- **2026-05-02**: Swipe-to-navigate features must add `.accessibilityAdjustableAction { direction in switch direction { case .increment: navigateNext(); case .decrement: navigatePrevious(); @unknown default: break } }` — VoiceOver users have no other way to access gesture-only navigation. The action fires when the user swipes up/down while focused on the view.
+
 ## Sign in with Apple
 - Email/name data only available on FIRST sign-in — cache to CloudKit UserProfile record immediately.
 - Store userIdentifier in Keychain with kSecAttrAccessibleAfterFirstUnlockThisDeviceOnly.

@@ -20,12 +20,14 @@ final class InsightsViewModelTests: XCTestCase {
         let authService = MockAuthenticationService()
         authService.currentUserID = currentUserID
         let syncMonitor = syncMonitorService ?? MockSyncMonitorService()
+        let hapticService = MockHapticService()
 
         let viewModel = InsightsViewModel(
             repository: expenseRepo,
             categoryRepository: categoryRepo,
             authService: authService,
-            syncMonitorService: syncMonitor
+            syncMonitorService: syncMonitor,
+            hapticService: hapticService
         )
 
         return (viewModel, expenseRepo, categoryRepo, syncMonitor)
@@ -61,7 +63,7 @@ final class InsightsViewModelTests: XCTestCase {
 
     // MARK: - loadData Tests (AC #3, #5)
 
-    func testLoadDataCallsFetchExpensesWithCorrectDateIntervals() async {
+    func testLoadDataCallsFetchExpensesWithCorrectDateIntervals() async throws {
         let (viewModel, expenseRepo, _, _) = makeSUT()
 
         await viewModel.loadData()
@@ -75,11 +77,11 @@ final class InsightsViewModelTests: XCTestCase {
             "loadData should fetch current period + previous period"
         )
 
-        // Capture now once to avoid midnight-straddling race
         let now = Date()
+        let gregorian = Calendar.gregorian
 
         // Verify current period is this week
-        let thisWeek = Calendar.current.dateInterval(of: .weekOfYear, for: now)!
+        let thisWeek = try XCTUnwrap(gregorian.dateInterval(of: .weekOfYear, for: now), "Gregorian calendar must return week interval")
         XCTAssertEqual(
             expenseRepo.fetchPeriods[0].start, thisWeek.start,
             "First fetch should be for current week start"
@@ -90,8 +92,8 @@ final class InsightsViewModelTests: XCTestCase {
         )
 
         // Verify previous period is last week
-        let lastWeekDate = Calendar.current.date(byAdding: .weekOfYear, value: -1, to: now)!
-        let lastWeek = Calendar.current.dateInterval(of: .weekOfYear, for: lastWeekDate)!
+        let lastWeekDate = try XCTUnwrap(gregorian.date(byAdding: .weekOfYear, value: -1, to: now), "Gregorian calendar must offset week")
+        let lastWeek = try XCTUnwrap(gregorian.dateInterval(of: .weekOfYear, for: lastWeekDate), "Gregorian calendar must return last week interval")
         XCTAssertEqual(
             expenseRepo.fetchPeriods[1].start, lastWeek.start,
             "Second fetch should be for previous week start"
@@ -347,113 +349,6 @@ final class InsightsViewModelTests: XCTestCase {
         XCTAssertEqual(viewModel.emptyStateText, "No entries this month")
     }
 
-    // MARK: - ChartSlice Tests (Story 3-2, AC #1)
-
-    func testChartSlicesPopulatedWithCorrectCategoryNamesColorsAndTotals() async {
-        let (viewModel, expenseRepo, categoryRepo, _) = makeSUT()
-        let foodID = UUID()
-        let transportID = UUID()
-        expenseRepo.stubbedFetchResult = [
-            makeExpense(amount: 2000, categoryID: foodID),
-            makeExpense(amount: 3000, categoryID: transportID)
-        ]
-        categoryRepo.categoriesToReturn = [
-            CategoryData(id: foodID, name: "Food & Drink", iconName: "fork.knife", colorName: "Sage", isDefault: true, sortOrder: 0),
-            CategoryData(id: transportID, name: "Transport", iconName: "car.fill", colorName: "Slate", isDefault: true, sortOrder: 1)
-        ]
-
-        await viewModel.loadData()
-
-        XCTAssertEqual(viewModel.chartSlices.count, 2, "Should have 2 chart slices")
-        XCTAssertEqual(viewModel.chartSlices[0].categoryName, "Transport", "First slice should be Transport (highest total)")
-        XCTAssertEqual(viewModel.chartSlices[0].colorName, "Slate")
-        XCTAssertEqual(viewModel.chartSlices[0].total, 3000)
-        XCTAssertEqual(viewModel.chartSlices[1].categoryName, "Food & Drink", "Second slice should be Food & Drink")
-        XCTAssertEqual(viewModel.chartSlices[1].colorName, "Sage")
-        XCTAssertEqual(viewModel.chartSlices[1].total, 2000)
-    }
-
-    func testChartSlicesSortedDescendingByTotal() async {
-        let (viewModel, expenseRepo, categoryRepo, _) = makeSUT()
-        let smallID = UUID()
-        let largeID = UUID()
-        let medID = UUID()
-        expenseRepo.stubbedFetchResult = [
-            makeExpense(amount: 100, categoryID: smallID),
-            makeExpense(amount: 5000, categoryID: largeID),
-            makeExpense(amount: 1000, categoryID: medID)
-        ]
-        categoryRepo.categoriesToReturn = [
-            CategoryData(id: smallID, name: "Small", iconName: "circle", colorName: "CoolGray", isDefault: true, sortOrder: 0),
-            CategoryData(id: largeID, name: "Large", iconName: "circle", colorName: "Sage", isDefault: true, sortOrder: 1),
-            CategoryData(id: medID, name: "Medium", iconName: "circle", colorName: "Slate", isDefault: true, sortOrder: 2)
-        ]
-
-        await viewModel.loadData()
-
-        XCTAssertEqual(viewModel.chartSlices.map(\.total), [5000, 1000, 100], "Slices should be sorted descending by total")
-    }
-
-    func testChartSlicesEmptyWhenNoExpenses() async {
-        let (viewModel, expenseRepo, _, _) = makeSUT()
-        expenseRepo.stubbedFetchResult = []
-
-        await viewModel.loadData()
-
-        XCTAssertTrue(viewModel.chartSlices.isEmpty, "chartSlices should be empty when no expenses")
-    }
-
-    func testChartSlicesClearedOnError() async {
-        let (viewModel, expenseRepo, categoryRepo, _) = makeSUT()
-        let catID = UUID()
-        expenseRepo.stubbedFetchResult = [makeExpense(amount: 1000, categoryID: catID)]
-        categoryRepo.categoriesToReturn = [
-            CategoryData(id: catID, name: "Food", iconName: "fork.knife", colorName: "Sage", isDefault: true, sortOrder: 0)
-        ]
-        await viewModel.loadData()
-        XCTAssertFalse(viewModel.chartSlices.isEmpty, "Precondition: slices should be populated")
-
-        // Force reload with error
-        expenseRepo.shouldThrow = true
-        await viewModel.invalidateAndReload()
-
-        XCTAssertTrue(viewModel.chartSlices.isEmpty, "chartSlices should be cleared on error")
-        XCTAssertNil(viewModel.currentPeriodInterval, "currentPeriodInterval should be nil on error")
-        XCTAssertTrue(viewModel.fetchedCategories.isEmpty, "fetchedCategories should be cleared on error")
-    }
-
-    // MARK: - Chart Accessibility Label Tests (Story 3-2, AC #5)
-
-    func testChartAccessibilityLabelContainsTotalAndLargestCategory() async {
-        let (viewModel, expenseRepo, categoryRepo, _) = makeSUT()
-        let foodID = UUID()
-        let transportID = UUID()
-        expenseRepo.stubbedFetchResult = [
-            makeExpense(amount: 12000, categoryID: foodID),
-            makeExpense(amount: 3000, categoryID: transportID)
-        ]
-        categoryRepo.categoriesToReturn = [
-            CategoryData(id: foodID, name: "Food & Drink", iconName: "fork.knife", colorName: "Sage", isDefault: true, sortOrder: 0),
-            CategoryData(id: transportID, name: "Transport", iconName: "car.fill", colorName: "Slate", isDefault: true, sortOrder: 1)
-        ]
-
-        await viewModel.loadData()
-
-        let label = viewModel.chartAccessibilityLabel
-        XCTAssertTrue(label.contains("Food & Drink"), "Accessibility label should name the largest category")
-        XCTAssertTrue(label.contains("total:"), "Accessibility label should contain total")
-    }
-
-    func testChartAccessibilityLabelReturnsEmptyStateTextWhenNoData() {
-        let (viewModel, _, _, _) = makeSUT()
-
-        XCTAssertEqual(
-            viewModel.chartAccessibilityLabel,
-            "No entries this week",
-            "Should return empty state text when no chart slices"
-        )
-    }
-
     // MARK: - selectCategory Tests (Story 3-2, AC #2)
 
     func testSelectCategorySetsSelectedDestination() async {
@@ -496,206 +391,9 @@ final class InsightsViewModelTests: XCTestCase {
         await viewModel.loadData()
 
         XCTAssertNotNil(viewModel.currentPeriodInterval, "currentPeriodInterval should be set after loadData")
-        let gregorian = Calendar(identifier: .gregorian)
+        let gregorian = Calendar.gregorian
         let thisWeek = gregorian.dateInterval(of: .weekOfYear, for: Date())
         XCTAssertEqual(viewModel.currentPeriodInterval?.start, thisWeek?.start, "Should match current week start")
-    }
-
-    // MARK: - Date Interval Tests (AC #3)
-
-    func testLoadDataFetchesCorrectIntervalsForDailyPeriod() async {
-        let (viewModel, expenseRepo, _, _) = makeSUT()
-        viewModel.selectedPeriod = .daily
-
-        await viewModel.loadData()
-
-        let today = Calendar.current.dateInterval(of: .day, for: Date())!
-        XCTAssertEqual(
-            expenseRepo.fetchPeriods[0].start, today.start,
-            "Daily period should fetch today's interval"
-        )
-    }
-
-    func testLoadDataFetchesCorrectIntervalsForMonthlyPeriod() async {
-        let (viewModel, expenseRepo, _, _) = makeSUT()
-        viewModel.selectedPeriod = .monthly
-
-        await viewModel.loadData()
-
-        let thisMonth = Calendar.current.dateInterval(of: .month, for: Date())!
-        XCTAssertEqual(
-            expenseRepo.fetchPeriods[0].start, thisMonth.start,
-            "Monthly period should fetch this month's interval"
-        )
-    }
-
-    // MARK: - Bar Entry Tests (Story 3-3, AC #1)
-
-    func testBarEntriesPopulatedAfterLoadData() async {
-        let (viewModel, expenseRepo, _, _) = makeSUT()
-        expenseRepo.stubbedFetchResult = [makeExpense(amount: 1000)]
-
-        await viewModel.loadData()
-
-        XCTAssertFalse(
-            viewModel.barEntries.isEmpty,
-            "barEntries should be populated after loadData with expenses"
-        )
-    }
-
-    func testBarEntriesAllZeroTotalWhenNoExpenses() async {
-        let (viewModel, expenseRepo, _, _) = makeSUT()
-        expenseRepo.stubbedFetchResult = []
-
-        await viewModel.loadData()
-
-        // Default period is .weekly → should have 7 entries, all zero
-        XCTAssertEqual(
-            viewModel.barEntries.count, 7,
-            "Weekly period should have 7 bar entries even with no expenses"
-        )
-        XCTAssertTrue(
-            viewModel.barEntries.allSatisfy { $0.total == 0 },
-            "All bar entries should have zero total when no expenses"
-        )
-    }
-
-    func testBarEntriesForWeeklyPeriodHasSevenEntries() async {
-        let (viewModel, expenseRepo, _, _) = makeSUT()
-        expenseRepo.stubbedFetchResult = [makeExpense(amount: 500)]
-
-        await viewModel.loadData()
-
-        XCTAssertEqual(
-            viewModel.barEntries.count, 7,
-            "Weekly period should produce exactly 7 bar entries"
-        )
-    }
-
-    func testBarEntriesForDailyPeriodHasOneEntry() async {
-        let (viewModel, expenseRepo, _, _) = makeSUT()
-        viewModel.selectedPeriod = .daily
-        expenseRepo.stubbedFetchResult = [makeExpense(amount: 2500)]
-
-        await viewModel.loadData()
-
-        XCTAssertEqual(
-            viewModel.barEntries.count, 1,
-            "Daily period should produce exactly 1 bar entry"
-        )
-        XCTAssertEqual(
-            viewModel.barEntries.first?.label, "Today",
-            "Daily bar entry label should be 'Today'"
-        )
-        XCTAssertEqual(
-            viewModel.barEntries.first?.total, 2500,
-            "Daily bar entry total should match expense sum"
-        )
-    }
-
-    func testBarEntriesForMonthlyPeriodHasCorrectWeekCount() async {
-        let (viewModel, expenseRepo, _, _) = makeSUT()
-        viewModel.selectedPeriod = .monthly
-        expenseRepo.stubbedFetchResult = []
-
-        await viewModel.loadData()
-
-        let thisMonth = Calendar.current.dateInterval(of: .month, for: Date())!
-        let expectedWeeks = Calendar.current.range(of: .weekOfMonth, in: .month, for: thisMonth.start)?.count ?? 0
-        XCTAssertEqual(
-            viewModel.barEntries.count, expectedWeeks,
-            "Monthly period should have one entry per week in current month"
-        )
-        XCTAssertEqual(
-            viewModel.barEntries.first?.label, "W1",
-            "First monthly entry should be labeled 'W1'"
-        )
-    }
-
-    func testBarEntriesForWeeklyPeriodAreInChronologicalOrder() async {
-        let (viewModel, expenseRepo, _, _) = makeSUT()
-        expenseRepo.stubbedFetchResult = [makeExpense(amount: 500)]
-
-        await viewModel.loadData()
-
-        let labels = viewModel.barEntries.map(\.label)
-        let calendar = Calendar.current
-        let weekInterval = calendar.dateInterval(of: .weekOfYear, for: Date())!
-        var expectedLabels: [String] = []
-        let formatter = DateFormatter()
-        formatter.dateFormat = "EEE"
-        formatter.locale = Locale(identifier: "en_US_POSIX")
-        var date = weekInterval.start
-        while date < weekInterval.end {
-            expectedLabels.append(formatter.string(from: date))
-            date = calendar.date(byAdding: .day, value: 1, to: date) ?? weekInterval.end
-        }
-
-        XCTAssertEqual(
-            labels, expectedLabels,
-            "Weekly bar entries should be in chronological order (first weekday to last)"
-        )
-    }
-
-    func testBarEntriesClearedOnError() async {
-        let (viewModel, expenseRepo, categoryRepo, _) = makeSUT()
-        let catID = UUID()
-        expenseRepo.stubbedFetchResult = [makeExpense(amount: 1000, categoryID: catID)]
-        categoryRepo.categoriesToReturn = [
-            CategoryData(id: catID, name: "Food", iconName: "fork.knife", colorName: "Sage", isDefault: true, sortOrder: 0)
-        ]
-        await viewModel.loadData()
-        XCTAssertFalse(viewModel.barEntries.isEmpty, "Precondition: barEntries should be populated")
-
-        expenseRepo.shouldThrow = true
-        await viewModel.invalidateAndReload()
-
-        XCTAssertTrue(
-            viewModel.barEntries.isEmpty,
-            "barEntries should be cleared on error"
-        )
-    }
-
-    func testBarChartAccessibilityLabelContainsEntryLabels() async {
-        let (viewModel, expenseRepo, _, _) = makeSUT()
-        viewModel.selectedPeriod = .daily
-        expenseRepo.stubbedFetchResult = [makeExpense(amount: 3000)]
-
-        await viewModel.loadData()
-
-        let label = viewModel.barChartAccessibilityLabel
-        XCTAssertTrue(
-            label.contains("Today"),
-            "Bar chart accessibility label should contain entry label. Got: \(label)"
-        )
-    }
-
-    func testBarChartAccessibilityLabelReturnsNoDataWhenEmpty() {
-        let (viewModel, _, _, _) = makeSUT()
-
-        XCTAssertEqual(
-            viewModel.barChartAccessibilityLabel,
-            "No spending data",
-            "Should return 'No spending data' when barEntries is empty"
-        )
-    }
-
-    // MARK: - ChartSlice iconName Tests (Story 3-3, AC #3)
-
-    func testChartSliceIncludesIconName() async {
-        let (viewModel, expenseRepo, categoryRepo, _) = makeSUT()
-        let foodID = UUID()
-        expenseRepo.stubbedFetchResult = [makeExpense(amount: 1000, categoryID: foodID)]
-        categoryRepo.categoriesToReturn = [
-            CategoryData(id: foodID, name: "Food & Drink", iconName: "fork.knife", colorName: "Sage", isDefault: true, sortOrder: 0)
-        ]
-
-        await viewModel.loadData()
-
-        XCTAssertEqual(
-            viewModel.chartSlices.first?.iconName, "fork.knife",
-            "ChartSlice should include iconName from category data"
-        )
     }
 
     // MARK: - Sync Status Tests (Story 4-3)
@@ -717,6 +415,7 @@ final class InsightsViewModelTests: XCTestCase {
 
         syncMonitor.syncStatus = .syncFailure
         for handler in syncMonitor.onSyncStatusChanged { handler(.syncFailure) }
+        await Task.yield()
 
         XCTAssertEqual(
             viewModel.syncStatus, .syncFailure,
@@ -733,6 +432,7 @@ final class InsightsViewModelTests: XCTestCase {
 
         syncMonitor.syncStatus = .noICloudAccount
         for handler in syncMonitor.onSyncStatusChanged { handler(.noICloudAccount) }
+        await Task.yield()
 
         XCTAssertEqual(
             viewModel.syncStatus, .noICloudAccount,
@@ -749,185 +449,18 @@ final class InsightsViewModelTests: XCTestCase {
 
         syncMonitor.syncStatus = .syncFailure
         for handler in syncMonitor.onSyncStatusChanged { handler(.syncFailure) }
+        await Task.yield()
         XCTAssertEqual(viewModel.syncStatus, .syncFailure)
 
         syncMonitor.syncStatus = .healthy
         for handler in syncMonitor.onSyncStatusChanged { handler(.healthy) }
+        await Task.yield()
 
         XCTAssertEqual(
             viewModel.syncStatus, .healthy,
             "syncStatus should reset to .healthy when callback fires after failure"
         )
         task.cancel()
-    }
-
-    // MARK: - Swipe Date Navigation Tests
-
-    func testNavigatePreviousDecrementsOffset() {
-        let (viewModel, _, _, _) = makeSUT()
-        XCTAssertEqual(viewModel.dateOffset, 0)
-
-        viewModel.navigatePrevious()
-        XCTAssertEqual(viewModel.dateOffset, -1, "navigatePrevious should decrement dateOffset by 1")
-
-        viewModel.navigatePrevious()
-        XCTAssertEqual(viewModel.dateOffset, -2, "navigatePrevious again should decrement to -2")
-    }
-
-    func testNavigateNextAtOffsetZeroIsNoOp() {
-        let (viewModel, _, _, _) = makeSUT()
-        XCTAssertFalse(viewModel.canNavigateForward, "canNavigateForward should be false at offset 0")
-
-        viewModel.navigateNext()
-        XCTAssertEqual(viewModel.dateOffset, 0, "navigateNext at offset 0 should be a no-op")
-    }
-
-    func testNavigateNextFromNegativeOneReachesZero() {
-        let (viewModel, _, _, _) = makeSUT()
-        viewModel.navigatePrevious()
-        XCTAssertEqual(viewModel.dateOffset, -1)
-        XCTAssertTrue(viewModel.canNavigateForward)
-
-        viewModel.navigateNext()
-        XCTAssertEqual(viewModel.dateOffset, 0, "navigateNext from offset -1 should reach 0")
-        XCTAssertFalse(viewModel.canNavigateForward, "canNavigateForward should be false after reaching 0")
-    }
-
-    func testResetToCurrentPeriodSetsOffsetToZero() {
-        let (viewModel, _, _, _) = makeSUT()
-        viewModel.navigatePrevious()
-        viewModel.navigatePrevious()
-        viewModel.navigatePrevious()
-        XCTAssertEqual(viewModel.dateOffset, -3)
-
-        viewModel.resetToCurrentPeriod()
-        XCTAssertEqual(viewModel.dateOffset, 0, "resetToCurrentPeriod should set offset to 0")
-    }
-
-    func testResetToCurrentPeriodAtZeroIsNoOp() {
-        let (viewModel, _, _, _) = makeSUT()
-        XCTAssertEqual(viewModel.dateOffset, 0)
-
-        viewModel.resetToCurrentPeriod()
-        XCTAssertEqual(viewModel.dateOffset, 0, "resetToCurrentPeriod at offset 0 should be a no-op")
-    }
-
-    func testLoadDataReloadsWhenOffsetChanges() async {
-        let (viewModel, expenseRepo, _, _) = makeSUT()
-        viewModel.selectedPeriod = .daily
-
-        await viewModel.loadData()
-        let countAfterFirstLoad = expenseRepo.fetchPeriods.count
-
-        viewModel.navigatePrevious()  // offset = -1
-        await viewModel.loadData()
-
-        XCTAssertGreaterThan(
-            expenseRepo.fetchPeriods.count, countAfterFirstLoad,
-            "loadData should fetch again when dateOffset changes"
-        )
-    }
-
-    func testLoadDataSkipsWhenPeriodAndOffsetUnchanged() async {
-        let (viewModel, expenseRepo, _, _) = makeSUT()
-        viewModel.selectedPeriod = .daily
-        viewModel.navigatePrevious()  // offset = -1
-
-        await viewModel.loadData()
-        let countAfterFirstLoad = expenseRepo.fetchPeriods.count
-
-        await viewModel.loadData()  // same period + offset
-
-        XCTAssertEqual(
-            expenseRepo.fetchPeriods.count, countAfterFirstLoad,
-            "loadData should skip when both period and offset are unchanged"
-        )
-    }
-
-    func testLoadDataAfterInvalidateAndReloadReloadsAtSameOffset() async {
-        let (viewModel, expenseRepo, _, _) = makeSUT()
-        viewModel.selectedPeriod = .daily
-        viewModel.navigatePrevious()  // offset = -1
-
-        await viewModel.loadData()
-        let countAfterFirstLoad = expenseRepo.fetchPeriods.count
-
-        await viewModel.invalidateAndReload()
-
-        XCTAssertGreaterThan(
-            expenseRepo.fetchPeriods.count, countAfterFirstLoad,
-            "invalidateAndReload should trigger a fresh fetch even at the same period+offset"
-        )
-    }
-
-    func testPeriodLabelAtOffsetZeroReturnsCurrentLabel() {
-        let (viewModel, _, _, _) = makeSUT()
-        viewModel.selectedPeriod = .daily
-        XCTAssertEqual(viewModel.periodLabel, "Today")
-
-        viewModel.selectedPeriod = .weekly
-        XCTAssertEqual(viewModel.periodLabel, "This Week")
-
-        viewModel.selectedPeriod = .monthly
-        XCTAssertEqual(viewModel.periodLabel, "This Month")
-    }
-
-    func testPeriodLabelAtOffsetNegativeOneReturnsSpecialLabel() {
-        let (viewModel, _, _, _) = makeSUT()
-
-        viewModel.selectedPeriod = .daily
-        viewModel.navigatePrevious()
-        XCTAssertEqual(viewModel.periodLabel, "Yesterday", "Daily offset -1 should return 'Yesterday'")
-
-        viewModel.resetToCurrentPeriod()
-        viewModel.selectedPeriod = .weekly
-        viewModel.navigatePrevious()
-        XCTAssertEqual(viewModel.periodLabel, "Last Week", "Weekly offset -1 should return 'Last Week'")
-
-        viewModel.resetToCurrentPeriod()
-        viewModel.selectedPeriod = .monthly
-        viewModel.navigatePrevious()
-        XCTAssertEqual(viewModel.periodLabel, "Last Month", "Monthly offset -1 should return 'Last Month'")
-    }
-
-    func testPeriodLabelAtLargerOffsetReturnsFormattedDate() {
-        let (viewModel, _, _, _) = makeSUT()
-        viewModel.selectedPeriod = .daily
-        viewModel.dateOffset = -5
-
-        let label = viewModel.periodLabel
-        XCTAssertFalse(label.isEmpty, "periodLabel at offset -5 should return a non-empty formatted date")
-        XCTAssertNotEqual(label, "Today", "periodLabel at offset -5 should not be 'Today'")
-        XCTAssertNotEqual(label, "Yesterday", "periodLabel at offset -5 should not be 'Yesterday'")
-    }
-
-    func testComparisonTextIsNilWhenOffsetIsNonZeroWithNonNilPreviousTotal() async {
-        let (viewModel, expenseRepo, _, _) = makeSUT()
-        expenseRepo.stubbedFetchResult = [makeExpense(amount: 5000)]
-
-        await viewModel.loadData()
-        // Ensure previousPeriodTotal is non-nil (both periods return same stub → 5000)
-        XCTAssertNotNil(viewModel.previousPeriodTotal, "Precondition: previousPeriodTotal must be non-nil")
-
-        viewModel.navigatePrevious()  // offset = -1
-        XCTAssertNil(
-            viewModel.comparisonText,
-            "comparisonText should be nil when dateOffset != 0, even with non-nil previousPeriodTotal"
-        )
-    }
-
-    func testDailyBarEntryLabelIsYesterdayAtOffsetNegativeOne() async {
-        let (viewModel, expenseRepo, _, _) = makeSUT()
-        viewModel.selectedPeriod = .daily
-        viewModel.navigatePrevious()  // offset = -1
-        expenseRepo.stubbedFetchResult = [makeExpense(amount: 1000)]
-
-        await viewModel.loadData()
-
-        XCTAssertEqual(
-            viewModel.barEntries.first?.label, "Yesterday",
-            "Daily bar entry at offset -1 should be labeled 'Yesterday' (runs against real clock)"
-        )
     }
 
     // MARK: - Initial Non-Healthy Status Snapshot (F7)

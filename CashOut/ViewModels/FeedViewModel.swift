@@ -25,7 +25,7 @@ final class FeedViewModel {
 
     // MARK: - Calendar & Formatting
 
-    private static let calendar = Calendar(identifier: .gregorian)
+    private static let calendar = Calendar.gregorian
 
     private static let sectionDateFormatter: DateFormatter = {
         let fmt = DateFormatter()

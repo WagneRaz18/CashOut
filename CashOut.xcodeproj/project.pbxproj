@@ -39,6 +39,7 @@
 		C1D2E3F4A5B60013C1D2E3F4 /* Color+CategoryTokens.swift in Sources */ = {isa = PBXBuildFile; fileRef = C1D2E3F4A5B60003C1D2E3F4 /* Color+CategoryTokens.swift */; };
 		C1D2E3F4A5B60014C1D2E3F4 /* Constants.swift in Sources */ = {isa = PBXBuildFile; fileRef = C1D2E3F4A5B60004C1D2E3F4 /* Constants.swift */; };
 		C1D2E3F4A5B60015C1D2E3F4 /* Int64+Currency.swift in Sources */ = {isa = PBXBuildFile; fileRef = C1D2E3F4A5B60005C1D2E3F4 /* Int64+Currency.swift */; };
+		C1D2E3F4A5B6001EC1D2E3F4 /* Calendar+App.swift in Sources */ = {isa = PBXBuildFile; fileRef = C1D2E3F4A5B6000EC1D2E3F4 /* Calendar+App.swift */; };
 		C1D2E3F4A5B60016C1D2E3F4 /* CategoryRepositoryProtocol.swift in Sources */ = {isa = PBXBuildFile; fileRef = C1D2E3F4A5B60006C1D2E3F4 /* CategoryRepositoryProtocol.swift */; };
 		C1D2E3F4A5B60017C1D2E3F4 /* CategoryRepository.swift in Sources */ = {isa = PBXBuildFile; fileRef = C1D2E3F4A5B60007C1D2E3F4 /* CategoryRepository.swift */; };
 		C1D2E3F4A5B60018C1D2E3F4 /* ExpenseRepositoryProtocol.swift in Sources */ = {isa = PBXBuildFile; fileRef = C1D2E3F4A5B60008C1D2E3F4 /* ExpenseRepositoryProtocol.swift */; };
@@ -71,6 +72,8 @@
 		J1K2L3M4N5O60A13 /* EditExpenseViewModelTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = J1K2L3M4N5O60A03 /* EditExpenseViewModelTests.swift */; };
 		K1L2M3N4O5P60B11 /* InsightsViewModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = K1L2M3N4O5P60B01 /* InsightsViewModel.swift */; };
 		K1L2M3N4O5P60B12 /* InsightsViewModelTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = K1L2M3N4O5P60B02 /* InsightsViewModelTests.swift */; };
+		K1L2M3N4O5P60B13 /* InsightsViewModelChartTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = K1L2M3N4O5P60B03 /* InsightsViewModelChartTests.swift */; };
+		K1L2M3N4O5P60B14 /* InsightsViewModelNavigationTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = K1L2M3N4O5P60B04 /* InsightsViewModelNavigationTests.swift */; };
 		L1M2N3O4P5Q60C11 /* InsightsSummaryView.swift in Sources */ = {isa = PBXBuildFile; fileRef = L1M2N3O4P5Q60C01 /* InsightsSummaryView.swift */; };
 		L1M2N3O4P5Q60C12 /* FilteredFeedView.swift in Sources */ = {isa = PBXBuildFile; fileRef = L1M2N3O4P5Q60C02 /* FilteredFeedView.swift */; };
 		L1M2N3O4P5Q60C13 /* DailyBarChartView.swift in Sources */ = {isa = PBXBuildFile; fileRef = L1M2N3O4P5Q60C03 /* DailyBarChartView.swift */; };
@@ -142,6 +145,7 @@
 		C1D2E3F4A5B60003C1D2E3F4 /* Color+CategoryTokens.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "Color+CategoryTokens.swift"; sourceTree = "<group>"; };
 		C1D2E3F4A5B60004C1D2E3F4 /* Constants.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Constants.swift; sourceTree = "<group>"; };
 		C1D2E3F4A5B60005C1D2E3F4 /* Int64+Currency.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "Int64+Currency.swift"; sourceTree = "<group>"; };
+		C1D2E3F4A5B6000EC1D2E3F4 /* Calendar+App.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "Calendar+App.swift"; sourceTree = "<group>"; };
 		C1D2E3F4A5B60006C1D2E3F4 /* CategoryRepositoryProtocol.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CategoryRepositoryProtocol.swift; sourceTree = "<group>"; };
 		C1D2E3F4A5B60007C1D2E3F4 /* CategoryRepository.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CategoryRepository.swift; sourceTree = "<group>"; };
 		C1D2E3F4A5B60008C1D2E3F4 /* ExpenseRepositoryProtocol.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ExpenseRepositoryProtocol.swift; sourceTree = "<group>"; };
@@ -177,6 +181,8 @@
 		J1K2L3M4N5O60A03 /* EditExpenseViewModelTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = EditExpenseViewModelTests.swift; sourceTree = "<group>"; };
 		K1L2M3N4O5P60B01 /* InsightsViewModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = InsightsViewModel.swift; sourceTree = "<group>"; };
 		K1L2M3N4O5P60B02 /* InsightsViewModelTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = InsightsViewModelTests.swift; sourceTree = "<group>"; };
+		K1L2M3N4O5P60B03 /* InsightsViewModelChartTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = InsightsViewModelChartTests.swift; sourceTree = "<group>"; };
+		K1L2M3N4O5P60B04 /* InsightsViewModelNavigationTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = InsightsViewModelNavigationTests.swift; sourceTree = "<group>"; };
 		L1M2N3O4P5Q60C01 /* InsightsSummaryView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = InsightsSummaryView.swift; sourceTree = "<group>"; };
 		L1M2N3O4P5Q60C02 /* FilteredFeedView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FilteredFeedView.swift; sourceTree = "<group>"; };
 		L1M2N3O4P5Q60C03 /* DailyBarChartView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DailyBarChartView.swift; sourceTree = "<group>"; };
@@ -319,6 +325,8 @@
 				D1E2F3A4B5C60104 /* ExpenseEntryViewModelTests.swift */,
 				H1I2J3K4L5M60804H1I2J3K4 /* FeedViewModelTests.swift */,
 				K1L2M3N4O5P60B02 /* InsightsViewModelTests.swift */,
+				K1L2M3N4O5P60B03 /* InsightsViewModelChartTests.swift */,
+				K1L2M3N4O5P60B04 /* InsightsViewModelNavigationTests.swift */,
 				TESTM003SVMTST002TESTM003 /* SettingsViewModelTests.swift */,
 			);
 			path = ViewModels;
@@ -390,6 +398,7 @@
 				C1D2E3F4A5B60003C1D2E3F4 /* Color+CategoryTokens.swift */,
 				H1I2J3K4L5M60801H1I2J3K4 /* Date+Formatting.swift */,
 				C1D2E3F4A5B60005C1D2E3F4 /* Int64+Currency.swift */,
+				C1D2E3F4A5B6000EC1D2E3F4 /* Calendar+App.swift */,
 				913246BA79EDB79F5EE93766 /* Bundle+Version.swift */,
 			);
 			path = Extensions;
@@ -601,6 +610,8 @@
 				H1I2J3K4L5M60814H1I2J3K4 /* FeedViewModelTests.swift in Sources */,
 				J1K2L3M4N5O60A13 /* EditExpenseViewModelTests.swift in Sources */,
 				K1L2M3N4O5P60B12 /* InsightsViewModelTests.swift in Sources */,
+				K1L2M3N4O5P60B13 /* InsightsViewModelChartTests.swift in Sources */,
+				K1L2M3N4O5P60B14 /* InsightsViewModelNavigationTests.swift in Sources */,
 				M1N2O3P4Q5R60D12M1N2O3P4 /* MockSyncMonitorService.swift in Sources */,
 				P1Q2R3S4T5U60G11P1Q2R3S4 /* SyncMonitorServiceTests.swift in Sources */,
 				TESTM001HSMOCK001TESTM001 /* MockHouseholdService.swift in Sources */,
@@ -644,6 +655,7 @@
 				8KJJZP53RQ19NCGKB501FQKB /* CategoryOrderStore.swift in Sources */,
 				U3V4W5X6Y7Z80K01U3V4W5X6 /* DesignTokens.swift in Sources */,
 				C1D2E3F4A5B60015C1D2E3F4 /* Int64+Currency.swift in Sources */,
+				C1D2E3F4A5B6001EC1D2E3F4 /* Calendar+App.swift in Sources */,
 				C1D2E3F4A5B60016C1D2E3F4 /* CategoryRepositoryProtocol.swift in Sources */,
 				C1D2E3F4A5B60017C1D2E3F4 /* CategoryRepository.swift in Sources */,
 				C1D2E3F4A5B60018C1D2E3F4 /* ExpenseRepositoryProtocol.swift in Sources */,

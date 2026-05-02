@@ -4,6 +4,7 @@ enum HapticEvent: Equatable {
     case numpadKey      // UIImpactFeedbackGenerator(.light)
     case categorySelect // UIImpactFeedbackGenerator(.light)
     case refresh        // UIImpactFeedbackGenerator(.light)
+    case dateNavigate   // UIImpactFeedbackGenerator(.light)
     case saveTap        // UINotificationFeedbackGenerator(.success)
     case deleteTap      // UINotificationFeedbackGenerator(.success)
     case error          // UINotificationFeedbackGenerator(.error)
@@ -38,7 +39,7 @@ final class HapticService: HapticServiceProtocol {
     func trigger(_ event: HapticEvent) {
         guard !UIAccessibility.isReduceMotionEnabled else { return }
         switch event {
-        case .numpadKey, .categorySelect, .refresh:
+        case .numpadKey, .categorySelect, .refresh, .dateNavigate:
             impactGenerator.impactOccurred()
             impactGenerator.prepare()
         case .saveTap, .deleteTap:

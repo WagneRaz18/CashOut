@@ -78,6 +78,18 @@ struct InsightsView: View {
                     }
                 }
             }
+            .simultaneousGesture(
+                DragGesture(minimumDistance: 30)
+                    .onEnded { value in
+                        guard abs(value.translation.width) > abs(value.translation.height) else { return }
+                        if value.translation.width < 0 {
+                            viewModel.navigatePrevious()
+                        } else {
+                            viewModel.navigateNext()
+                        }
+                    }
+            )
+            .animation(.easeInOut(duration: 0.15), value: viewModel.loadKey)
         }
         .background(Surface.base)
         .navigationTitle("Insights")
@@ -108,25 +120,18 @@ struct InsightsView: View {
             SettingsView()
                 .onAppear { logger.debug("Navigating to Settings from Insights") }
         }
-        .task {
-            viewModel.resetToCurrentPeriod()
+        .accessibilityAdjustableAction { direction in
+            switch direction {
+            case .increment: viewModel.navigateNext()
+            case .decrement: viewModel.navigatePrevious()
+            @unknown default: break
+            }
         }
         .onChange(of: viewModel.selectedPeriod) {
             viewModel.resetToCurrentPeriod()
         }
-        .simultaneousGesture(
-            DragGesture(minimumDistance: 30)
-                .onEnded { value in
-                    guard abs(value.translation.width) > abs(value.translation.height) else { return }
-                    if value.translation.width < 0 {
-                        viewModel.navigatePrevious()
-                    } else {
-                        viewModel.navigateNext()
-                    }
-                }
-        )
         .task(id: viewModel.loadKey) {
-            logger.info("InsightsView.task: loading period=\(viewModel.selectedPeriod.rawValue) offset=\(viewModel.dateOffset)")
+            logger.info("InsightsView.task: loading period=\(viewModel.selectedPeriod.rawValue, privacy: .public) offset=\(viewModel.dateOffset, privacy: .public)")
             await viewModel.loadData()
         }
         .task {

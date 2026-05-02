@@ -20,7 +20,7 @@ final class ExpenseRepositoryTests: XCTestCase {
         daysAgo: Int = 0
     ) async throws -> ExpenseData {
         let categories = try await categoryRepository.fetchCategories()
-        let date = Calendar.current.date(byAdding: .day, value: -daysAgo, to: Date())!
+        let date = Calendar.gregorian.date(byAdding: .day, value: -daysAgo, to: Date()) ?? Date()
         return ExpenseData(
             id: UUID(),
             amount: amount,
@@ -38,8 +38,8 @@ final class ExpenseRepositoryTests: XCTestCase {
         try await repository.saveExpense(expense)
 
         let period = DateInterval(
-            start: Calendar.current.date(byAdding: .day, value: -1, to: Date())!,
-            end: Calendar.current.date(byAdding: .day, value: 1, to: Date())!
+            start: Calendar.gregorian.date(byAdding: .day, value: -1, to: Date()) ?? Date(),
+            end: Calendar.gregorian.date(byAdding: .day, value: 1, to: Date()) ?? Date()
         )
         let results = try await repository.fetchExpenses(for: period)
         XCTAssertEqual(results.count, 1)
@@ -55,8 +55,8 @@ final class ExpenseRepositoryTests: XCTestCase {
         try await repository.deleteExpense(id: expense.id)
 
         let period = DateInterval(
-            start: Calendar.current.date(byAdding: .day, value: -1, to: Date())!,
-            end: Calendar.current.date(byAdding: .day, value: 1, to: Date())!
+            start: Calendar.gregorian.date(byAdding: .day, value: -1, to: Date()) ?? Date(),
+            end: Calendar.gregorian.date(byAdding: .day, value: 1, to: Date()) ?? Date()
         )
         let results = try await repository.fetchExpenses(for: period)
         XCTAssertTrue(results.isEmpty)
@@ -71,8 +71,8 @@ final class ExpenseRepositoryTests: XCTestCase {
         try await repository.saveExpense(oldExpense)
 
         let lastWeek = DateInterval(
-            start: Calendar.current.date(byAdding: .day, value: -7, to: Date())!,
-            end: Calendar.current.date(byAdding: .day, value: 1, to: Date())!
+            start: Calendar.gregorian.date(byAdding: .day, value: -7, to: Date()) ?? Date(),
+            end: Calendar.gregorian.date(byAdding: .day, value: 1, to: Date()) ?? Date()
         )
         let results = try await repository.fetchExpenses(for: lastWeek)
         XCTAssertEqual(results.count, 1)
@@ -88,8 +88,8 @@ final class ExpenseRepositoryTests: XCTestCase {
         try await repository.saveExpense(newer)
 
         let period = DateInterval(
-            start: Calendar.current.date(byAdding: .day, value: -7, to: Date())!,
-            end: Calendar.current.date(byAdding: .day, value: 1, to: Date())!
+            start: Calendar.gregorian.date(byAdding: .day, value: -7, to: Date()) ?? Date(),
+            end: Calendar.gregorian.date(byAdding: .day, value: 1, to: Date()) ?? Date()
         )
         let results = try await repository.fetchExpenses(for: period)
         XCTAssertEqual(results.count, 2)
@@ -114,8 +114,8 @@ final class ExpenseRepositoryTests: XCTestCase {
         try await repository.saveExpense(updated)
 
         let period = DateInterval(
-            start: Calendar.current.date(byAdding: .day, value: -1, to: Date())!,
-            end: Calendar.current.date(byAdding: .day, value: 1, to: Date())!
+            start: Calendar.gregorian.date(byAdding: .day, value: -1, to: Date()) ?? Date(),
+            end: Calendar.gregorian.date(byAdding: .day, value: 1, to: Date()) ?? Date()
         )
         let results = try await repository.fetchExpenses(for: period)
         XCTAssertEqual(results.count, 1, "Saving same ID twice should not create duplicates")
