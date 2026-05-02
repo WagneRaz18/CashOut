@@ -9,6 +9,8 @@ struct MonthlyCalendarView: View {
     private static let weekdaySymbols = ["S", "M", "T", "W", "T", "F", "S"]
     private static let columns = Array(repeating: GridItem(.flexible(), spacing: 1), count: 7)
 
+    @State private var cells: [MonthGridCell] = []
+
     private var todayStart: Date {
         Calendar.gregorian.startOfDay(for: today)
     }
@@ -27,7 +29,7 @@ struct MonthlyCalendarView: View {
             .padding(.horizontal, Spacing.sm)
 
             LazyVGrid(columns: Self.columns, spacing: 1) {
-                ForEach(buildCells()) { cell in
+                ForEach(cells) { cell in
                     if let date = cell.date {
                         let dateStart = Calendar.gregorian.startOfDay(for: date)
                         CalendarDayCell(
@@ -46,6 +48,7 @@ struct MonthlyCalendarView: View {
             .padding(.horizontal, Spacing.sm)
         }
         .padding(.vertical, Spacing.sm)
+        .onChange(of: calendarMonth, initial: true) { _, _ in cells = buildCells() }
     }
 
     private func buildCells() -> [MonthGridCell] {
@@ -73,6 +76,7 @@ private struct MonthGridCell: Identifiable {
     let date: Date?
 }
 
+@MainActor
 private struct CalendarDayCell: View {
     let date: Date
     let amount: Int64?
@@ -80,7 +84,9 @@ private struct CalendarDayCell: View {
     let isFuture: Bool
     let onTap: () -> Void
 
-    @MainActor private static let a11yFormatter: DateFormatter = {
+    @ScaledMetric(relativeTo: .caption2) private var amountFontSize: CGFloat = 8
+
+    private static let a11yFormatter: DateFormatter = {
         let fmt = DateFormatter()
         fmt.dateStyle = .medium
         fmt.timeStyle = .none
@@ -103,7 +109,7 @@ private struct CalendarDayCell: View {
 
             if let amount, amount > 0 {
                 Text(amount.displayAmount)
-                    .font(.system(size: 8))
+                    .font(.system(size: amountFontSize))
                     .foregroundStyle(Color.secondary)
                     .lineLimit(1)
                     .minimumScaleFactor(0.5)
@@ -117,12 +123,9 @@ private struct CalendarDayCell: View {
         .opacity(isFuture ? 0.3 : 1.0)
         .allowsHitTesting(!isFuture)
         .accessibilityLabel(accessibilityLabel)
-        .accessibilityHint(isFuture ? "Future date, not available" : "")
+        .accessibilityHint(isFuture ? "Future date, not available" : "Double-tap to navigate to this day")
         .accessibilityAddTraits(isFuture ? [] : .isButton)
-        .onTapGesture {
-            guard !isFuture else { return }
-            onTap()
-        }
+        .onTapGesture { onTap() }
     }
 
     private var accessibilityLabel: String {

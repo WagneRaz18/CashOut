@@ -109,8 +109,9 @@ final class InsightsViewModel {
     var canNavigateForward: Bool { dateOffset < 0 }
 
     var viewedMonthStart: Date {
-        let ref = Self.calendar.date(byAdding: .month, value: dateOffset, to: Date()) ?? Date()
-        return Self.calendar.dateInterval(of: .month, for: ref)?.start ?? ref
+        currentPeriodInterval?.start
+            ?? Self.calendar.dateInterval(of: .month, for: Date())?.start
+            ?? Date()
     }
 
     var headlineText: String { totalAmount.displayAmount }

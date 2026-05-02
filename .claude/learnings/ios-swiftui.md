@@ -112,6 +112,10 @@
 ## Testing Async Notification Handlers
 - **2026-03-28**: `Task { }` on `@MainActor` doesn't start until the caller yields. `NotificationCenter.notifications(named:)` only receives notifications posted AFTER `for await` begins iteration. In tests: `await Task.yield()` before posting notifications so observer Tasks register their async sequence listeners first. Without this, tests pass as false positives (asserting on already-default-nil state).
 
+## SwiftUI View Performance & Caching
+- **2026-05-02**: `@MainActor` on a `static let` of a `struct` does NOT isolate it — Swift 6 treats `DateFormatter` (non-Sendable) on a struct's static let as a potential data race regardless of property-level annotations. Fix: annotate the entire `private struct CalendarDayCell: View` with `@MainActor`. All SwiftUI `body` evals are already main-actor; putting `@MainActor` on the type makes isolation explicit and resolves the sendability issue for all members at once.
+- **2026-05-02**: `buildCells()` / similar computed methods called directly in `body` re-run on every `@Observable` observation tick (e.g., when `dailyTotals` changes). For O(N) work that only changes when a single input (e.g., `calendarMonth`) changes: cache with `@State private var cells: [Cell] = []` and populate via `.onChange(of: calendarMonth, initial: true) { _, _ in cells = buildCells() }`. The `initial: true` flag fires during the first update pass — no blank-grid flash.
+
 ## Swift 6 Strict Concurrency
 - `static var` with closure init is not concurrency-safe — use `static let` for singletons/previews.
 - CoreData's `NSMergeByPropertyStoreTrumpMergePolicy` triggers "shared mutable state" error in Swift 6 — use `@preconcurrency import CoreData`.

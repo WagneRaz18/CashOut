@@ -14,7 +14,7 @@ struct InsightsView: View {
     private var periodBinding: Binding<InsightsViewModel.TimePeriod> {
         Binding(
             get: { viewModel.selectedPeriod },
-            set: { viewModel.selectedPeriod = $0; viewModel.resetToCurrentPeriod() }
+            set: { newPeriod in viewModel.dateOffset = 0; viewModel.selectedPeriod = newPeriod }
         )
     }
 
