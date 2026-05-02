@@ -3,7 +3,8 @@ import SwiftUI
 struct CategoryBreakdownView: View {
     let slices: [InsightsViewModel.ChartSlice]
     let totalAmount: Int64
-    let onCategoryTapped: (UUID) -> Void
+    let excludedCategories: Set<UUID>
+    let onCategoryFilterToggled: (UUID) -> Void
 
     var body: some View {
         if slices.isEmpty {
@@ -11,10 +12,11 @@ struct CategoryBreakdownView: View {
         } else {
             VStack(spacing: Spacing.sm) {
                 ForEach(slices) { slice in
-                    let proportion = totalAmount > 0 ? Double(slice.total) / Double(totalAmount) : 0.0
+                    let isExcluded = excludedCategories.contains(slice.categoryID)
+                    let proportion = isExcluded ? 0.0 : (totalAmount > 0 ? Double(slice.total) / Double(totalAmount) : 0.0)
 
                     Button {
-                        onCategoryTapped(slice.categoryID)
+                        onCategoryFilterToggled(slice.categoryID)
                     } label: {
                         VStack(alignment: .leading, spacing: Spacing.xs) {
                             HStack(spacing: Spacing.sm) {
@@ -39,10 +41,13 @@ struct CategoryBreakdownView: View {
                             .frame(height: 4)
                         }
                         .padding(.vertical, Spacing.xs)
+                        .opacity(isExcluded ? 0.35 : 1.0)
                     }
                     .buttonStyle(.plain)
                     .accessibilityElement(children: .combine)
                     .accessibilityLabel("\(slice.categoryName), \(slice.total.displayAmount), \(Int(proportion * 100))% of total")
+                    .accessibilityValue(isExcluded ? "excluded" : "included")
+                    .accessibilityHint(isExcluded ? "Double tap to include in chart" : "Double tap to exclude from chart")
                 }
             }
             .padding(.horizontal, Spacing.md)

@@ -59,7 +59,7 @@ struct InsightsView: View {
                 } else {
                     VStack(spacing: Spacing.md) {
                         InsightsSummaryView(
-                            slices: viewModel.chartSlices,
+                            slices: viewModel.visibleChartSlices,
                             headlineText: viewModel.headlineText,
                             periodLabel: viewModel.periodLabel,
                             comparisonText: viewModel.comparisonText,
@@ -69,7 +69,8 @@ struct InsightsView: View {
                                 viewModel.selectCategory(categoryID)
                             }
                         )
-                        .id(viewModel.loadKey)
+                        .transition(.opacity)
+                        .id("\(viewModel.loadKey)-\(viewModel.visibleChartSlices.map(\.categoryID.uuidString).joined())")
 
                         if viewModel.selectedPeriod == .monthly {
                             MonthlyCalendarView(
@@ -91,13 +92,15 @@ struct InsightsView: View {
                         if !viewModel.isEmpty {
                             CategoryBreakdownView(
                                 slices: viewModel.chartSlices,
-                                totalAmount: viewModel.totalAmount,
-                                onCategoryTapped: { categoryID in
-                                    viewModel.selectCategory(categoryID)
+                                totalAmount: viewModel.filteredTotalAmount,
+                                excludedCategories: viewModel.excludedCategories,
+                                onCategoryFilterToggled: { categoryID in
+                                    viewModel.toggleCategoryFilter(categoryID)
                                 }
                             )
                         }
                     }
+                    .animation(.easeInOut(duration: 0.15), value: viewModel.loadKey)
                 }
             }
             .simultaneousGesture(
@@ -111,7 +114,7 @@ struct InsightsView: View {
                         }
                     }
             )
-            .animation(.easeInOut(duration: 0.15), value: viewModel.loadKey)
+            .onAppear { viewModel.clearCategoryFilter() }
         }
         .background(Surface.base)
         .navigationTitle("Insights")

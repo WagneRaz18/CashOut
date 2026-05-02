@@ -99,6 +99,9 @@ final class InsightsViewModel {
     var errorMessage: String?
     var syncStatus: SyncStatus = .healthy
 
+    // Ephemeral filter — never persisted, reset on every data load and tab appear.
+    var excludedCategories: Set<UUID> = []
+
     // MARK: - Computed Properties
 
     var isEmpty: Bool { totalAmount == 0 && categoryTotals.isEmpty }
@@ -114,7 +117,15 @@ final class InsightsViewModel {
             ?? Date()
     }
 
-    var headlineText: String { totalAmount.displayAmount }
+    var visibleChartSlices: [ChartSlice] {
+        chartSlices.filter { !excludedCategories.contains($0.categoryID) }
+    }
+
+    var filteredTotalAmount: Int64 {
+        visibleChartSlices.reduce(Int64(0)) { $0 + $1.total }
+    }
+
+    var headlineText: String { filteredTotalAmount.displayAmount }
 
     var periodLabel: String {
         guard dateOffset != 0 else { return selectedPeriod.currentPeriodLabel }
@@ -138,6 +149,7 @@ final class InsightsViewModel {
 
     var comparisonText: String? {
         guard dateOffset == 0 else { return nil }
+        guard excludedCategories.isEmpty else { return nil }
         guard let previous = previousPeriodTotal else { return nil }
         let difference = totalAmount - previous
         if difference > 0 {
@@ -162,10 +174,10 @@ final class InsightsViewModel {
     }
 
     var chartAccessibilityLabel: String {
-        guard let largest = chartSlices.first else {
+        guard let largest = visibleChartSlices.first else {
             return "No entries this \(selectedPeriod.emptyStateLabel)"
         }
-        return "This \(selectedPeriod.emptyStateLabel) total: \(totalAmount.displayAmount). Largest category: \(largest.categoryName) at \(largest.total.displayAmount)."
+        return "This \(selectedPeriod.emptyStateLabel) total: \(filteredTotalAmount.displayAmount). Largest category: \(largest.categoryName) at \(largest.total.displayAmount)."
     }
 
     // MARK: - Dependencies
@@ -267,6 +279,17 @@ final class InsightsViewModel {
         selectedPeriod = .daily
     }
 
+    func toggleCategoryFilter(_ categoryID: UUID) {
+        if !excludedCategories.insert(categoryID).inserted {
+            excludedCategories.remove(categoryID)
+        }
+    }
+
+    func clearCategoryFilter() {
+        guard !excludedCategories.isEmpty else { return }
+        excludedCategories.removeAll()
+    }
+
     func selectCategory(_ categoryID: UUID?) {
         guard let categoryID, let interval = currentPeriodInterval else {
             logger.debug("selectCategory: cleared (hasCategory=\(categoryID != nil), hasInterval=\(self.currentPeriodInterval != nil))")
@@ -342,6 +365,7 @@ final class InsightsViewModel {
         interval: DateInterval,
         offset: Int
     ) {
+        clearCategoryFilter()
         totalAmount = currentExpenses.reduce(Int64(0)) { $0 + $1.amount }
         categoryTotals = buildCategoryTotals(from: currentExpenses)
         fetchedCategories = categories
