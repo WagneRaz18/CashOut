@@ -121,10 +121,10 @@ private struct CalendarDayCell: View {
         .aspectRatio(0.75, contentMode: .fit)
         .contentShape(Rectangle())
         .opacity(isFuture ? 0.3 : 1.0)
-        .allowsHitTesting(!isFuture)
+        .allowsHitTesting(!isFuture && (amount ?? 0) > 0)
         .accessibilityLabel(accessibilityLabel)
-        .accessibilityHint(isFuture ? "Future date, not available" : "Double-tap to navigate to this day")
-        .accessibilityAddTraits(isFuture ? [] : .isButton)
+        .accessibilityHint(isFuture ? "Future date, not available" : (amount ?? 0) > 0 ? "Double-tap to navigate to this day" : "No expenses")
+        .accessibilityAddTraits((isFuture || (amount ?? 0) == 0) ? [] : .isButton)
         .onTapGesture { onTap() }
     }
 

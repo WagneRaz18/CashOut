@@ -105,9 +105,9 @@ struct InsightsView: View {
                     .onEnded { value in
                         guard abs(value.translation.width) > abs(value.translation.height) else { return }
                         if value.translation.width < 0 {
-                            viewModel.navigatePrevious()
-                        } else {
                             viewModel.navigateNext()
+                        } else {
+                            viewModel.navigatePrevious()
                         }
                     }
             )
