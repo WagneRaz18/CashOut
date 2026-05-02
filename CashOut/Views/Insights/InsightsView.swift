@@ -108,8 +108,25 @@ struct InsightsView: View {
             SettingsView()
                 .onAppear { logger.debug("Navigating to Settings from Insights") }
         }
-        .task(id: viewModel.selectedPeriod) {
-            logger.info("InsightsView.task: loading data for period \(viewModel.selectedPeriod.rawValue)")
+        .task {
+            viewModel.resetToCurrentPeriod()
+        }
+        .onChange(of: viewModel.selectedPeriod) {
+            viewModel.resetToCurrentPeriod()
+        }
+        .simultaneousGesture(
+            DragGesture(minimumDistance: 30)
+                .onEnded { value in
+                    guard abs(value.translation.width) > abs(value.translation.height) else { return }
+                    if value.translation.width < 0 {
+                        viewModel.navigatePrevious()
+                    } else {
+                        viewModel.navigateNext()
+                    }
+                }
+        )
+        .task(id: viewModel.loadKey) {
+            logger.info("InsightsView.task: loading period=\(viewModel.selectedPeriod.rawValue) offset=\(viewModel.dateOffset)")
             await viewModel.loadData()
         }
         .task {

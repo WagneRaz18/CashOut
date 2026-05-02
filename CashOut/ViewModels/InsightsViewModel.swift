@@ -63,12 +63,14 @@ final class InsightsViewModel {
     }
 
     struct BarEntry: Identifiable, Sendable {
+        let position: Int
         let label: String
         let dateLabel: String?
         let total: Int64
-        var id: String { label }
+        var id: Int { position }
 
-        init(label: String, total: Int64, dateLabel: String? = nil) {
+        init(position: Int, label: String, total: Int64, dateLabel: String? = nil) {
+            self.position = position
             self.label = label
             self.dateLabel = dateLabel
             self.total = total
@@ -83,6 +85,7 @@ final class InsightsViewModel {
     // MARK: - Observable Properties
 
     var selectedPeriod: TimePeriod = .weekly
+    var dateOffset: Int = 0
     var totalAmount: Int64 = 0
     var previousPeriodTotal: Int64?
     var categoryTotals: [CategoryTotal] = []
@@ -98,11 +101,34 @@ final class InsightsViewModel {
 
     var isEmpty: Bool { totalAmount == 0 && categoryTotals.isEmpty }
 
+    var loadKey: String { "\(selectedPeriod.rawValue)-\(dateOffset)" }
+
+    var canNavigateForward: Bool { dateOffset < 0 }
+
     var headlineText: String { totalAmount.displayAmount }
 
-    var periodLabel: String { selectedPeriod.currentPeriodLabel }
+    var periodLabel: String {
+        guard dateOffset != 0 else { return selectedPeriod.currentPeriodLabel }
+        guard let shifted = Self.calendar.date(byAdding: selectedPeriod.calendarComponent, value: dateOffset, to: Date()),
+              let interval = Self.calendar.dateInterval(of: selectedPeriod.calendarComponent, for: shifted) else {
+            return selectedPeriod.currentPeriodLabel
+        }
+        switch selectedPeriod {
+        case .daily:
+            if dateOffset == -1 { return "Yesterday" }
+            return Self.mediumDateFormatter.string(from: interval.start)
+        case .weekly:
+            if dateOffset == -1 { return "Last Week" }
+            let lastDay = Self.calendar.date(byAdding: .day, value: -1, to: interval.end) ?? interval.end
+            return "\(Self.mediumDateFormatter.string(from: interval.start)) – \(Self.mediumDateFormatter.string(from: lastDay))"
+        case .monthly:
+            if dateOffset == -1 { return "Last Month" }
+            return Self.monthYearFormatter.string(from: interval.start)
+        }
+    }
 
     var comparisonText: String? {
+        guard dateOffset == 0 else { return nil }
         guard let previous = previousPeriodTotal else { return nil }
         let difference = totalAmount - previous
         if difference > 0 {
@@ -154,6 +180,9 @@ final class InsightsViewModel {
     private var loadedPeriod: TimePeriod?
 
     @ObservationIgnored
+    private var loadedOffset: Int?
+
+    @ObservationIgnored
     private var isSubscribed = false
 
     @ObservationIgnored
@@ -181,21 +210,39 @@ final class InsightsViewModel {
     // MARK: - Data Loading
 
     func loadData() async {
-        guard loadedPeriod != selectedPeriod else {
-            logger.debug("loadData: period \(self.selectedPeriod.rawValue) already loaded — skipped")
+        guard loadedPeriod != selectedPeriod || loadedOffset != dateOffset else {
+            logger.debug("loadData: period=\(self.selectedPeriod.rawValue) offset=\(self.dateOffset) already loaded — skipped")
             return
         }
-        logger.info("loadData: loading period \(self.selectedPeriod.rawValue)")
-        await performLoad()
+        logger.info("loadData: loading period=\(self.selectedPeriod.rawValue) offset=\(self.dateOffset)")
+        loadTask?.cancel()
+        let task = Task { await self.performLoad() }
+        loadTask = task
+        await task.value
     }
 
     func invalidateAndReload() async {
         logger.debug("invalidateAndReload: resetting for fresh load")
         loadedPeriod = nil
+        loadedOffset = nil
         loadTask?.cancel()
-        let task = Task { await performLoad() }
+        let task = Task { await self.performLoad() }
         loadTask = task
         await task.value
+    }
+
+    func navigatePrevious() {
+        dateOffset -= 1
+    }
+
+    func navigateNext() {
+        guard canNavigateForward else { return }
+        dateOffset += 1
+    }
+
+    func resetToCurrentPeriod() {
+        guard dateOffset != 0 else { return }
+        dateOffset = 0
     }
 
     func selectCategory(_ categoryID: UUID?) {
@@ -253,9 +300,11 @@ final class InsightsViewModel {
 
     private func performLoad() async {
         let period = selectedPeriod
+        let offset = dateOffset
         let now = Date()
-        let currentInterval = dateInterval(for: period, referenceDate: now)
-        let previousInterval = previousDateInterval(for: period, referenceDate: now)
+        let refDate = referenceDate(for: period, offset: offset, relativeTo: now)
+        let currentInterval = dateInterval(for: period, referenceDate: refDate)
+        let previousInterval = previousDateInterval(for: period, referenceDate: refDate)
 
         logger.debug("performLoad: period=\(period.rawValue), interval=\(currentInterval.start) — \(currentInterval.end)")
 
@@ -305,6 +354,7 @@ final class InsightsViewModel {
             currentPeriodInterval = currentInterval
             errorMessage = nil
             loadedPeriod = period
+            loadedOffset = offset
             logger.info("performLoad: complete — total=\(self.totalAmount, privacy: .private) satang, \(self.categoryTotals.count) categories")
         } catch {
             guard !Task.isCancelled else { return }
@@ -321,6 +371,20 @@ final class InsightsViewModel {
     }
 
     // MARK: - Bar Entry Computation
+
+    private static let mediumDateFormatter: DateFormatter = {
+        let formatter = DateFormatter()
+        formatter.dateFormat = "MMM d"
+        formatter.locale = Locale(identifier: "en_US_POSIX")
+        return formatter
+    }()
+
+    private static let monthYearFormatter: DateFormatter = {
+        let formatter = DateFormatter()
+        formatter.dateFormat = "MMM yyyy"
+        formatter.locale = Locale(identifier: "en_US_POSIX")
+        return formatter
+    }()
 
     private static let weekdayFormatter: DateFormatter = {
         let formatter = DateFormatter()
@@ -343,21 +407,27 @@ final class InsightsViewModel {
         switch period {
         case .daily:
             let total = expenses.reduce(Int64(0)) { $0 + $1.amount }
-            return [BarEntry(label: "Today", total: total, dateLabel: Self.dayMonthFormatter.string(from: interval.start))]
+            let label = cal.isDateInToday(interval.start) ? "Today"
+                : cal.isDateInYesterday(interval.start) ? "Yesterday"
+                : Self.dayMonthFormatter.string(from: interval.start)
+            return [BarEntry(position: 0, label: label, total: total, dateLabel: Self.dayMonthFormatter.string(from: interval.start))]
 
         case .weekly:
             var entries: [BarEntry] = []
             var date = interval.start
+            var position = 0
             while date < interval.end {
                 let dayTotal = expenses
                     .filter { cal.isDate($0.createdAt, inSameDayAs: date) }
                     .reduce(Int64(0)) { $0 + $1.amount }
                 entries.append(BarEntry(
+                    position: position,
                     label: Self.weekdayFormatter.string(from: date),
                     total: dayTotal,
                     dateLabel: Self.dayMonthFormatter.string(from: date)
                 ))
                 date = cal.date(byAdding: .day, value: 1, to: date) ?? interval.end
+                position += 1
             }
             return entries
 
@@ -372,13 +442,18 @@ final class InsightsViewModel {
                 weeklyTotals[weekNum, default: 0] += expense.amount
             }
 
-            return range.map { week in
-                BarEntry(label: "W\(week)", total: weeklyTotals[week, default: 0])
+            return range.enumerated().map { idx, week in
+                BarEntry(position: idx, label: "W\(week)", total: weeklyTotals[week, default: 0])
             }
         }
     }
 
     // MARK: - Date Interval Helpers
+
+    private func referenceDate(for period: TimePeriod, offset: Int, relativeTo base: Date) -> Date {
+        guard offset != 0 else { return base }
+        return Self.calendar.date(byAdding: period.calendarComponent, value: offset, to: base) ?? base
+    }
 
     // Uses Gregorian calendar — should never return nil, but defends against it with logged fallback
     private func dateInterval(for period: TimePeriod, referenceDate: Date) -> DateInterval {
