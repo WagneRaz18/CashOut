@@ -60,6 +60,8 @@
 - **2026-04-04**: `.chartAngleSelection` alone uses hold-not-tap gesture (Apple bug). Must pair with `.chartGesture { chart in SpatialTapGesture().onEnded { ... chart.selectAngleValue(at: angle) } }` to enable single-tap selection on donut/pie charts.
 - **2026-04-04**: `chartAngleSelection` raw value can exceed the integer sum of all `SectorMark` values due to floating-point rounding in chart geometry. Always fall back to the last slice in `resolveCategory` instead of returning nil — prevents silent tap failures on the last slice's trailing edge.
 - **2026-04-04**: `BarMark` with String x-values sorts labels alphabetically by default. Use `.chartXScale(domain: entries.map(\.label))` to enforce array-order (chronological). If ordering still breaks, fall back to index-based x-values with custom `AxisValueLabel`.
+- **2026-05-02**: Custom multi-line X-axis labels in Swift Charts: use `.chartXAxis { AxisMarks { value in AxisGridLine(); AxisTick(); AxisValueLabel { if let label = value.as(String.self) { VStack { Text(label); Text(subtitle) } } } } }`. Get the axis value via `value.as(String.self)`. Pre-build a `[String: String]` lookup dictionary as a computed property on the view — never call `.first(where:)` inside the closure (O(n) per axis redraw).
+- **2026-05-02**: `DateFormatter.dateFormat = "d.M"` requires `locale = Locale(identifier: "en_US_POSIX")` even for purely numeric formats — without it, some locales treat the format string as a template and may reorder day/month. `en_US_POSIX` guarantees the format is literal.
 
 ## SwiftData Migrations
 - N/A — CashOut uses Core Data, not SwiftData (shared CloudKit database not supported in SwiftData).

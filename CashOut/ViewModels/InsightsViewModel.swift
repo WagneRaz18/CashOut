@@ -64,8 +64,15 @@ final class InsightsViewModel {
 
     struct BarEntry: Identifiable, Sendable {
         let label: String
+        let dateLabel: String?
         let total: Int64
         var id: String { label }
+
+        init(label: String, total: Int64, dateLabel: String? = nil) {
+            self.label = label
+            self.dateLabel = dateLabel
+            self.total = total
+        }
     }
 
     struct CategoryNavDestination: Hashable {
@@ -113,7 +120,10 @@ final class InsightsViewModel {
 
     var barChartAccessibilityLabel: String {
         guard !barEntries.isEmpty else { return "No spending data" }
-        return barEntries.map { "\($0.label): \($0.total.displayAmount)" }.joined(separator: ". ")
+        return barEntries.map { entry in
+            let prefix = entry.dateLabel.map { "\(entry.label) (\($0))" } ?? entry.label
+            return "\(prefix): \(entry.total.displayAmount)"
+        }.joined(separator: ". ")
     }
 
     var chartAccessibilityLabel: String {
@@ -319,6 +329,14 @@ final class InsightsViewModel {
         return formatter
     }()
 
+    // en_US_POSIX ensures "d.M" is treated as a fixed-format template (e.g. "2.5"), not locale-substituted
+    private static let dayMonthFormatter: DateFormatter = {
+        let formatter = DateFormatter()
+        formatter.dateFormat = "d.M"
+        formatter.locale = Locale(identifier: "en_US_POSIX")
+        return formatter
+    }()
+
     private func computeBarEntries(from expenses: [ExpenseData], period: TimePeriod, interval: DateInterval) -> [BarEntry] {
         let cal = Self.calendar
 
@@ -334,7 +352,11 @@ final class InsightsViewModel {
                 let dayTotal = expenses
                     .filter { cal.isDate($0.createdAt, inSameDayAs: date) }
                     .reduce(Int64(0)) { $0 + $1.amount }
-                entries.append(BarEntry(label: Self.weekdayFormatter.string(from: date), total: dayTotal))
+                entries.append(BarEntry(
+                    label: Self.weekdayFormatter.string(from: date),
+                    total: dayTotal,
+                    dateLabel: Self.dayMonthFormatter.string(from: date)
+                ))
                 date = cal.date(byAdding: .day, value: 1, to: date) ?? interval.end
             }
             return entries

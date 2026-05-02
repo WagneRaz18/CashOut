@@ -5,6 +5,12 @@ struct DailyBarChartView: View {
     let entries: [InsightsViewModel.BarEntry]
     let accessibilityLabel: String
 
+    private var datesByLabel: [String: String] {
+        Dictionary(uniqueKeysWithValues: entries.compactMap { entry in
+            entry.dateLabel.map { (entry.label, $0) }
+        })
+    }
+
     var body: some View {
         if entries.isEmpty {
             EmptyView()
@@ -22,6 +28,26 @@ struct DailyBarChartView: View {
                 }
             }
             .chartXScale(domain: entries.map(\.label))
+            .chartXAxis {
+                AxisMarks { value in
+                    AxisGridLine()
+                    AxisTick()
+                    AxisValueLabel {
+                        if let label = value.as(String.self) {
+                            if let dateLabel = datesByLabel[label] {
+                                VStack(spacing: 1) {
+                                    Text(label)
+                                    Text(dateLabel)
+                                        .font(.caption2)
+                                        .foregroundStyle(.secondary)
+                                }
+                            } else {
+                                Text(label)
+                            }
+                        }
+                    }
+                }
+            }
             .chartYAxis(.hidden)
             .chartLegend(.hidden)
             .frame(height: 140)
