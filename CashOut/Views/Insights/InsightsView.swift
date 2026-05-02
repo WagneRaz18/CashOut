@@ -71,6 +71,7 @@ struct InsightsView: View {
                         )
                         .transition(.opacity)
                         .id("\(viewModel.loadKey)-\(viewModel.visibleChartSlices.map(\.categoryID.uuidString).joined())")
+                        .animation(.easeInOut(duration: 0.15), value: viewModel.loadKey)
 
                         if viewModel.selectedPeriod == .monthly {
                             MonthlyCalendarView(
@@ -80,6 +81,7 @@ struct InsightsView: View {
                                 onDayTap: { date in viewModel.navigateToDay(date) }
                             )
                             .transition(.opacity)
+                            .animation(.easeInOut(duration: 0.15), value: viewModel.loadKey)
                         } else {
                             DailyBarChartView(
                                 entries: viewModel.barEntries,
@@ -87,6 +89,7 @@ struct InsightsView: View {
                             )
                             .id(viewModel.loadKey)
                             .transition(.opacity)
+                            .animation(.easeInOut(duration: 0.15), value: viewModel.loadKey)
                         }
 
                         if !viewModel.isEmpty {
@@ -98,9 +101,10 @@ struct InsightsView: View {
                                     viewModel.toggleCategoryFilter(categoryID)
                                 }
                             )
+                            .transition(.opacity)
+                            .animation(.easeInOut(duration: 0.15), value: viewModel.loadKey)
                         }
                     }
-                    .animation(.easeInOut(duration: 0.15), value: viewModel.loadKey)
                 }
             }
             .simultaneousGesture(
@@ -114,6 +118,8 @@ struct InsightsView: View {
                         }
                     }
             )
+            // Deliberate: reset filters on tab return so Insights always opens unfiltered.
+            // applyLoadResults also resets on new data loads (the primary reset point).
             .onAppear { viewModel.clearCategoryFilter() }
         }
         .background(Surface.base)

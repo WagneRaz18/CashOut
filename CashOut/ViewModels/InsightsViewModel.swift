@@ -7,81 +7,6 @@ private let logger = Logger(subsystem: "com.wagneraz.CashOut", category: "Insigh
 @Observable
 final class InsightsViewModel {
 
-    // MARK: - Types
-
-    enum TimePeriod: String, CaseIterable {
-        case daily = "Day"
-        case weekly = "Week"
-        case monthly = "Month"
-
-        var currentPeriodLabel: String {
-            switch self {
-            case .daily: "Today"
-            case .weekly: "This Week"
-            case .monthly: "This Month"
-            }
-        }
-
-        var previousPeriodLabel: String {
-            switch self {
-            case .daily: "yesterday"
-            case .weekly: "last week"
-            case .monthly: "last month"
-            }
-        }
-
-        var emptyStateLabel: String {
-            switch self {
-            case .daily: "day"
-            case .weekly: "week"
-            case .monthly: "month"
-            }
-        }
-
-        fileprivate var calendarComponent: Calendar.Component {
-            switch self {
-            case .daily: .day
-            case .weekly: .weekOfYear
-            case .monthly: .month
-            }
-        }
-    }
-
-    struct CategoryTotal: Identifiable, Sendable {
-        let categoryID: UUID
-        let total: Int64
-        var id: UUID { categoryID }
-    }
-
-    struct ChartSlice: Identifiable, Sendable {
-        let categoryID: UUID
-        let categoryName: String
-        let colorName: String
-        let iconName: String
-        let total: Int64
-        var id: UUID { categoryID }
-    }
-
-    struct BarEntry: Identifiable, Sendable {
-        let position: Int
-        let label: String
-        let dateLabel: String?
-        let total: Int64
-        var id: Int { position }
-
-        init(position: Int, label: String, total: Int64, dateLabel: String? = nil) {
-            self.position = position
-            self.label = label
-            self.dateLabel = dateLabel
-            self.total = total
-        }
-    }
-
-    struct CategoryNavDestination: Hashable {
-        let categoryID: UUID
-        let interval: DateInterval
-    }
-
     // MARK: - Observable Properties
 
     var selectedPeriod: TimePeriod = .weekly
@@ -280,8 +205,10 @@ final class InsightsViewModel {
     }
 
     func toggleCategoryFilter(_ categoryID: UUID) {
-        if !excludedCategories.insert(categoryID).inserted {
+        if excludedCategories.contains(categoryID) {
             excludedCategories.remove(categoryID)
+        } else {
+            excludedCategories.insert(categoryID)
         }
     }
 
@@ -347,9 +274,9 @@ final class InsightsViewModel {
                 previousExpenses: previousExpenses,
                 categories: categories,
                 period: period,
-                interval: currentInterval,
-                offset: offset
+                interval: currentInterval
             )
+            loadedOffset = offset
         } catch {
             guard !Task.isCancelled else { return }
             logger.error("performLoad: FAILED — \(error.localizedDescription)")
@@ -362,8 +289,7 @@ final class InsightsViewModel {
         previousExpenses: [ExpenseData],
         categories: [CategoryData],
         period: TimePeriod,
-        interval: DateInterval,
-        offset: Int
+        interval: DateInterval
     ) {
         clearCategoryFilter()
         totalAmount = currentExpenses.reduce(Int64(0)) { $0 + $1.amount }
@@ -371,15 +297,14 @@ final class InsightsViewModel {
         fetchedCategories = categories
         let categoryMap = buildCategoryMap(from: categories)
         chartSlices = buildChartSlices(from: categoryTotals, categoryMap: categoryMap)
-        barEntries = computeBarEntries(from: currentExpenses, period: period, interval: interval)
         dailyTotals = currentExpenses.reduce(into: [:]) { map, expense in
             map[Self.calendar.startOfDay(for: expense.createdAt), default: 0] += expense.amount
         }
+        barEntries = computeBarEntries(from: currentExpenses, period: period, interval: interval)
         previousPeriodTotal = previousExpenses.isEmpty ? nil : previousExpenses.reduce(Int64(0)) { $0 + $1.amount }
         currentPeriodInterval = interval
         errorMessage = nil
         loadedPeriod = period
-        loadedOffset = offset
         logger.info("performLoad: complete — total=\(self.totalAmount, privacy: .private) satang, \(self.categoryTotals.count) categories")
     }
 
@@ -501,17 +426,18 @@ final class InsightsViewModel {
 
     private func computeWeeklyEntries(from expenses: [ExpenseData], interval: DateInterval) -> [BarEntry] {
         let cal = Self.calendar
+        var grouped: [Date: Int64] = [:]
+        for expense in expenses {
+            grouped[cal.startOfDay(for: expense.createdAt), default: 0] += expense.amount
+        }
         var entries: [BarEntry] = []
         var date = interval.start
         var position = 0
         while date < interval.end {
-            let dayTotal = expenses
-                .filter { cal.isDate($0.createdAt, inSameDayAs: date) }
-                .reduce(Int64(0)) { $0 + $1.amount }
             entries.append(BarEntry(
                 position: position,
                 label: Self.weekdayFormatter.string(from: date),
-                total: dayTotal,
+                total: grouped[cal.startOfDay(for: date), default: 0],
                 dateLabel: Self.dayMonthFormatter.string(from: date)
             ))
             date = cal.date(byAdding: .day, value: 1, to: date) ?? interval.end

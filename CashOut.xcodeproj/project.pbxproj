@@ -71,6 +71,7 @@
 		J1K2L3M4N5O60A12 /* EditExpenseSheet.swift in Sources */ = {isa = PBXBuildFile; fileRef = J1K2L3M4N5O60A02 /* EditExpenseSheet.swift */; };
 		J1K2L3M4N5O60A13 /* EditExpenseViewModelTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = J1K2L3M4N5O60A03 /* EditExpenseViewModelTests.swift */; };
 		K1L2M3N4O5P60B11 /* InsightsViewModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = K1L2M3N4O5P60B01 /* InsightsViewModel.swift */; };
+		K1L2M3N4O5P60B16 /* InsightsViewModel+Types.swift in Sources */ = {isa = PBXBuildFile; fileRef = K1L2M3N4O5P60B15 /* InsightsViewModel+Types.swift */; };
 		K1L2M3N4O5P60B12 /* InsightsViewModelTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = K1L2M3N4O5P60B02 /* InsightsViewModelTests.swift */; };
 		K1L2M3N4O5P60B13 /* InsightsViewModelChartTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = K1L2M3N4O5P60B03 /* InsightsViewModelChartTests.swift */; };
 		K1L2M3N4O5P60B14 /* InsightsViewModelNavigationTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = K1L2M3N4O5P60B04 /* InsightsViewModelNavigationTests.swift */; };
@@ -181,6 +182,7 @@
 		J1K2L3M4N5O60A02 /* EditExpenseSheet.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = EditExpenseSheet.swift; sourceTree = "<group>"; };
 		J1K2L3M4N5O60A03 /* EditExpenseViewModelTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = EditExpenseViewModelTests.swift; sourceTree = "<group>"; };
 		K1L2M3N4O5P60B01 /* InsightsViewModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = InsightsViewModel.swift; sourceTree = "<group>"; };
+		K1L2M3N4O5P60B15 /* InsightsViewModel+Types.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "InsightsViewModel+Types.swift"; sourceTree = "<group>"; };
 		K1L2M3N4O5P60B02 /* InsightsViewModelTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = InsightsViewModelTests.swift; sourceTree = "<group>"; };
 		K1L2M3N4O5P60B03 /* InsightsViewModelChartTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = InsightsViewModelChartTests.swift; sourceTree = "<group>"; };
 		K1L2M3N4O5P60B04 /* InsightsViewModelNavigationTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = InsightsViewModelNavigationTests.swift; sourceTree = "<group>"; };
@@ -292,6 +294,7 @@
 				D1E2F3A4B5C60101 /* ExpenseEntryViewModel.swift */,
 				H1I2J3K4L5M60802H1I2J3K4 /* FeedViewModel.swift */,
 				K1L2M3N4O5P60B01 /* InsightsViewModel.swift */,
+				K1L2M3N4O5P60B15 /* InsightsViewModel+Types.swift */,
 				8CDFDD4BAAFD33EB669B30F6 /* SettingsViewModel.swift */,
 			);
 			path = ViewModels;
@@ -681,6 +684,7 @@
 				J1K2L3M4N5O60A11 /* EditExpenseViewModel.swift in Sources */,
 				J1K2L3M4N5O60A12 /* EditExpenseSheet.swift in Sources */,
 				K1L2M3N4O5P60B11 /* InsightsViewModel.swift in Sources */,
+				K1L2M3N4O5P60B16 /* InsightsViewModel+Types.swift in Sources */,
 				L1M2N3O4P5Q60C11 /* InsightsSummaryView.swift in Sources */,
 				L1M2N3O4P5Q60C12 /* FilteredFeedView.swift in Sources */,
 				L1M2N3O4P5Q60C13 /* DailyBarChartView.swift in Sources */,

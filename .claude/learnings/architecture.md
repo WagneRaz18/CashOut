@@ -108,6 +108,8 @@
 ## Project Generation
 - xcodegen (project.yml) can fully replace manual Xcode project creation including Core Data + CloudKit setup. Generates valid .xcodeproj with proper build phases for .xcdatamodeld files.
 - .xcdatamodeld is a directory with XML contents that can be created programmatically — no Xcode GUI required.
+- **2026-05-03**: Swift source files created outside Xcode (Write tool, CLI) must be manually registered in `project.pbxproj`: (1) add `PBXFileReference` entry, (2) add `PBXBuildFile` entry referencing the file ref, (3) add the file ref to the group's `children` array, (4) add the build file to the target's `Sources` build phase. Missing any step silently produces "type not found" / "module not found" build errors despite the file being physically present on disk.
+- **2026-05-03**: When extracting nested types from an `@Observable` class to a companion `+Types.swift` extension file, any members with `fileprivate` access that are used from the original file must be changed to `internal` (remove the modifier). `fileprivate` is file-scoped — it denies access across files even within the same type extension in the same module.
 
 - **2026-03-29**: Button `isDisabled` must mirror ALL silent-return guards in the ViewModel action — if `saveExpense()` returns silently on `selectedCategoryID == nil` (e.g., categories failed to load), the Save button must include `selectedCategoryID == nil` in its disabled condition. Otherwise the user sees an enabled button that does nothing on tap.
 

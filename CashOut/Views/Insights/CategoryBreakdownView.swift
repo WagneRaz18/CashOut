@@ -1,10 +1,16 @@
 import SwiftUI
+import os.log
+
+private let logger = Logger(subsystem: "com.wagneraz.CashOut", category: "CategoryBreakdownView")
 
 struct CategoryBreakdownView: View {
     let slices: [InsightsViewModel.ChartSlice]
     let totalAmount: Int64
     let excludedCategories: Set<UUID>
     let onCategoryFilterToggled: (UUID) -> Void
+
+    @ScaledMetric(relativeTo: .subheadline) private var badgeSize: CGFloat = 14
+    @ScaledMetric(relativeTo: .subheadline) private var badgeDimension: CGFloat = 28
 
     var body: some View {
         if slices.isEmpty {
@@ -59,9 +65,9 @@ struct CategoryBreakdownView: View {
     private func categoryBadge(iconName: String, colorName: String) -> some View {
         let color = CategoryColor(from: colorName)?.color ?? .gray
         return Image(systemName: iconName)
-            .font(.system(size: 14))
+            .font(.system(size: badgeSize))
             .foregroundStyle(.white)
-            .frame(width: 28, height: 28)
+            .frame(width: badgeDimension, height: badgeDimension)
             .background(color, in: Circle())
     }
 }
