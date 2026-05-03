@@ -43,67 +43,52 @@ struct InsightsView: View {
                         .padding(.top, Spacing.sm)
                 }
 
-                if viewModel.isEmpty && viewModel.selectedPeriod != .monthly {
+                VStack(spacing: Spacing.md) {
                     InsightsSummaryView(
-                        slices: [],
+                        slices: viewModel.visibleChartSlices,
                         headlineText: viewModel.headlineText,
                         periodLabel: viewModel.periodLabel,
-                        comparisonText: nil,
+                        comparisonText: viewModel.comparisonText,
                         emptyStateText: viewModel.emptyStateText,
                         accessibilityLabel: viewModel.chartAccessibilityLabel,
-                        onSliceTapped: { _ in }
+                        onSliceTapped: { categoryID in
+                            viewModel.selectCategory(categoryID)
+                        }
                     )
-                    .containerRelativeFrame(.vertical) { height, _ in
-                        height
+                    .transition(.opacity)
+                    .id("\(viewModel.loadKey)-\(viewModel.visibleChartSlices.map(\.categoryID.uuidString).joined())")
+                    .animation(.easeInOut(duration: 0.15), value: viewModel.loadKey)
+
+                    if viewModel.selectedPeriod == .monthly {
+                        MonthlyCalendarView(
+                            calendarMonth: viewModel.viewedMonthStart,
+                            dailyTotals: viewModel.dailyTotals,
+                            today: Date(),
+                            onDayTap: { date in viewModel.navigateToDay(date) }
+                        )
+                        .transition(.opacity)
+                        .animation(.easeInOut(duration: 0.15), value: viewModel.loadKey)
+                    } else {
+                        DailyBarChartView(
+                            entries: viewModel.barEntries,
+                            accessibilityLabel: viewModel.barChartAccessibilityLabel
+                        )
+                        .id(viewModel.loadKey)
+                        .transition(.opacity)
+                        .animation(.easeInOut(duration: 0.15), value: viewModel.loadKey)
                     }
-                } else {
-                    VStack(spacing: Spacing.md) {
-                        InsightsSummaryView(
-                            slices: viewModel.visibleChartSlices,
-                            headlineText: viewModel.headlineText,
-                            periodLabel: viewModel.periodLabel,
-                            comparisonText: viewModel.comparisonText,
-                            emptyStateText: viewModel.emptyStateText,
-                            accessibilityLabel: viewModel.chartAccessibilityLabel,
-                            onSliceTapped: { categoryID in
-                                viewModel.selectCategory(categoryID)
+
+                    if !viewModel.isEmpty {
+                        CategoryBreakdownView(
+                            slices: viewModel.chartSlices,
+                            totalAmount: viewModel.filteredTotalAmount,
+                            excludedCategories: viewModel.excludedCategories,
+                            onCategoryFilterToggled: { categoryID in
+                                viewModel.toggleCategoryFilter(categoryID)
                             }
                         )
                         .transition(.opacity)
-                        .id("\(viewModel.loadKey)-\(viewModel.visibleChartSlices.map(\.categoryID.uuidString).joined())")
                         .animation(.easeInOut(duration: 0.15), value: viewModel.loadKey)
-
-                        if viewModel.selectedPeriod == .monthly {
-                            MonthlyCalendarView(
-                                calendarMonth: viewModel.viewedMonthStart,
-                                dailyTotals: viewModel.dailyTotals,
-                                today: Date(),
-                                onDayTap: { date in viewModel.navigateToDay(date) }
-                            )
-                            .transition(.opacity)
-                            .animation(.easeInOut(duration: 0.15), value: viewModel.loadKey)
-                        } else {
-                            DailyBarChartView(
-                                entries: viewModel.barEntries,
-                                accessibilityLabel: viewModel.barChartAccessibilityLabel
-                            )
-                            .id(viewModel.loadKey)
-                            .transition(.opacity)
-                            .animation(.easeInOut(duration: 0.15), value: viewModel.loadKey)
-                        }
-
-                        if !viewModel.isEmpty {
-                            CategoryBreakdownView(
-                                slices: viewModel.chartSlices,
-                                totalAmount: viewModel.filteredTotalAmount,
-                                excludedCategories: viewModel.excludedCategories,
-                                onCategoryFilterToggled: { categoryID in
-                                    viewModel.toggleCategoryFilter(categoryID)
-                                }
-                            )
-                            .transition(.opacity)
-                            .animation(.easeInOut(duration: 0.15), value: viewModel.loadKey)
-                        }
                     }
                 }
             }
